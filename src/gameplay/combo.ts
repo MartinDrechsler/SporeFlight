@@ -1,9 +1,9 @@
 import { TUNING } from '../config/tuning';
 
 const C = TUNING.combo;
-const MAX_MULTIPLIER = C.thresholds.length;
+export const MAX_MULTIPLIER = C.thresholds.length;
 
-/** Chaining passes quickly raises the points multiplier; pausing too long resets it. */
+/** Chaining actions quickly raises the multiplier; pausing too long resets it. */
 export interface Combo {
   count: number;
   multiplier: number;
@@ -15,22 +15,23 @@ export function createCombo(): Combo {
   return { count: 0, multiplier: 1, timeLeft: 0 };
 }
 
+/** Fever is the top multiplier: points and coins are doubled again. */
 export function isFever(combo: Combo): boolean {
   return combo.multiplier === MAX_MULTIPLIER;
 }
 
-/** Points earned for one pass at the current combo. */
-export function pointsForPass(combo: Combo): number {
-  return combo.multiplier * (isFever(combo) ? C.feverPointFactor : 1);
+/** Value of one point or coin at the current combo. */
+export function comboValue(combo: Combo): number {
+  return combo.multiplier * (isFever(combo) ? C.feverFactor : 1);
 }
 
-/** Extends the chain. Returns true when this step entered fever. */
-export function extendCombo(combo: Combo): boolean {
-  const wasFever = isFever(combo);
-  combo.count += 1;
+/** Extends the chain. Returns the new multiplier if it went up, otherwise null. */
+export function extendCombo(combo: Combo, amount: number): number | null {
+  const before = combo.multiplier;
+  combo.count += amount;
   combo.timeLeft = C.windowSeconds;
   combo.multiplier = multiplierFor(combo.count);
-  return !wasFever && isFever(combo);
+  return combo.multiplier > before ? combo.multiplier : null;
 }
 
 export function stepCombo(combo: Combo, dt: number): void {

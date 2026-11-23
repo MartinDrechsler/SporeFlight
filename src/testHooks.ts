@@ -1,5 +1,7 @@
 import type { Loop } from './core/loop';
 import type { StateMachine } from './core/stateMachine';
+import { pickupPosition } from './gameplay/pickups';
+import { gapBottom, gapTop, rootLeft } from './gameplay/roots';
 import { flapPlayer } from './gameplay/world';
 import type { GameContext, StateName } from './states/context';
 
@@ -14,8 +16,10 @@ declare global {
     __test?: {
       flap(): void;
       tap(): void;
+      go(state: StateName): void;
       seed(value: number): void;
-      finishRest(): void;
+      setSave(patch: Record<string, unknown>): void;
+      invulnerable(on: boolean): void;
     };
   }
 }
@@ -31,11 +35,16 @@ export function installTestHooks(
     return JSON.stringify({
       coords: 'origin top-left, +y down, CSS pixels',
       state: machine.current,
+      level: { id: world.level.id, name: world.level.name },
       field: { width: world.width, height: world.height, groundY: world.groundY },
-      player: { x: round(world.player.x), y: round(world.player.y), vy: round(world.player.vy) },
-      roots: world.roots.map((r) => ({ x: round(r.x), gapCenter: round(r.gapCenter), gapSize: round(r.gapSize), motion: r.motion.kind })),
-      pickups: world.pickups.map((p) => ({ kind: p.kind, x: round(p.x), y: round(p.y) })),
-      round: { score: world.score, coins: world.coins, diamonds: world.diamonds, combo: world.combo.multiplier, crashed: world.crashed },
+      player: { x: round(world.player.x), y: round(world.player.y), vy: round(world.player.vy), radius: world.player.radius },
+      roots: world.roots.map((r) => ({
+        left: round(rootLeft(r)), right: round(rootLeft(r) + r.width), gapTop: round(gapTop(r)), gapBottom: round(gapBottom(r)),
+        gapCenter: round(r.gapCenter), columns: r.columns, motion: r.motion.kind,
+      })),
+      pickups: world.pickups.map((p) => ({ kind: p.kind, ...pickupPosition(p) })),
+      winds: world.winds.map((w) => ({ kind: w.kind, x: round(w.x), width: round(w.width) })),
+      round: { ...world.stats, combo: world.combo.multiplier, shield: world.shield, magnet: round(world.magnetTime), crashed: world.crashed },
       save: ctx.save,
     });
   };
@@ -43,9 +52,14 @@ export function installTestHooks(
   window.__test = {
     flap: () => flapPlayer(ctx.world),
     tap: () => machine.tap(),
+    go: (state) => machine.go(state),
     seed: (value) => reseed(value),
-    finishRest: () => {
-      ctx.save.restUntil = 1;
+    setSave: (patch) => {
+      Object.assign(ctx.save, patch);
+      ctx.persist();
+    },
+    invulnerable: (on) => {
+      ctx.world.invulnerableTime = on ? Infinity : 0;
     },
   };
   loop.advance(0);

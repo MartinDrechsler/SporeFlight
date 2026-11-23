@@ -10,3 +10,27 @@ export function setText(element: HTMLElement, value: string | number): void {
   // Skip identical writes so per-frame callers stay cheap.
   if (element.textContent !== text) element.textContent = text;
 }
+
+/** Small element builder for lists rendered from data. */
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className = '',
+  text = '',
+): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text) element.textContent = text;
+  return element;
+}
+
+export function button(label: string, className: string, onClick: (() => void) | null): HTMLButtonElement {
+  const b = el('button', className, label);
+  b.type = 'button';
+  b.disabled = onClick === null;
+  if (onClick) b.addEventListener('click', onClick);
+  return b;
+}
+
+export function starText(stars: number): string {
+  return '★'.repeat(stars) + '☆'.repeat(3 - stars);
+}

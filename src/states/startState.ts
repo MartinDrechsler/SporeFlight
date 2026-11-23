@@ -1,46 +1,77 @@
+import { ENDLESS_LEVEL_ID } from '../config/levels';
+import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
-import { flapPlayer } from '../gameplay/world';
+import { claimableCount, dayKey, refreshQuests } from '../meta/quests';
 import { byId, setText } from '../ui/dom';
+import { clearHudEffects, hearts } from '../ui/hud';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
+import { hover } from './hover';
+import { startRound } from './round';
 
-const HOVER_SCROLL_SPEED = 40;
-
-/** Title screen: the mushroom hovers while the forest drifts by. */
+/** Title screen and main menu: the mushroom hovers while the forest drifts by. */
 export function startState(ctx: GameContext): State {
   let time = 0;
+  const menu = (id: string, target: Parameters<GameContext['go']>[0]): void => {
+    byId(id).addEventListener('click', () => {
+      ctx.audio.unlock();
+      ctx.audio.ui('click');
+      ctx.go(target);
+    });
+  };
+  menu('menu-shop', 'shop');
+  menu('menu-badges', 'badges');
+  menu('menu-quests', 'quests');
+  byId('menu-adventure').addEventListener('click', () => {
+    ctx.audio.unlock();
+    ctx.audio.ui('click');
+    ctx.go(ctx.save.adventureUnlocked ? 'levels' : 'unlock');
+  });
+  byId('start-button').addEventListener('click', () => {
+    ctx.audio.unlock();
+    begin();
+  });
+
+  const begin = (): void => {
+    if (ctx.current() === 'start') startRound(ctx, ENDLESS_LEVEL_ID, { fromHover: true });
+  };
 
   return {
     enter() {
-      if (ctx.save.restUntil > 0) {
+      if (ctx.save.lives <= 0) {
         ctx.go('gameOver');
         return;
       }
-      ctx.world = ctx.newWorld();
-      ctx.effects.clear();
+      if (refreshQuests(ctx.save, dayKey(ctx.now()), ctx.rng)) ctx.persist();
+      ctx.levelId = ENDLESS_LEVEL_ID;
+      ctx.world = ctx.newWorld(ENDLESS_LEVEL_ID);
       time = 0;
-      setText(byId('start-best'), ctx.save.bestScore);
-      setText(byId('start-coins'), ctx.save.coins);
-      setText(byId('start-diamonds'), ctx.save.diamonds);
-      setText(byId('start-lives'), ctx.save.lives);
-      const last = byId('start-last');
-      last.hidden = ctx.lastScore === null;
-      setText(byId('start-last-score'), ctx.lastScore ?? 0);
+      clearHudEffects();
+      refresh(ctx);
       showScreens('start');
     },
 
     update(dt) {
       time += dt;
-      const player = ctx.world.player;
-      const home = ctx.world.height * 0.45;
-      player.y = home + Math.sin(time * 2.5) * 6;
-      ctx.world.distance += HOVER_SCROLL_SPEED * dt;
-      ctx.effects.update(dt);
+      hover(ctx, 'start-slot', time, dt);
     },
 
-    onTap() {
-      ctx.go('playing');
-      flapPlayer(ctx.world);
-    },
+    onTap: begin,
   };
+}
+
+function refresh(ctx: GameContext): void {
+  const { save } = ctx;
+  setText(byId('start-username'), save.username ?? TUNING.session.defaultUsername);
+  setText(byId('start-best'), save.bestScore);
+  setText(byId('start-coins'), save.coins);
+  setText(byId('start-diamonds'), save.diamonds);
+  setText(byId('start-lives'), hearts(save.lives));
+  byId('start-last').hidden = ctx.lastScore === null;
+  setText(byId('start-last-score'), ctx.lastScore ?? 0);
+  byId('adventure-lock').hidden = save.adventureUnlocked;
+  const claimable = claimableCount(save);
+  const badge = byId('quests-badge');
+  badge.hidden = claimable === 0;
+  setText(badge, claimable);
 }

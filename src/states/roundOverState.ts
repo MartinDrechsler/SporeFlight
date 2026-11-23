@@ -1,14 +1,15 @@
+import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
-import { writeSave } from '../core/save';
-import { stepWorld } from '../gameplay/world';
+import { roundCoins, stepWorld } from '../gameplay/world';
+import { bankRound } from '../meta/economy';
 import { updateHud } from '../ui/hud';
-import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
+import { addQuest, checkAchievements, deliverEvents } from './round';
 
 /**
- * The moment after a crash: the round's rewards are banked and one life is
- * lost, then the mushroom falls for a beat before the next screen.
+ * The moment after a crash: the round ends, its rewards are banked (an
+ * endless round also costs a life), then the mushroom falls for a beat.
  */
 export function roundOverState(ctx: GameContext): State {
   let timeLeft = 0;
@@ -16,25 +17,29 @@ export function roundOverState(ctx: GameContext): State {
   return {
     enter() {
       const { world, save } = ctx;
-      save.coins += world.coins;
-      save.diamonds += world.diamonds;
-      save.bestScore = Math.max(save.bestScore, world.score);
-      save.lives = Math.max(0, save.lives - 1);
-      writeSave(ctx.store, save);
-
-      ctx.lastScore = world.score;
+      deliverEvents(ctx);
+      bankRound(save, {
+        levelId: world.level.id,
+        score: world.stats.score,
+        coins: roundCoins(world),
+        diamonds: world.stats.diamonds,
+        distance: world.distance + world.player.x,
+      });
+      if (world.level.id !== ENDLESS_LEVEL_ID) addQuest(ctx, 'adventureRuns', 1);
+      checkAchievements(ctx);
+      ctx.persist();
+      ctx.lastScore = world.stats.score;
       timeLeft = TUNING.roundOver.seconds;
-      showScreens('hud');
-      updateHud(world, save.lives, save.coins - world.coins);
+      updateHud(world, save, { banked: true });
     },
 
     update(dt) {
       stepWorld(ctx.world, dt);
       ctx.world.events.length = 0;
-      ctx.effects.update(dt);
       timeLeft -= dt;
       if (timeLeft > 0) return;
-      ctx.go(ctx.save.lives > 0 ? 'start' : 'gameOver');
+      if (ctx.world.level.id !== ENDLESS_LEVEL_ID) ctx.go('adventureOver');
+      else ctx.go(ctx.save.lives > 0 ? 'start' : 'gameOver');
     },
   };
 }

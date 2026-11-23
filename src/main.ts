@@ -1,23 +1,38 @@
+import '@fontsource/vt323/latin-400.css';
 import './styles/base.css';
 import './styles/screens.css';
+import './styles/menus.css';
+import { createMockAds, type RewardedAds } from './ads/ads';
 import { Audio } from './audio/audio';
-import { CLASSIC_SKIN, FOREST_THEME } from './config/theme';
+import { levelById, ENDLESS_LEVEL_ID } from './config/levels';
 import { TUNING } from './config/tuning';
 import { createLoop } from './core/loop';
 import { createRandom, randomSeed } from './core/random';
 import { browserStore, loadSave, writeSave } from './core/save';
 import { StateMachine } from './core/stateMachine';
+import { isFever } from './gameplay/combo';
 import { createWorld } from './gameplay/world';
 import { createSurface, resizeSurface } from './render/canvas';
 import { Effects } from './render/effects';
+import { preloadImages } from './render/images';
 import { renderScene } from './render/renderer';
+import { adState } from './states/adState';
+import { adventureOverState } from './states/adventureOverState';
+import { badgesState } from './states/badgesState';
 import type { GameContext, StateName } from './states/context';
 import { gameOverState } from './states/gameOverState';
+import { levelsState } from './states/levelsState';
 import { playingState } from './states/playingState';
+import { questsState } from './states/questsState';
 import { roundOverState } from './states/roundOverState';
+import { shopState } from './states/shopState';
 import { startState } from './states/startState';
+import { unlockState } from './states/unlockState';
+import { usernameState } from './states/usernameState';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
+
+const AD_SECONDS = 2;
 
 const params = new URLSearchParams(location.search);
 const isTest = params.has('test');
@@ -26,31 +41,44 @@ let rng = createRandom(Number.isFinite(seedParam) && seedParam > 0 ? seedParam :
 
 // Layout in CSS needs the ground height; pass it from the one place it is defined.
 document.documentElement.style.setProperty('--ground-height', `${TUNING.world.groundHeight}px`);
+preloadImages();
 
 const canvas = byId<HTMLCanvasElement>('game-canvas');
 const surface = createSurface(canvas);
 const store = browserStore();
-const save = loadSave(store, TUNING.session.lives);
+const save = loadSave(store);
+// Test runs get an ad that finishes instantly, so flows can be checked quickly.
+const ads: RewardedAds = createMockAds(isTest ? 0 : AD_SECONDS);
 
 const ctx: GameContext = {
-  world: createWorld(surface.width, surface.height, rng),
+  world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), rng),
   save,
-  store,
   audio: new Audio(save.soundOn),
   effects: new Effects(),
-  theme: FOREST_THEME,
-  skin: CLASSIC_SKIN,
+  ads,
+  rng,
+  levelId: ENDLESS_LEVEL_ID,
   lastScore: null,
-  now: () => Date.now(),
-  newWorld: () => createWorld(surface.width, surface.height, rng),
+  newWorld: (levelId) => createWorld(surface.width, surface.height, levelById(levelId), rng),
   go: (name) => machine.go(name),
+  current: () => machine.current,
+  persist: () => writeSave(store, save),
+  now: () => Date.now(),
 };
 
 const machine = new StateMachine<StateName>({
+  username: usernameState(ctx),
   start: startState(ctx),
   playing: playingState(ctx),
   roundOver: roundOverState(ctx),
   gameOver: gameOverState(ctx),
+  ad: adState(ctx, AD_SECONDS),
+  adventureOver: adventureOverState(ctx),
+  shop: shopState(ctx),
+  badges: badgesState(ctx),
+  quests: questsState(ctx),
+  levels: levelsState(ctx),
+  unlock: unlockState(ctx),
 });
 
 let time = 0;
@@ -58,46 +86,54 @@ const loop = createLoop(
   (dt) => {
     time += dt;
     machine.update(dt);
+    const { world } = ctx;
+    ctx.effects.update(dt, isFever(world.combo) && machine.current === 'playing', world.player.x, world.player.y);
   },
-  () => renderScene(surface, { world: ctx.world, theme: ctx.theme, skin: ctx.skin, effects: ctx.effects, time }),
+  () => renderScene(surface, { world: ctx.world, skinId: save.activeSkin, effects: ctx.effects, deathMarks: save.deathMarks, time }),
 );
 
 setupInput();
 setupLifecycle();
 setupSoundToggle();
 
-machine.go('start');
+machine.go(save.username === null ? 'username' : 'start');
 if (isTest) {
-  installTestHooks(ctx, machine, loop, (seed) => (rng = createRandom(seed)));
+  installTestHooks(ctx, machine, loop, (seed) => {
+    rng = createRandom(seed);
+    ctx.rng = rng;
+  });
 } else {
   loop.start();
 }
 
-/** Taps on the playfield flap. Buttons in overlays handle their own clicks. */
+/**
+ * Taps flap. Only the canvas and overlays marked `data-tap` count as the
+ * playfield; buttons, inputs and menus handle their own touches.
+ */
 function setupInput(): void {
+  const isPlayfield = (event: Event): boolean => {
+    const target = event.target as HTMLElement;
+    if (target.closest('button, input, label, a')) return false;
+    return target === canvas || target.closest('[data-tap]') !== null;
+  };
   const field = byId('game');
-  const isButton = (event: Event): boolean => (event.target as HTMLElement).closest('button') !== null;
   field.addEventListener('pointerdown', (event) => {
-    if (isButton(event)) return;
+    if (!isPlayfield(event)) return;
     ctx.audio.unlock();
     machine.tap();
   });
-  // Stop the page from scrolling or zooming. Buttons are exempt, because
-  // cancelling their touchstart would also cancel their click on phones.
+  // Stop the page from scrolling or zooming on the playfield. Elsewhere touches
+  // must work normally: cancelling them would also cancel button clicks and list scrolling.
   field.addEventListener(
     'touchstart',
     (event) => {
-      if (!isButton(event)) event.preventDefault();
+      if (isPlayfield(event)) event.preventDefault();
     },
     { passive: false },
   );
   window.addEventListener('keydown', (event) => {
-    if (event.code !== 'Space' || event.repeat) return;
+    if (event.code !== 'Space' || event.repeat || (event.target as HTMLElement).closest('input')) return;
     event.preventDefault();
-    ctx.audio.unlock();
-    machine.tap();
-  });
-  byId('start-button').addEventListener('click', () => {
     ctx.audio.unlock();
     machine.tap();
   });
@@ -108,30 +144,30 @@ function setupLifecycle(): void {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       loop.stop();
-      writeSave(store, ctx.save);
+      writeSave(store, save);
     } else if (!isTest) {
       loop.start();
     }
   });
   window.addEventListener('resize', () => {
     resizeSurface(canvas, surface);
-    // Only rebuild the field between rounds, never mid-flight.
+    // Only rebuild the field on the title screen, never mid-flight.
     if (machine.current === 'start') machine.go('start');
   });
 }
 
 function setupSoundToggle(): void {
-  const button = byId<HTMLButtonElement>('sound-button');
+  const soundButton = byId<HTMLButtonElement>('sound-button');
   const paint = (): void => {
-    button.textContent = ctx.save.soundOn ? '🔊' : '🔇';
-    button.setAttribute('aria-label', ctx.save.soundOn ? 'Mute sound' : 'Unmute sound');
+    soundButton.textContent = save.soundOn ? '🔊' : '🔇';
+    soundButton.setAttribute('aria-label', save.soundOn ? 'Mute sound' : 'Unmute sound');
   };
   paint();
-  button.addEventListener('click', () => {
-    ctx.save.soundOn = !ctx.save.soundOn;
-    ctx.audio.enabled = ctx.save.soundOn;
+  soundButton.addEventListener('click', () => {
+    save.soundOn = !save.soundOn;
+    ctx.audio.enabled = save.soundOn;
     ctx.audio.unlock();
-    writeSave(store, ctx.save);
+    writeSave(store, save);
     paint();
   });
 }

@@ -1,5 +1,6 @@
 /**
- * Plays the game in a phone-sized browser and saves screenshots to shots/.
+ * Plays every screen of the game in a phone-sized browser, checks the flows
+ * and saves screenshots to shots/.
  *
  *   npm run dev                         (in one terminal)
  *   npm run play -- http://localhost:5173/ [device]
@@ -29,6 +30,7 @@ page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
 const state = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
 const advance = (ms) => page.evaluate((t) => window.advanceTime(t), ms);
+const test = (fn, arg) => page.evaluate(fn, arg);
 // Overlays fade in over real time, so let CSS animations finish before capturing.
 const shot = async (name) => {
   await page.waitForTimeout(400);
@@ -36,57 +38,136 @@ const shot = async (name) => {
 };
 const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
+const tapButton = async (selector) => {
+  await page.tap(selector);
+  await advance(50);
+};
 
-await page.goto(`${url}?test=1&seed=12345`);
-await advance(500);
-await shot('1-start');
-check('starts on start screen', (await state()).state === 'start');
-
-await page.tap('#start-button');
-await advance(50);
-check('start button begins play', (await state()).state === 'playing');
-
-// Autopilot: flap whenever below the next gap centre.
-let maxScore = 0;
-for (let i = 0; i < 600; i++) {
-  await page.evaluate(() => {
-    const s = JSON.parse(window.render_game_to_text());
-    const next = s.roots.find((r) => r.x + 65 > s.player.x - 18);
-    const target = next ? next.gapCenter + 10 : s.field.height * 0.45;
-    if (s.player.y > target && s.player.vy > 0) window.__test.flap();
-    window.advanceTime(1000 / 30);
-  });
-  const s = await state();
-  maxScore = Math.max(maxScore, s.round.score);
-  if (i === 150) await shot('2-playing');
-  if (s.state !== 'playing') break;
+/** Flies with a simple autopilot for up to `frames` steps of 1/30 s. Returns the best score seen. */
+async function fly(frames, snapshotAt = -1, snapshotName = '') {
+  let best = 0;
+  for (let i = 0; i < frames; i++) {
+    const s = await test(() => {
+      const s = JSON.parse(window.render_game_to_text());
+      const next = s.roots.find((r) => r.right > s.player.x - s.player.radius);
+      const target = next ? next.gapCenter + 10 : s.field.height * 0.45;
+      if (s.player.y > target && s.player.vy > 0) window.__test.flap();
+      window.advanceTime(1000 / 30);
+      return JSON.parse(window.render_game_to_text());
+    });
+    best = Math.max(best, s.round.score);
+    if (i === snapshotAt) await shot(snapshotName);
+    if (s.state !== 'playing') break;
+  }
+  return best;
 }
+
+// 1. First launch asks for a name.
+await page.goto(`${url}?test=1&seed=12345`);
+await advance(300);
+check('first launch asks for a name', (await state()).state === 'username');
+await shot('01-username');
+await page.fill('#username-input', 'martin');
+await tapButton('#username-form button');
+let s = await state();
+check('name saved, start screen shown', s.state === 'start' && s.save.username === 'martin');
+check('daily quests created', s.save.quests.list.length === 3);
+await shot('02-start');
+
+// 2. Endless round.
+await tapButton('#start-button');
+check('start button begins play', (await state()).state === 'playing');
+await test(() => window.__test.setSave({}));
+const maxScore = await fly(900, 200, '03-playing');
 check('scores while flying', maxScore > 0, `max score ${maxScore}`);
+await advance(3000);
+s = await state();
+check('crash costs a life', s.save.lives === 4, `lives ${s.save.lives}`);
+check('back to start after crash', s.state === 'start');
+check('crash spot remembered', s.save.deathMarks.length === 1);
+await shot('04-start-after-round');
 
-// Stop flapping until the round ends.
-await advance(4000);
-await shot('3-after-crash');
-const afterCrash = await state();
-check('crash costs a life', afterCrash.save.lives === 4, `lives ${afterCrash.save.lives}`);
-check('back to start after crash', afterCrash.state === 'start');
-
-// Lose the remaining lives.
+// 3. Losing all lives leads to the ad, which refills lives.
 for (let life = 0; life < 4; life++) {
-  await page.evaluate(() => window.__test.tap());
+  await test(() => window.__test.tap());
   await advance(4000);
 }
-await shot('4-game-over');
-const over = await state();
-check('out of lives shows game over', over.state === 'gameOver');
+s = await state();
+check('out of lives shows game over', s.state === 'gameOver');
+await shot('05-game-over');
+await tapButton('#watch-ad-button');
+await page.waitForTimeout(100); // the test ad resolves on the next tick
+await advance(50);
+s = await state();
+check('watching the ad gives 10 lives', s.state === 'start' && s.save.lives === 10, `${s.state} lives ${s.save.lives}`);
 
-await page.evaluate(() => window.__test.finishRest());
-await advance(100);
-const rested = await state();
-check('resting refills lives', rested.state === 'start' && rested.save.lives === 5);
+// 4. Shop.
+await test(() => window.__test.setSave({ coins: 40 }));
+await tapButton('#menu-shop');
+check('shop opens', (await state()).state === 'shop');
+await shot('06-shop');
+await page.tap('#shop-list li:nth-child(2) button');
+s = await state();
+check('buying a skin spends coins and selects it', s.save.activeSkin === 'emerald' && s.save.coins === 25);
+await tapButton('#screen-shop .back-button');
 
+// 5. Badges.
+await tapButton('#menu-badges');
+check('badges open', (await state()).state === 'badges');
+await shot('07-badges');
+await tapButton('#screen-badges .back-button');
+
+// 6. Quests: finish the first one and claim it.
+await test(() => {
+  const save = JSON.parse(window.render_game_to_text()).save;
+  save.quests.list[0].progress = 999;
+  window.__test.setSave({ quests: save.quests });
+});
+await tapButton('#menu-quests');
+await shot('08-quests');
+const coinsBefore = (await state()).save.coins;
+await page.tap('#quests-list li:first-child .item-button');
+s = await state();
+check('claiming a quest pays coins once', s.save.coins > coinsBefore && s.save.quests.list[0].claimed);
+await tapButton('#screen-quests .back-button');
+
+// 7. Adventure: unlock, pick level 1, fly, crash.
+await tapButton('#menu-adventure');
+check('adventure asks to unlock first', (await state()).state === 'unlock');
+await shot('09-unlock');
+await tapButton('#unlock-confirm');
+s = await state();
+check('adventure unlocked', s.state === 'levels' && s.save.adventureUnlocked);
+await page.tap('#levels-grid button:nth-child(1)');
+await shot('10-levels');
+await tapButton('#levels-grid button:nth-child(1)');
+s = await state();
+check('level 1 starts on second tap', s.state === 'playing' && s.level.id === 1);
+await fly(400, 60, '11-level-1');
+await advance(3000);
+s = await state();
+check('adventure crash shows level result, keeps lives', s.state === 'adventureOver' && s.save.lives === 10);
+await shot('12-adventure-over');
+await tapButton('#adventure-retry');
+check('retry restarts the same level', (await state()).level.id === 1);
+
+// 8. Every adventure level looks right mid-flight (invulnerable to reach later roots).
+for (const id of [2, 4, 5, 6, 7, 8, 9]) {
+  await test(() => window.__test.go('levels'));
+  await advance(50);
+  await page.tap(`#levels-grid button:nth-child(${id})`);
+  await tapButton(`#levels-grid button:nth-child(${id})`);
+  await test(() => window.__test.invulnerable(true));
+  await fly(150);
+  await shot(`13-level-${id}`);
+}
+
+// 9. Progress survives a reload.
+await test(() => window.__test.go('start'));
 await page.reload();
 await advance(200);
-check('progress survives reload', (await state()).save.bestScore >= maxScore);
+s = await state();
+check('progress survives reload', s.state === 'start' && s.save.username === 'martin' && s.save.bestScore >= maxScore && s.save.activeSkin === 'emerald');
 
 check('no console errors', errors.length === 0, errors.join(' | '));
 await browser.close();

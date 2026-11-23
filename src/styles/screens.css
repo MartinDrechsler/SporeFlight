@@ -1,4 +1,4 @@
-/* Overlays drawn above the canvas: HUD, start and game over. */
+/* Overlays drawn above the canvas: HUD, title, results. */
 
 .overlay {
   position: absolute;
@@ -7,10 +7,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  /* Content stays above the ground strip drawn on the canvas. */
-  padding: calc(64px + var(--safe-top)) 28px calc(var(--ground-height) + 12px);
-  animation: fade-in 0.3s ease-out;
+  gap: 12px;
+  padding: calc(60px + var(--safe-top)) 24px calc(var(--ground-height) + 10px);
+  animation: fade-in 0.25s ease-out;
+}
+
+.overlay.center {
+  justify-content: center;
+}
+
+.overlay.dim {
+  background: rgba(3, 16, 13, 0.78);
 }
 
 @keyframes fade-in {
@@ -19,42 +26,80 @@
   }
 }
 
-/* Start */
 .title {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: clamp(2.6rem, 13vw, 3.6rem);
-  line-height: 1;
+  font-weight: normal;
+  font-size: clamp(3.4rem, 17vw, 4.6rem);
+  line-height: 0.85;
   letter-spacing: 0.08em;
 }
 
-.title-accent {
+.accent {
   color: var(--accent);
   text-shadow: 0 0 18px rgba(0, 242, 195, 0.7);
 }
 
-/* Leaves room for the hovering mushroom drawn on the canvas. */
-.start-spacer {
+/* Title screen */
+.start {
+  gap: 10px;
+}
+
+/* Space reserved for the hovering mushroom drawn on the canvas; the state reads its position. */
+.mushroom-slot {
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.mushroom-slot.grow {
   flex: 1;
+  min-height: 56px;
 }
 
 .last-score {
   color: var(--muted);
+  font-size: 1.3rem;
 }
 
 .last-score strong {
   color: var(--text);
+  font-weight: normal;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+
+.lock {
+  font-size: 0.8rem;
+}
+
+.alert {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--fever);
+  color: white;
+  font-size: 1rem;
+  line-height: 22px;
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
   width: 100%;
-  padding: 14px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
   background: var(--panel);
+  font-size: 1.25rem;
 }
 
 .stats div {
@@ -67,85 +112,258 @@
   color: var(--muted);
 }
 
-.stats dd {
-  font-weight: 700;
+/* First launch */
+.username-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
-.stats .coins {
-  color: var(--gold);
-}
-
-.stats .diamonds {
-  color: var(--diamond);
-}
-
-/* Game over */
-.gameover {
-  justify-content: center;
-  background: rgba(3, 16, 13, 0.7);
+.label {
+  color: var(--muted);
   text-align: center;
+  font-size: 1.3rem;
+}
+
+.text-input {
+  height: 56px;
+  border-radius: 14px;
+  border: 2px solid var(--panel-line);
+  background: var(--panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 2rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Results */
+.tired-mushroom {
+  width: 140px;
+  height: auto;
+  border-radius: 16px;
 }
 
 .panel-title {
-  font-size: 2rem;
-  color: var(--pink);
-  letter-spacing: 0.1em;
+  font-weight: normal;
+  font-size: 2.6rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(0, 242, 195, 0.5);
+  text-align: center;
+}
+
+.panel-title.danger {
+  color: var(--danger);
+  text-shadow: 0 0 14px rgba(255, 60, 105, 0.5);
 }
 
 .panel-text {
   color: var(--muted);
+  text-align: center;
+  font-size: 1.3rem;
+}
+
+.panel-text strong {
+  color: var(--text);
+  font-weight: normal;
 }
 
 .timer {
-  font-size: 3rem;
-  font-weight: 700;
+  font-size: 4rem;
   color: var(--accent);
+}
+
+.level-name {
+  color: var(--level-color, var(--accent));
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.stars {
+  color: var(--gold);
+  font-size: 1.6rem;
+  letter-spacing: 0.15em;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.button-row > * {
+  flex: 1;
 }
 
 /* HUD */
 .hud {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0;
   z-index: 1;
-  padding: calc(14px + var(--safe-top)) 68px 0 16px;
-  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: calc(14px + var(--safe-top)) 62px 0 14px;
 }
 
-.hud-row {
+.hud-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 1.1rem;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .hud-lives {
   color: var(--pink);
-  letter-spacing: 0.1em;
-}
-
-.hud-coins {
-  color: var(--gold);
-  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
 }
 
 .hud-score {
-  margin-top: 18px;
-  margin-right: -52px;
+  margin: 6px -48px 0 0;
   text-align: center;
-  font-size: 3.4rem;
-  font-weight: 700;
+  font-size: 4.2rem;
+  line-height: 1;
   text-shadow: 0 0 16px rgba(0, 242, 195, 0.6);
 }
 
 .hud-combo {
-  margin-right: -52px;
+  margin-right: -48px;
   text-align: center;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.5rem;
   color: var(--gold);
+  text-shadow: 0 0 10px rgba(255, 210, 63, 0.6);
 }
 
 .hud-combo.fever {
   color: var(--fever);
   text-shadow: 0 0 12px var(--fever);
+}
+
+.hud-bottom {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(var(--ground-height) - 54px);
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.3rem;
+  color: var(--muted);
+}
+
+.hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-coin,
+.icon-diamond {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+}
+
+.icon-diamond {
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--diamond);
+  box-shadow: 0 0 6px var(--diamond);
+}
+
+.powerups {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 8px -48px 0 0;
+}
+
+.powerup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 1px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 1.1rem;
+}
+
+.powerup.shield {
+  color: #00baff;
+  border: 1px solid rgba(0, 186, 255, 0.5);
+}
+
+.powerup.magnet {
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+}
+
+.powerup-bar {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.powerup-bar span {
+  display: block;
+  height: 100%;
+  background: #00e5ff;
+}
+
+/* Short phones (e.g. iPhone SE): tighter title and menus so the start screen fits above the ground. */
+@media (max-height: 700px) {
+  .overlay {
+    gap: 6px;
+    padding-top: calc(46px + var(--safe-top));
+  }
+
+  .title {
+    font-size: 2.7rem;
+  }
+
+  .mushroom-slot.grow {
+    min-height: 44px;
+  }
+
+  .primary-button.compact {
+    font-size: 1.3rem;
+    letter-spacing: 0.04em;
+  }
+
+  .start .menu-button {
+    min-height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .start .primary-button {
+    min-height: 48px;
+  }
+
+  .stats {
+    padding: 6px 12px;
+    font-size: 1.1rem;
+  }
+
+  .tired-mushroom {
+    width: 100px;
+  }
+
+  .panel-title {
+    font-size: 2.1rem;
+  }
 }

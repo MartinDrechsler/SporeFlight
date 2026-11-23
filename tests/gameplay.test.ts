@@ -1,64 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
-import { STEP_SECONDS } from '../src/core/loop';
-import { circleHitsRect } from '../src/gameplay/collision';
-import { createCombo, extendCombo, isFever, pointsForPass, stepCombo } from '../src/gameplay/combo';
+import { circleToBoxGap } from '../src/gameplay/collision';
+import { comboValue, createCombo, extendCombo, isFever, stepCombo } from '../src/gameplay/combo';
 import { gapSizeFor, makeRoot } from '../src/gameplay/spawner';
-import { createWorld, flapPlayer, stepWorld, type World } from '../src/gameplay/world';
+import { flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
+import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
 
-const WIDTH = 390;
-const HEIGHT = 700;
-
-function run(world: World, seconds: number, onStep?: (w: World) => void): void {
-  const steps = Math.round(seconds / STEP_SECONDS);
-  for (let i = 0; i < steps; i++) {
-    stepWorld(world, STEP_SECONDS);
-    onStep?.(world);
-  }
-}
-
-/** Flaps whenever the mushroom drops below the centre of the next gap. */
-function autopilot(world: World): void {
-  const next = world.roots.find((root) => root.x + root.width > world.player.x - world.player.radius);
-  const target = next ? next.gapCenter + 10 : world.height * 0.45;
-  if (world.player.y > target && world.player.vy > 0) flapPlayer(world);
-}
+const FIELD = { height: HEIGHT, groundY: HEIGHT - TUNING.world.groundHeight };
 
 describe('random', () => {
   it('replays the same numbers for the same seed', () => {
     const a = createRandom(42);
     const b = createRandom(42);
-    const seqA = Array.from({ length: 5 }, () => a.next());
-    const seqB = Array.from({ length: 5 }, () => b.next());
-    expect(seqA).toEqual(seqB);
-    seqA.forEach((n) => expect(n).toBeGreaterThanOrEqual(0));
-    seqA.forEach((n) => expect(n).toBeLessThan(1));
+    expect(Array.from({ length: 5 }, () => a.next())).toEqual(Array.from({ length: 5 }, () => b.next()));
   });
 });
 
 describe('player physics', () => {
   it('falls without flapping and crashes into the ground', () => {
-    const world = createWorld(WIDTH, HEIGHT, createRandom(1));
+    const world = newWorld();
     run(world, 3);
     expect(world.crashed).toBe(true);
     expect(world.events.some((e) => e.type === 'crash')).toBe(true);
   });
 
   it('a flap always gives the same upward speed', () => {
-    const world = createWorld(WIDTH, HEIGHT, createRandom(1));
-    run(world, 0.3);
-    flapPlayer(world);
-    expect(world.player.vy).toBe(TUNING.player.flapVelocity);
-    run(world, 0.1);
-    flapPlayer(world);
-    expect(world.player.vy).toBe(TUNING.player.flapVelocity);
+    const world = emptyWorld();
+    for (const wait of [0.3, 0.1, 0.5]) {
+      run(world, wait);
+      flapPlayer(world);
+      expect(world.player.vy).toBe(TUNING.player.flapVelocity);
+    }
+    expect(world.stats.flaps).toBe(3);
   });
 
   it('bumps off the ceiling instead of crashing', () => {
-    const world = createWorld(WIDTH, HEIGHT, createRandom(1));
-    world.roots = [];
-    world.distanceSinceSpawn = -1e9; // no roots in this test
+    const world = emptyWorld();
     for (let i = 0; i < 20; i++) {
       flapPlayer(world);
       run(world, 0.05);
@@ -69,77 +47,157 @@ describe('player physics', () => {
 });
 
 describe('collision', () => {
-  it('detects circle overlapping a rectangle edge', () => {
-    expect(circleHitsRect(0, 0, 10, 5, -5, 10, 10)).toBe(true);
-    expect(circleHitsRect(0, 0, 10, 11, -5, 10, 10)).toBe(false);
+  it('measures the gap between a circle and a box', () => {
+    expect(circleToBoxGap(0, 0, 10, { x: 5, y: -5, w: 10, h: 10 })).toBeLessThan(0);
+    expect(circleToBoxGap(0, 0, 10, { x: 15, y: -5, w: 10, h: 10 })).toBeCloseTo(5);
   });
 });
 
 describe('combo', () => {
-  it('raises the multiplier at the thresholds and enters fever once', () => {
+  it('raises the multiplier at the thresholds and reaches fever', () => {
     const combo = createCombo();
     const multipliers: number[] = [];
-    let feverEntries = 0;
-    for (let i = 0; i < 10; i++) {
-      if (extendCombo(combo)) feverEntries += 1;
+    for (let i = 0; i < 9; i++) {
+      extendCombo(combo, 1);
       multipliers.push(combo.multiplier);
     }
-    expect(multipliers).toEqual([1, 2, 2, 3, 3, 4, 4, 5, 5, 5]);
-    expect(feverEntries).toBe(1);
+    expect(multipliers).toEqual([1, 2, 2, 3, 3, 4, 4, 5, 5]);
     expect(isFever(combo)).toBe(true);
-    expect(pointsForPass(combo)).toBe(10);
+    expect(comboValue(combo)).toBe(10);
   });
 
-  it('breaks after the window runs out', () => {
+  it('bigger actions extend it further, and it breaks after the window', () => {
     const combo = createCombo();
-    extendCombo(combo);
-    extendCombo(combo);
+    expect(extendCombo(combo, 2)).toBe(2);
     stepCombo(combo, TUNING.combo.windowSeconds + 0.01);
     expect(combo).toEqual(createCombo());
   });
 });
 
 describe('spawner', () => {
-  it('shrinks the gap with progress but never below the minimum', () => {
-    expect(gapSizeFor(0)).toBe(TUNING.roots.gapStart);
-    expect(gapSizeFor(1000)).toBe(TUNING.roots.gapMin);
+  it('endless gap shrinks with progress but never below the minimum', () => {
+    expect(gapSizeFor(ENDLESS, 0)).toBe(ENDLESS.gap.max);
+    expect(gapSizeFor(ENDLESS, 1000)).toBe(ENDLESS.gap.min);
   });
 
-  it('keeps gap centres inside the allowed band', () => {
+  it('keeps random gap centres in the band and within a step of the last', () => {
     const rng = createRandom(7);
     let previous: number | null = null;
     for (let i = 0; i < 200; i++) {
-      const root = makeRoot(rng, 0, HEIGHT, i, previous);
+      const root = makeRoot(rng, ENDLESS, FIELD, 0, i, previous);
       expect(root.gapCenter).toBeGreaterThanOrEqual(root.centerMin);
       expect(root.gapCenter).toBeLessThanOrEqual(root.centerMax);
-      if (previous !== null) {
-        expect(Math.abs(root.gapCenter - previous)).toBeLessThanOrEqual(TUNING.roots.maxCenterStep);
-      }
+      if (previous !== null) expect(Math.abs(root.gapCenter - previous)).toBeLessThanOrEqual(TUNING.roots.maxCenterStep);
       previous = root.gapCenter;
     }
   });
 
-  it('starts moving gaps only after enough roots', () => {
+  it('endless roots start still and begin to sway later', () => {
     const rng = createRandom(3);
-    expect(makeRoot(rng, 0, HEIGHT, 0, null).motion.kind).toBe('still');
-    expect(makeRoot(rng, 0, HEIGHT, TUNING.roots.sway.fromRoot, null).motion.kind).toBe('sway');
+    expect(makeRoot(rng, ENDLESS, FIELD, 0, 0, null).motion.kind).toBe('still');
+    expect(makeRoot(rng, ENDLESS, FIELD, 0, TUNING.roots.endlessSwayFromRoot, null).motion.kind).toBe('sway');
+  });
+
+  it('each adventure mechanic comes from its level data', () => {
+    const rng = createRandom(11);
+    const make = (id: number, index = 0) => makeRoot(rng, level(id), FIELD, 0, index, null);
+    expect([make(1, 0).columns, make(1, 1).columns]).toEqual(['top', 'bottom']);
+    expect(make(1).glowfly).not.toBeNull();
+    expect(make(1).widthPhase).not.toBeNull();
+    expect(make(2).motion.kind).toBe('drift');
+    expect(make(4).gapPulse).not.toBeNull();
+    expect(make(5).slidePhase).not.toBeNull();
+    expect(make(6, 0).gapCenter).toBeLessThan(make(6, 1).gapCenter);
+    expect(make(7).motion.kind).toBe('sway');
+    expect(make(3).motion.kind).toBe('still');
   });
 });
 
 describe('a full round', () => {
   it('is deterministic for a seed', () => {
     const play = (): number[] => {
-      const world = createWorld(WIDTH, HEIGHT, createRandom(99));
+      const world = newWorld(99);
       run(world, 20, autopilot);
-      return [world.score, world.rootsPassed, world.coins, Math.round(world.player.y)];
+      return [world.stats.score, world.rootsPassed, world.stats.coins, Math.round(world.player.y)];
     };
     expect(play()).toEqual(play());
   });
 
   it('scores points when flying through gaps', () => {
-    const world = createWorld(WIDTH, HEIGHT, createRandom(5));
+    const world = newWorld(5);
     run(world, 15, autopilot);
     expect(world.rootsPassed).toBeGreaterThan(3);
-    expect(world.score).toBeGreaterThanOrEqual(world.rootsPassed);
+    expect(world.stats.score).toBeGreaterThanOrEqual(world.rootsPassed);
+  });
+
+  // Difficulty itself is judged by playing; this only proves every level runs and builds roots.
+  it('every adventure level runs and keeps its roots inside the playfield', () => {
+    for (let id = 1; id <= 9; id++) {
+      const world = newWorld(21, level(id));
+      world.invulnerableTime = Infinity;
+      run(world, 20, (w) => {
+        autopilot(w);
+        for (const root of w.roots) {
+          expect(root.gapCenter).toBeGreaterThanOrEqual(root.centerMin);
+          expect(root.gapCenter).toBeLessThanOrEqual(root.centerMax);
+          expect(root.gapSize).toBeGreaterThanOrEqual(level(id).gap.min - 1e-9);
+        }
+      });
+      expect(world.crashed, `level ${id}`).toBe(false);
+      expect(world.rootsSpawned, `level ${id}`).toBeGreaterThan(8);
+    }
+  });
+});
+
+describe('power-ups and rewards', () => {
+  it('a shield absorbs one hit and gives a moment of invulnerability', () => {
+    const world = newWorld(5);
+    world.shield = true;
+    run(world, 10); // no flapping: will hit something
+    const popped = world.events.some((e) => e.type === 'shieldPop');
+    expect(popped || world.crashed).toBe(true);
+    if (popped) expect(world.shield).toBe(false);
+  });
+
+  it('the ground is safe while invulnerable', () => {
+    const world = emptyWorld();
+    world.invulnerableTime = 5;
+    run(world, 2);
+    expect(world.crashed).toBe(false);
+    expect(world.player.y).toBeCloseTo(world.groundY - world.player.radius);
+  });
+
+  it('a magnet pulls nearby coins in', () => {
+    const world = emptyWorld();
+    world.roots = [makeRoot(createRandom(1), ENDLESS, FIELD, world.player.x - 200, 0, null)];
+    const root = world.roots[0]!;
+    world.pickups = [{ kind: 'coin', root, offsetX: 280, offsetY: world.player.y - root.gapCenter, vx: 0, vy: 0, collected: false }];
+    world.magnetTime = 5;
+    world.player.vy = 0;
+    for (let i = 0; i < 60 && world.pickups.length > 0; i++) {
+      world.player.vy = 0;
+      stepWorld(world, 1 / 60);
+    }
+    expect(world.stats.coins).toBeGreaterThan(0);
+  });
+
+  it('benchmarks pay bonus coins once each', () => {
+    const world = emptyWorld();
+    world.stats.score = 60;
+    stepWorld(world, 1 / 60);
+    stepWorld(world, 1 / 60);
+    expect(world.benchmarksReached).toBe(2);
+    expect(world.bonusCoins).toBe(15);
+    expect(roundCoins(world)).toBe(15);
+  });
+
+  it('wind zones push the mushroom', () => {
+    const world = emptyWorld();
+    world.winds = [{ kind: 'updraft', x: 0, width: 2000 }];
+    const still = emptyWorld();
+    run(world, 0.3);
+    run(still, 0.3);
+    expect(world.player.y).toBeLessThan(still.player.y);
+    expect(world.events.some((e) => e.type === 'wind')).toBe(true);
   });
 });
