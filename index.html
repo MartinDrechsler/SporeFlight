@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#03100d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Spore Flight</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 17a13 11 0 0 1 26 0z' fill='%23e02476'/%3E%3Crect x='12' y='16' width='8' height='12' rx='3' fill='%23f2ead8'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="game-canvas"></canvas>
+      <div class="fever-vignette" aria-hidden="true"></div>
+
+      <button id="sound-button" class="icon-button" type="button" aria-label="Mute sound"></button>
+
+      <!-- In-game display -->
+      <section id="screen-hud" class="hud" data-tap hidden>
+        <div class="hud-top">
+          <div id="hud-lives" class="hud-lives"></div>
+          <div id="hud-level" class="badge" hidden></div>
+          <div id="hud-username" class="badge"></div>
+        </div>
+        <div id="hud-score" class="hud-score">0</div>
+        <div id="hud-combo" class="hud-combo" hidden></div>
+        <div class="hud-bottom">
+          <span class="hud-stat coins"><span class="icon-coin"></span><span id="hud-coins">0</span></span>
+          <span class="hud-stat diamonds"><span class="icon-diamond"></span><span id="hud-diamonds">0</span></span>
+          <span class="hud-stat">BEST <span id="hud-best">0</span></span>
+        </div>
+        <div class="powerups">
+          <div id="hud-shield" class="powerup shield" hidden>SHIELD</div>
+          <div id="hud-magnet" class="powerup magnet" hidden>MAGNET<span class="powerup-bar"><span id="hud-magnet-bar"></span></span></div>
+        </div>
+      </section>
+
+      <!-- First launch -->
+      <section id="screen-username" class="overlay center" hidden>
+        <h1 class="title"><span>SPORE</span><span class="accent">FLIGHT</span></h1>
+        <div id="username-slot" class="mushroom-slot"></div>
+        <form id="username-form" class="username-form">
+          <label for="username-input" class="label">Name your mushroom</label>
+          <input id="username-input" class="text-input" type="text" maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="SPORE" />
+          <button class="primary-button" type="submit">START!</button>
+        </form>
+      </section>
+
+      <!-- Title / menu -->
+      <section id="screen-start" class="overlay start" data-tap hidden>
+        <h1 class="title"><span>SPORE</span><span class="accent">FLIGHT</span></h1>
+        <p id="start-username" class="badge"></p>
+        <div id="start-slot" class="mushroom-slot grow"></div>
+        <p id="start-last" class="last-score" hidden>ROUND SCORE <strong id="start-last-score">0</strong></p>
+        <button id="start-button" class="primary-button blink" type="button">TAP TO FLAP</button>
+        <div class="menu-grid">
+          <button id="menu-shop" class="menu-button" type="button">SHOP</button>
+          <button id="menu-badges" class="menu-button" type="button">BADGES</button>
+          <button id="menu-adventure" class="menu-button" type="button">ADVENTURE <span id="adventure-lock" class="lock">🔒</span></button>
+          <button id="menu-quests" class="menu-button" type="button">QUESTS <span id="quests-badge" class="alert" hidden>0</span></button>
+        </div>
+        <dl class="stats">
+          <div><dt>BEST</dt><dd id="start-best">0</dd></div>
+          <div><dt>LIVES</dt><dd id="start-lives" class="lives">0</dd></div>
+          <div><dt>COINS</dt><dd id="start-coins" class="coins">0</dd></div>
+          <div><dt>DIAMONDS</dt><dd id="start-diamonds" class="diamonds">0</dd></div>
+        </dl>
+      </section>
+
+      <!-- Out of lives -->
+      <section id="screen-gameOver" class="overlay center dim" hidden>
+        <img class="tired-mushroom" src="./src/assets/tired-mushroom.webp" alt="" width="150" height="157" />
+        <h2 class="panel-title danger">OUT OF BREATH!</h2>
+        <dl class="stats">
+          <div><dt>SCORE</dt><dd id="gameover-score">0</dd></div>
+          <div><dt>BEST</dt><dd id="gameover-best">0</dd></div>
+        </dl>
+        <p class="panel-text">Watch a short ad to get your lives back.</p>
+        <button id="watch-ad-button" class="primary-button compact blink" type="button">WATCH AD: +10 LIVES</button>
+        <p id="ad-error" class="panel-text danger" hidden>The ad could not be shown. Please try again.</p>
+      </section>
+
+      <!-- Rewarded ad playing -->
+      <section id="screen-ad" class="overlay center dim" hidden>
+        <h2 class="panel-title">SPONSOR</h2>
+        <p class="panel-text">PLAYING AD...</p>
+        <p id="ad-timer" class="timer">2</p>
+      </section>
+
+      <!-- Adventure crash -->
+      <section id="screen-adventureOver" class="overlay center dim" hidden>
+        <img class="tired-mushroom" src="./src/assets/tired-mushroom.webp" alt="" width="150" height="157" />
+        <h2 class="panel-title">COLLISION!</h2>
+        <p id="adventure-over-level" class="level-name"></p>
+        <p class="panel-text">SCORE REACHED <strong id="adventure-over-score">0</strong></p>
+        <p id="adventure-over-stars" class="stars"></p>
+        <div class="button-row">
+          <button id="adventure-back" class="menu-button" type="button">LEVELS</button>
+          <button id="adventure-retry" class="primary-button compact" type="button">FLAP AGAIN</button>
+        </div>
+      </section>
+
+      <!-- Menus -->
+      <section id="screen-shop" class="overlay panel" hidden>
+        <h2 class="panel-title">SPORE SHOP</h2>
+        <p class="panel-text">COINS <strong id="shop-coins" class="coins">0</strong></p>
+        <ul id="shop-list" class="item-list"></ul>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <section id="screen-badges" class="overlay panel" hidden>
+        <h2 class="panel-title">BADGES</h2>
+        <ul id="badges-list" class="item-list"></ul>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <section id="screen-quests" class="overlay panel" hidden>
+        <h2 class="panel-title">DAILY QUESTS</h2>
+        <p id="quests-timer" class="panel-text">RESETS IN --:--:--</p>
+        <ul id="quests-list" class="item-list"></ul>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <section id="screen-levels" class="overlay panel" hidden>
+        <h2 class="panel-title">LEVELS</h2>
+        <button id="level-endless" class="menu-button wide" type="button">ENDLESS MODE</button>
+        <div id="levels-grid" class="levels-grid"></div>
+        <div class="level-info">
+          <p id="level-info-name" class="level-name">SELECT A LEVEL</p>
+          <p id="level-info-text" class="panel-text">Tap a level to see its trial, tap again to fly. Every level starts at score 0.</p>
+        </div>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <section id="screen-unlock" class="overlay center dim" hidden>
+        <h2 class="panel-title">ADVENTURE MODE</h2>
+        <p class="panel-text">Nine trials, each with its own twist.</p>
+        <p class="panel-text">COST <strong id="unlock-cost"></strong></p>
+        <p class="panel-text">YOU HAVE <strong id="unlock-have"></strong></p>
+        <div class="button-row">
+          <button class="menu-button back-button" type="button">CANCEL</button>
+          <button id="unlock-confirm" class="primary-button compact" type="button">UNLOCK</button>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" role="status" hidden></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
