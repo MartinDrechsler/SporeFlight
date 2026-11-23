@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#03100d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Spore Flight</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 17a13 11 0 0 1 26 0z' fill='%23e02476'/%3E%3Crect x='12' y='16' width='8' height='12' rx='3' fill='%23f2ead8'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="game-canvas"></canvas>
+
+      <button id="sound-button" class="icon-button" type="button" aria-label="Mute sound"></button>
+
+      <section id="screen-hud" class="hud" hidden>
+        <div class="hud-row">
+          <span id="hud-lives" class="hud-lives"></span>
+          <span class="hud-coins"><span class="coin-icon">●</span> <span id="hud-coins">0</span></span>
+        </div>
+        <div id="hud-score" class="hud-score">0</div>
+        <div id="hud-combo" class="hud-combo" hidden></div>
+      </section>
+
+      <section id="screen-start" class="overlay start" hidden>
+        <h1 class="title"><span>SPORE</span><span class="title-accent">FLIGHT</span></h1>
+        <div class="start-spacer"></div>
+        <p id="start-last" class="last-score" hidden>Last round: <strong id="start-last-score">0</strong></p>
+        <button id="start-button" class="primary-button" type="button">TAP TO FLAP</button>
+        <dl class="stats">
+          <div><dt>Best</dt><dd id="start-best">0</dd></div>
+          <div><dt>Lives</dt><dd id="start-lives">0</dd></div>
+          <div><dt>Coins</dt><dd id="start-coins" class="coins">0</dd></div>
+          <div><dt>Diamonds</dt><dd id="start-diamonds" class="diamonds">0</dd></div>
+        </dl>
+      </section>
+
+      <section id="screen-gameOver" class="overlay gameover" hidden>
+        <h2 class="panel-title">OUT OF LIVES</h2>
+        <p class="panel-text">Your mushroom is resting. Lives refill in</p>
+        <p id="gameover-timer" class="timer">1:00</p>
+        <dl class="stats">
+          <div><dt>Last round</dt><dd id="gameover-score">0</dd></div>
+          <div><dt>Best</dt><dd id="gameover-best">0</dd></div>
+        </dl>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
