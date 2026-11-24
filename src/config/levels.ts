@@ -90,7 +90,7 @@ export const LEVELS: readonly LevelConfig[] = [
     speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
     // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
     magnetFromRoot: 40, windFromRoot: 120, clearings: { fromRoot: 4, chance: 0.14 },
-    diamonds: { first: 30, every: 30 }, progressive: true,
+    diamonds: { first: 12, every: 20 }, progressive: true,
   }),
   // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.
   level({

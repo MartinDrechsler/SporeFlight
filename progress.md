@@ -32,7 +32,8 @@ quests paying 5 to 15 coins, skin prices).
 
 ### After Martin's first phone test
 - Fixed: missed coins and diamonds froze on screen when their root left (they now drift off).
-- Adventure unlock: 50 coins (and 3 diamonds).
+- Adventure unlock: 50 coins and 3 diamonds. Endless diamonds come at root 12, then every 20 (was 30 and 30).
+  Magnets stay off the start (from root 40).
 - More coins: a pickup after 30% of roots (was 15%), three in four of them coins. Endless clearings:
   now and then (about one in 15 roots) a root is left out and an arc of 7 coins floats in the space.
   Coins are never pulled in by themselves; you fly through them (only the magnet power-up pulls).
