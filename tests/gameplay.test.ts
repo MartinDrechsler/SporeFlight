@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { toScreen } from '../src/render/view';
+import { pickupPosition, type Pickup } from '../src/gameplay/pickups';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
-import { gapSizeFor, makePickup, makeRoot, wavePhase } from '../src/gameplay/spawner';
+import { gapSizeFor, isClearing, makeCoinCluster, makePickup, makeRoot, wavePhase } from '../src/gameplay/spawner';
 import { ADVENTURE_LEVELS, rootCount } from '../src/config/levels';
 import { crashSpot, flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
 import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
@@ -373,5 +374,63 @@ describe('twist levels', () => {
     expect(toScreen('upsideDown', 400, 800, 100, 700)).toEqual({ x: 100, y: 100 });
     expect(toScreen('backwards', 400, 800, 100, 700)).toEqual({ x: 300, y: 700 });
     expect(toScreen('normal', 400, 800, 100, 700)).toEqual({ x: 100, y: 700 });
+  });
+});
+
+describe('missed pickups', () => {
+  it('drift off the screen with the forest, even after their root is gone', () => {
+    const world = emptyWorld();
+    world.invulnerableTime = Infinity;
+    const root = makeRoot(createRandom(1), ENDLESS, FIELD, 30, 5, null);
+    const coin: Pickup = { kind: 'coin', root, offsetX: 200, offsetY: -150, vx: 0, vy: 0, collected: false };
+    world.roots = [root];
+    world.pickups = [coin];
+    let last = pickupPosition(coin).x;
+    for (let i = 0; i < 60 * 6 && world.pickups.includes(coin); i++) {
+      world.player.y = 600;
+      world.player.vy = 0;
+      stepWorld(world, 1 / 60);
+      const x = pickupPosition(coin).x;
+      expect(x).toBeLessThan(last);
+      last = x;
+    }
+    expect(world.roots).not.toContain(root);
+    expect(world.pickups).not.toContain(coin);
+  });
+});
+
+describe('more coins, fairer moving gaps', () => {
+  it('endless leaves a root out now and then for a cluster of 7 coins, never in a surge', () => {
+    const rng = createRandom(9);
+    let clearings = 0;
+    let after = false;
+    for (let i = 0; i < 400; i++) {
+      after = isClearing(rng, ENDLESS, i, after);
+      if (!after) continue;
+      clearings += 1;
+      expect(i).toBeGreaterThanOrEqual(ENDLESS.clearings!.fromRoot);
+      expect(wavePhase(ENDLESS, i)).not.toBe('surge');
+    }
+    expect(clearings).toBeGreaterThan(10);
+    expect(isClearing(createRandom(1), level(2), 10, false)).toBe(false);
+    const coins = makeCoinCluster(FIELD, 400, 300);
+    expect(coins).toHaveLength(7);
+    expect(coins.every((c) => c.kind === 'coin' && c.root === null)).toBe(true);
+  });
+
+  it('a clearing in a round: no root in that slot, its coins count as offered', () => {
+    const world = newWorld(9);
+    world.invulnerableTime = Infinity;
+    run(world, 120, autopilot);
+    expect(world.offered.coins).toBeGreaterThan(world.rootsSpawned * 0.25);
+  });
+
+  it('in endless a moving gap is wider than a still one at the same place', () => {
+    const rng = () => createRandom(4);
+    const still = makeRoot(rng(), { ...ENDLESS, progressive: true }, FIELD, 0, 5, null);
+    const moving = makeRoot(rng(), ENDLESS, FIELD, 0, 45, null);
+    expect(still.motion.kind).toBe('still');
+    expect(moving.motion.kind).not.toBe('still');
+    expect(moving.gapSize - gapSizeFor(ENDLESS, 45)).toBeGreaterThanOrEqual(TUNING.roots.endlessMovingGap.drift);
   });
 });

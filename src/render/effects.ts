@@ -50,10 +50,6 @@ export class Effects {
       case 'flap':
         this.burst(px - 10, py + 12, 6, flapColor, 60, 0.4);
         break;
-      case 'pass':
-        // A short column of light where the root was cleared.
-        for (let i = 0; i < 8; i++) this.spawn(event.rootX, py + (i - 4) * 14, 0, -40, 0.35, 2, accent);
-        break;
       case 'nearMiss':
         this.burst(px, py, 14, '#ffd700', 180, 0.5);
         this.text('NEAR MISS!', px, py - 30, '#ffd700');

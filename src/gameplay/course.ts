@@ -2,7 +2,7 @@ import { rootCount, type Stage } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import { createBoss, sendAway } from './boss';
 import type { World } from './world';
-import { makePickup, makeRoot } from './spawner';
+import { isClearing, makeCoinCluster, makePickup, makeRoot } from './spawner';
 
 /**
  * A level's route: its stages in order, then the finish gate. Endless is one
@@ -15,13 +15,15 @@ export interface Course {
   stageRoots: number;
   /** Seconds spent in the current stage. */
   stageTime: number;
+  /** The last slot was a clearing (no root, a cluster of coins). */
+  afterClearing: boolean;
   /** Screen x of the finish gate's centre once it has appeared. */
   gateX: number | null;
   finished: boolean;
 }
 
 export function createCourse(): Course {
-  return { stage: 0, stageRoots: 0, stageTime: 0, gateX: null, finished: false };
+  return { stage: 0, stageRoots: 0, stageTime: 0, afterClearing: false, gateX: null, finished: false };
 }
 
 export function currentStage(world: World): Stage | null {
@@ -95,6 +97,14 @@ function nextStage(world: World): void {
 function spawnRoot(world: World): void {
   const previous = world.roots.at(-1);
   const index = world.rootsSpawned;
+  const course = world.course;
+  course.afterClearing = isClearing(world.layoutRng, world.level, index, course.afterClearing);
+  if (course.afterClearing) {
+    const coins = makeCoinCluster(world, world.width, previous?.gapCenter ?? world.height * 0.45);
+    world.pickups.push(...coins);
+    world.offered.coins += coins.length;
+    return;
+  }
   const root = makeRoot(world.layoutRng, world.level, world, world.width, index, previous?.gapCenter ?? null);
   const pickup = makePickup(world.layoutRng, root, index, world.level, world);
   world.roots.push(root);

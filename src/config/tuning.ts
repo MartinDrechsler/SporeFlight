@@ -48,16 +48,20 @@ export const TUNING = {
     /** Endless difficulty: moving gaps appear with progress. Counted in roots spawned, not points. */
     endlessDrift: { fromRoot: 10, startChance: 0.25, chancePerRoot: 0.05, maxChance: 0.8, baseSpeed: 30, extraSpeedPerRoot: 2.4, maxSpeed: 120 },
     endlessSwayFromRoot: 15,
+    /** Endless: a moving gap opens wider so it stays passable (drift grows with its speed). */
+    endlessMovingGap: { drift: 24, perDriftSpeed: 0.15, sway: 34 },
     sway: { minAmplitude: 55, maxAmplitude: 80, minFrequency: 1.5, maxFrequency: 2.4 },
   },
 
   pickups: {
     radius: 9,
     /** Chance that a pickup floats after a root (diamond slots aside). */
-    chance: 0.15,
+    chance: 0.3,
     /** Of those: share of shields and magnets; the rest are coins. */
-    shieldShare: 0.2,
-    magnetShare: 0.24,
+    shieldShare: 0.12,
+    magnetShare: 0.12,
+    /** A clearing's coins: a hump of coins in the empty space where a root was left out. */
+    cluster: { coins: 7, spacing: 34, height: 40 },
     /** Collection is a little stricter than touching, so it feels earned. */
     collectRadiusFactor: 0.7,
     minVerticalOffset: 45,

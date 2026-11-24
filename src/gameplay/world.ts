@@ -4,7 +4,7 @@ import { TUNING } from '../config/tuning';
 import { createRandom, type Random } from '../core/random';
 import { circlesTouch, isNearMiss, playerHitsGround, playerHitsRoot } from './collision';
 import { createPlayer, flap, stepPlayer, type Player } from './player';
-import { isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
+import { detach, isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
 import { rootLeft, stepRoot, type Root } from './roots';
 import { removeRock, rockHittingPlayer, stepBoss, type Boss } from './boss';
 import { createCourse, stepCourse, type Course } from './course';
@@ -358,6 +358,9 @@ function checkMilestones(world: World): void {
 }
 
 function removeOffscreen(world: World): void {
-  world.roots = world.roots.filter((root) => rootLeft(root) + root.width > -20);
+  const gone = world.roots.filter((root) => rootLeft(root) + root.width <= -20);
+  // A missed pickup must not stop with its root: it drifts on and leaves the screen by itself.
+  for (const pickup of world.pickups) if (pickup.root && gone.includes(pickup.root)) detach(pickup);
+  world.roots = world.roots.filter((root) => !gone.includes(root));
   world.pickups = world.pickups.filter((pickup) => !pickup.collected && pickupPosition(pickup).x > -20);
 }

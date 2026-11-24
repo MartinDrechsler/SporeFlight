@@ -26,9 +26,19 @@ quests paying 5 to 15 coins, skin prices).
   goes on, with a breather halfway. Every throw is announced (eyes flare, mouth opens, growl).
 - **Twist levels** mirror the picture, never the rules (`view` in level data).
 - **HUD** shows a progress bar to the gate in levels; the crash screen shows how far you got.
-- **Unlock price**: 100 coins and 3 diamonds. **Save v4**: stars per level (old level scores dropped,
+- **Unlock price**: 50 coins and 3 diamonds (was 100 at first). **Save v4**: stars per level (old level scores dropped,
   since the levels are new).
 - **Removed** (Martin's call): glowfly swarms, one-sided roots, breathing root width, big height steps.
+
+### After Martin's first phone test
+- Fixed: missed coins and diamonds froze on screen when their root left (they now drift off).
+- Adventure unlock: 50 coins and 3 diamonds. Endless diamonds come at root 12, then every 20 (was 30 and 30).
+  Magnets stay off the start (from root 40).
+- More coins: a pickup after 30% of roots (was 15%), three in four of them coins. Endless clearings:
+  now and then (about one in 15 roots) a root is left out and an arc of 7 coins floats in the space.
+  Coins are never pulled in by themselves; you fly through them (only the magnet power-up pulls).
+- Endless moving gaps open wider: drifting +24 px plus more for faster drift, swinging +34 px.
+- Removed the dotted light column after each root.
 
 ### To check by playing
 - Heart of the Storm: 40 roots at spacing 170 with speed rising every 10 roots may be too hard.
