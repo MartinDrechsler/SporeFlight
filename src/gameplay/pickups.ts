@@ -31,6 +31,18 @@ export function scrollPickup(pickup: Pickup, travelled: number): void {
   if (!pickup.root) pickup.offsetX -= travelled;
 }
 
+/**
+ * Lets a pickup go of its root (when the root leaves the screen): it keeps its
+ * place on screen and from then on drifts with the forest by itself.
+ */
+export function detach(pickup: Pickup): void {
+  if (!pickup.root) return;
+  const { x, y } = pickupPosition(pickup);
+  pickup.root = null;
+  pickup.offsetX = x;
+  pickup.offsetY = y;
+}
+
 /** A pickup floating freely at a screen position. */
 export function freePickup(kind: PickupKind, x: number, y: number): Pickup {
   return { kind, root: null, offsetX: x, offsetY: y, vx: 0, vy: 0, collected: false };

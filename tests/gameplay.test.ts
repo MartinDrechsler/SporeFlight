@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toScreen } from '../src/render/view';
+import { pickupPosition, type Pickup } from '../src/gameplay/pickups';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
@@ -373,5 +374,27 @@ describe('twist levels', () => {
     expect(toScreen('upsideDown', 400, 800, 100, 700)).toEqual({ x: 100, y: 100 });
     expect(toScreen('backwards', 400, 800, 100, 700)).toEqual({ x: 300, y: 700 });
     expect(toScreen('normal', 400, 800, 100, 700)).toEqual({ x: 100, y: 700 });
+  });
+});
+
+describe('missed pickups', () => {
+  it('drift off the screen with the forest, even after their root is gone', () => {
+    const world = emptyWorld();
+    world.invulnerableTime = Infinity;
+    const root = makeRoot(createRandom(1), ENDLESS, FIELD, 30, 5, null);
+    const coin: Pickup = { kind: 'coin', root, offsetX: 200, offsetY: -150, vx: 0, vy: 0, collected: false };
+    world.roots = [root];
+    world.pickups = [coin];
+    let last = pickupPosition(coin).x;
+    for (let i = 0; i < 60 * 6 && world.pickups.includes(coin); i++) {
+      world.player.y = 600;
+      world.player.vy = 0;
+      stepWorld(world, 1 / 60);
+      const x = pickupPosition(coin).x;
+      expect(x).toBeLessThan(last);
+      last = x;
+    }
+    expect(world.roots).not.toContain(root);
+    expect(world.pickups).not.toContain(coin);
   });
 });
