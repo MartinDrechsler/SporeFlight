@@ -1,7 +1,6 @@
 import type { Life, Scenery } from '../config/biomes';
 import type { Theme } from '../config/theme';
 import { hash, rgbOf } from './color';
-import { readyImage, type ImageName } from './images';
 
 /**
  * The distant world of each biome and the small life in its air. Everything
@@ -22,15 +21,20 @@ export function drawScenery(ctx: CanvasRenderingContext2D, scenery: Scenery, alp
   ctx.globalAlpha = alpha;
   switch (scenery) {
     case 'darkForest':
-      painting(ctx, 'forest-1', 0.35, view);
+      trees(ctx, view, { speed: 0.06, spacing: 120, height: 0.55, color: '#0f362b', shape: 'gnarled' });
+      trees(ctx, view, { speed: 0.14, spacing: 170, height: 0.7, color: '#08241b', shape: 'gnarled' });
+      glowingShrooms(ctx, view);
       break;
     case 'twilight':
-      moon(ctx, view.width * 0.78, view.groundY * 0.22, 26, '#ffe3b0');
-      painting(ctx, 'forest-1', 0.6, view);
+      moon(ctx, view.width * 0.74, view.groundY * 0.16, 26, '#ffe3b0');
+      trees(ctx, view, { speed: 0.06, spacing: 70, height: 0.4, color: '#3a2c55', shape: 'pine' });
+      trees(ctx, view, { speed: 0.14, spacing: 150, height: 0.5, color: '#221a33', shape: 'gnarled' });
       lightShafts(ctx, view, '255, 207, 112');
       break;
     case 'woodland':
-      painting(ctx, 'forest-2', 0.75, view);
+      sun(ctx, view.width * 0.78, view.groundY * 0.14, 30, '#fff6c8');
+      trees(ctx, view, { speed: 0.06, spacing: 80, height: 0.45, color: '#6f9fb0', shape: 'round' });
+      trees(ctx, view, { speed: 0.14, spacing: 150, height: 0.6, color: '#3f6e48', shape: 'round' });
       lightShafts(ctx, view, '255, 240, 180');
       break;
     case 'meadow':
@@ -93,30 +97,102 @@ export function drawLife(ctx: CanvasRenderingContext2D, life: Life, alpha: numbe
   ctx.restore();
 }
 
-/** A painted forest, tiled with every other copy mirrored so no seam shows. */
-function painting(ctx: CanvasRenderingContext2D, name: ImageName, strength: number, view: SceneryView): void {
-  const image = readyImage(name);
-  if (!image) return;
-  const { width, groundY, distance } = view;
-  const drawHeight = groundY * 0.75;
-  const drawWidth = image.naturalWidth * (drawHeight / image.naturalHeight);
-  const offset = distance * 0.1;
-  const first = Math.floor(offset / drawWidth);
-  const before = ctx.globalAlpha;
-  ctx.globalAlpha = before * strength;
-  for (let tile = first; tile * drawWidth - offset < width; tile++) {
-    const x = tile * drawWidth - offset;
-    ctx.save();
-    if (tile % 2 !== 0) {
-      ctx.translate(x + drawWidth, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(image, 0, groundY - drawHeight, drawWidth, drawHeight);
-    } else {
-      ctx.drawImage(image, x, groundY - drawHeight, drawWidth, drawHeight);
+interface TreeLayer {
+  /** Parallax: how fast the layer moves compared to the action. */
+  speed: number;
+  spacing: number;
+  /** Tallest tree, as a share of the space above the ground. */
+  height: number;
+  color: string;
+  shape: 'gnarled' | 'pine' | 'round';
+}
+
+/**
+ * A row of tree silhouettes, the same flat style as the mountains and mesas
+ * of later biomes, so every biome belongs to one world.
+ */
+function trees(ctx: CanvasRenderingContext2D, view: SceneryView, layer: TreeLayer): void {
+  const { groundY } = view;
+  ctx.fillStyle = layer.color;
+  ctx.strokeStyle = layer.color;
+  scroll(view, layer.speed, layer.spacing, (x, n) => {
+    const h = groundY * layer.height * (0.65 + hash(n * 3 + layer.speed) * 0.35);
+    const lean = (hash(n + 11) - 0.5) * 0.3;
+    switch (layer.shape) {
+      case 'pine': {
+        const w = h * 0.32;
+        ctx.fillRect(x - 2, groundY - h * 0.15, 4, h * 0.15);
+        for (let tier = 0; tier < 4; tier++) {
+          const top = groundY - h + tier * h * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x - w * (0.45 + tier * 0.18), top + h * 0.32);
+          ctx.lineTo(x + w * (0.45 + tier * 0.18), top + h * 0.32);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      }
+      case 'round': {
+        const r = h * 0.28;
+        ctx.fillRect(x - h * 0.03, groundY - h * 0.55, h * 0.06, h * 0.55);
+        for (const [dx, dy, s] of [[0, -0.72, 1], [-0.55, -0.55, 0.75], [0.55, -0.58, 0.8], [0, -0.45, 0.85]] as const) {
+          ctx.beginPath();
+          ctx.arc(x + dx * r, groundY + dy * h, r * s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+      case 'gnarled': {
+        // A wide old tree: flared roots, a leaning trunk, branches and a broad crown.
+        const trunk = h * 0.08;
+        const topX = x + lean * h;
+        ctx.beginPath();
+        ctx.moveTo(x - trunk * 2.2, groundY);
+        ctx.quadraticCurveTo(x - trunk, groundY - h * 0.12, x - trunk * 0.7, groundY - h * 0.3);
+        ctx.lineTo(topX - trunk * 0.5, groundY - h * 0.7);
+        ctx.lineTo(topX + trunk * 0.5, groundY - h * 0.7);
+        ctx.lineTo(x + trunk * 0.7, groundY - h * 0.3);
+        ctx.quadraticCurveTo(x + trunk, groundY - h * 0.12, x + trunk * 2.2, groundY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.lineWidth = trunk * 0.5;
+        ctx.lineCap = 'round';
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(topX, groundY - h * 0.6);
+          ctx.quadraticCurveTo(topX + side * h * 0.2, groundY - h * 0.7, topX + side * h * 0.32, groundY - h * 0.82);
+          ctx.stroke();
+        }
+        for (const [dx, dy, rx, ry] of [[0, -0.88, 0.3, 0.14], [-0.28, -0.8, 0.2, 0.11], [0.3, -0.82, 0.22, 0.1], [0, -0.98, 0.18, 0.08]] as const) {
+          ctx.beginPath();
+          ctx.ellipse(topX + dx * h, groundY + dy * h, rx * h, ry * h, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
     }
+  });
+}
+
+/** Little glowing mushrooms between the old trees, the dark forest's own lights. */
+function glowingShrooms(ctx: CanvasRenderingContext2D, view: SceneryView): void {
+  const { groundY, time } = view;
+  scroll(view, 0.14, 60, (x, n) => {
+    if (hash(n + 21) < 0.5) return;
+    const color = hash(n + 22) < 0.5 ? '#00f2c3' : '#b26bff';
+    const y = groundY - 30 - hash(n + 23) * 25;
+    ctx.save();
+    ctx.globalAlpha *= 0.6 + 0.4 * Math.sin(time * 2 + n) ** 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 5, 3, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(x - 1, y, 2, 5);
     ctx.restore();
-  }
-  ctx.globalAlpha = before;
+  });
 }
 
 function sun(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {

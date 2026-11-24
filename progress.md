@@ -12,8 +12,9 @@ replay check of scores, country, privacy).
   Twilight Woods, Morning Woodland, Sunlit Meadow, Dry Savanna, Desert Canyon, Highland Pass, Frozen Peaks.
   Each has colours, scenery, life in the air and its own obstacles. Colours blend over the 5 roots before
   a biome arrives, obstacles change exactly at its score, and its name is announced. Rules never change.
-  A badge for reaching each biome. The first three use the painted forests (now without a seam); the rest
-  are drawn in code.
+  A badge for reaching each biome. All eight are drawn in code in one flat, layered style (sky, sun or moon,
+  distant and near silhouettes, hills, life in the air), so they match and blend into each other. The old
+  painted forest pictures are gone (they ended in a hard edge and looked different from the rest).
 - **Crystal veins**: gem clusters on a root cap facing the gap. Touching one bounces you off and cracks it;
   the third hit breaks it open for a diamond. Endless: root 20, then every 30. Adventure: one per level in
   the climax, replacing the diamond pickup (part of the third star).
