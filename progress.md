@@ -7,6 +7,27 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Avatar with a face that acts
+- **New look**: the "Button" mushroom Martin picked from four sketches: a wide round red cap with three white
+  spots over a chubby white stem, smooth dark outlines, no gills. One drawing (`render/mushroom.ts`) is used in
+  flight, on the home screen, on the scene stages and (as SVG) in the shop. The free skin is now CLASSIC RED.
+- **Faces as data** (`config/expressions.ts`): neutral, happy, sad, exhausted, dozing, surprised, proud,
+  nervous, dizzy. Each is a few numbers for eyes, eyelids, brows, mouth, cheeks and a sweat drop; faces ease
+  into each other. Schell: faces carry the most emotion, and simple eyes and brows give it cheaply.
+- **Animations as data** (`config/animations.ts`): a list of moves (hop, squash, spin, flash, wobble, shiver,
+  lean, lie, breathe, burst, zzz, reveal) and face cues. `render/timeline.ts` turns one into a frame for any
+  moment (pure, tested). A new animation is a new entry, not new code.
+- **Scenes**: out of lives, the mushroom lies on its side, exhausted, breathing slowly, eyes falling shut now
+  and then, "z z" rising, with the ad and the countdown underneath. An Adventure crash shows it dazed, then
+  sad. Buying a skin or trail: crouch, jump into a spin (the face hides while its back turns), a flash and a
+  burst of spores and light, the new look, then happy hops; the name appears at the reveal.
+- **Cheer** on the level complete screen (big happy jumps). **Proud** on the home screen after a new badge
+  (a hop, then chest out, chin up and a smirk for a few seconds; the home avatar can act out any animation
+  through `Pose.act`). **Nervous** in flight while the Stone Thrower is in the fight (worried brows, wobbly
+  mouth, a sweat drop; face only, so the flight looks and plays the same).
+- **avatars.html** plays every animation and shows every face, for checking by eye (not linked in the game).
+- The old resting-mushroom picture is gone.
+
 ### Settings, pixel icons, home avatar
 - **Settings** (gear on the home screen): a music volume slider, off to 100%, heard while dragging and saved
   (save v7, default 70%). Sound effects keep their level; the speaker button still mutes everything.
@@ -184,7 +205,7 @@ app stores, playtesting).
 - Level select: tap a stop on the map to read it, then FLY. The old hover text could not be read on phones.
 - Coins and diamonds are banked at the end of a round (same totals; closing the app mid-round loses that round's).
 - Removed: unused obstacle types, the dev tunnel/QR code, the "skip rest (testing)" button.
-- The resting-mushroom picture is used on the game over and adventure crash screens.
+- The resting mushroom on the game over and adventure crash screens is now the animated avatar.
 
 ## Open questions for Martin
 - **Leaderboard**: weekly board as well as all-time? (not built; the plan's default was all-time only)

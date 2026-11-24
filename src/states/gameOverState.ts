@@ -1,16 +1,20 @@
 import type { State } from '../core/stateMachine';
 import { rest } from '../meta/economy';
+import { skinById } from '../config/skins';
+import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText } from '../ui/dom';
 import { showScreens } from '../ui/screens';
 import { toast } from '../ui/toast';
 import type { GameContext } from './context';
 
 /**
- * Out of lives. The player chooses: rest one minute (counting only while the
- * game is open) or watch a short ad to fly again right away.
+ * Out of lives. The mushroom lies on its side, exhausted, breathing slowly.
+ * The player chooses: rest one minute (counting only while the game is open)
+ * or watch a short ad to fly again right away.
  */
 export function gameOverState(ctx: GameContext): State {
   let sinceSave = 0;
+  const stage = new AvatarStage(byId<HTMLCanvasElement>('gameover-stage'), { skin: skinById(ctx.save.activeSkin) });
 
   byId('watch-ad-button').addEventListener('click', () => {
     ctx.audio.unlock();
@@ -25,10 +29,12 @@ export function gameOverState(ctx: GameContext): State {
       setText(byId('gameover-score'), ctx.lastScore ?? 0);
       setText(byId('gameover-best'), ctx.save.bestScore);
       paintTimer(ctx.save.restSecondsLeft);
+      stage.play('rest', { skin: skinById(ctx.save.activeSkin) });
       showScreens('gameOver');
     },
 
     update(dt) {
+      stage.update(dt);
       const rested = rest(ctx.save, dt);
       paintTimer(ctx.save.restSecondsLeft);
       // Save the countdown now and then, so closing the game keeps the progress.

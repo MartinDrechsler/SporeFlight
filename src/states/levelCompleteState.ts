@@ -1,8 +1,10 @@
 import { levelById } from '../config/levels';
+import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
 import { stepWorld } from '../gameplay/world';
 import { finishLevel, nextLevelId } from '../meta/adventure';
+import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText } from '../ui/dom';
 import { updateHud } from '../ui/hud';
 import { showScreens } from '../ui/screens';
@@ -17,6 +19,7 @@ export function levelCompleteState(ctx: GameContext): State {
   let time = 0;
   let starsShown = 0;
   let stars = 0;
+  const stage = new AvatarStage(byId<HTMLCanvasElement>('complete-stage'), { skin: skinById(ctx.save.activeSkin) });
 
   byId('complete-map').addEventListener('click', () => {
     ctx.audio.ui('click');
@@ -45,6 +48,7 @@ export function levelCompleteState(ctx: GameContext): State {
       ctx.persist();
       updateHud(world, save, { banked: true });
 
+      stage.play('cheer', { skin: skinById(save.activeSkin) });
       stars = result.stars;
       time = 0;
       starsShown = 0;
@@ -64,6 +68,7 @@ export function levelCompleteState(ctx: GameContext): State {
     },
 
     update(dt) {
+      stage.update(dt);
       stepWorld(ctx.world, dt);
       ctx.world.events.length = 0;
       time += dt;

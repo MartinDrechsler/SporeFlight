@@ -8,12 +8,14 @@ import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
 import { avatarScale, idleLook } from '../render/avatar';
+import { AvatarPlayer } from '../render/timeline';
 import { startRound } from './round';
 import { syncLeaderboard } from './syncLeaderboard';
 
 /** Title screen and main menu: the mushroom hovers while the forest drifts by. */
 export function startState(ctx: GameContext): State {
   let time = 0;
+  const acting = new AvatarPlayer();
   const menu = (id: string, target: Parameters<GameContext['go']>[0]): void => {
     byId(id).addEventListener('click', () => {
       ctx.audio.unlock();
@@ -50,6 +52,8 @@ export function startState(ctx: GameContext): State {
       ctx.levelId = ENDLESS_LEVEL_ID;
       ctx.world = ctx.newWorld(ENDLESS_LEVEL_ID);
       time = 0;
+      acting.play(ctx.avatarMood ?? 'idle');
+      ctx.avatarMood = null;
       refresh(ctx);
       showScreens('start');
       // A run that could not be sent earlier (offline) goes now.
@@ -62,7 +66,7 @@ export function startState(ctx: GameContext): State {
       // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
       const room = byId('start-slot').getBoundingClientRect().height;
       const scale = avatarScale(room, ctx.world.player.radius);
-      ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time) };
+      ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time), act: acting.update(dt) };
     },
 
     onTap: begin,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { avatarScale, idleLook, NEUTRAL_POSE, relaxPose } from '../src/render/avatar';
+import { avatarScale, idleLook, NEUTRAL_POSE, relaxPose, type Pose } from '../src/render/avatar';
 
 describe('home screen avatar', () => {
   const samples = Array.from({ length: 2000 }, (_, i) => idleLook(i / 60));
@@ -17,7 +17,7 @@ describe('home screen avatar', () => {
   });
 
   it('settles back to the normal look once the home screen is left', () => {
-    let pose = { shiftX: 150, scale: 1.7, gaze: 1, blink: 1 };
+    let pose: Pose = { shiftX: 150, scale: 1.7, gaze: 1, blink: 1, act: null };
     for (let i = 0; i < 60; i++) pose = relaxPose(pose, 1 / 60);
     expect(pose.shiftX).toBe(0);
     expect(pose.scale).toBeCloseTo(NEUTRAL_POSE.scale, 3);

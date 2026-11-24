@@ -1,7 +1,9 @@
+import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
 import { courseProgress } from '../gameplay/course';
 import { levelStars } from '../meta/adventure';
+import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText, starText } from '../ui/dom';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
@@ -9,6 +11,7 @@ import { startRound } from './round';
 
 /** After a crash in an adventure level: how far you got, then fly again or back to the map. */
 export function adventureOverState(ctx: GameContext): State {
+  const stage = new AvatarStage(byId<HTMLCanvasElement>('adventure-over-stage'), { skin: skinById(ctx.save.activeSkin) });
   byId('adventure-back').addEventListener('click', () => {
     ctx.audio.ui('click');
     ctx.go('levels');
@@ -31,7 +34,12 @@ export function adventureOverState(ctx: GameContext): State {
       bar.style.width = `${percent}%`;
       bar.style.setProperty('--level-color', color);
       setText(byId('adventure-over-stars'), starText(levelStars(ctx.save, level.id)));
+      stage.play('dazed', { skin: skinById(ctx.save.activeSkin) });
       showScreens('adventureOver');
+    },
+
+    update(dt) {
+      stage.update(dt);
     },
   };
 }

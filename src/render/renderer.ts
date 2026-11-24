@@ -65,6 +65,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
     invulnerable: isInvulnerable(world),
     time,
     pose: scene.pose,
+    bossNear: world.boss !== null && !world.boss.leaving,
   });
   // Clumps sit in front, so the one growing beside a fallen mushroom is not hidden behind it.
   const newMark =

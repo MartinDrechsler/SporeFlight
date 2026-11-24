@@ -147,10 +147,40 @@
 }
 
 /* Results */
-.tired-mushroom {
-  width: 140px;
-  height: auto;
-  border-radius: 16px;
+/* A small stage where the avatar acts out a scene (resting, showing off a new look). */
+.avatar-stage {
+  display: block;
+  width: 220px;
+  height: 130px;
+}
+
+.avatar-stage.tall {
+  height: 200px;
+}
+
+.avatar-stage.short {
+  height: 110px;
+}
+
+/* Covers the shop while a new look is shown off. */
+.reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(3, 16, 13, 0.97);
+}
+
+.reveal[hidden] {
+  display: none;
+}
+
+.reveal .pending {
+  visibility: hidden;
 }
 
 .panel-title {
@@ -377,8 +407,17 @@
     font-size: 1.1rem;
   }
 
-  .tired-mushroom {
-    width: 100px;
+  .avatar-stage {
+    width: 190px;
+    height: 112px;
+  }
+
+  .avatar-stage.tall {
+    height: 160px;
+  }
+
+  .avatar-stage.short {
+    height: 90px;
   }
 
   .panel-title {

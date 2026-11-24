@@ -65,6 +65,7 @@ const ctx: GameContext = {
   levelId: ENDLESS_LEVEL_ID,
   lastScore: null,
   pose: NEUTRAL_POSE,
+  avatarMood: null,
   newWorld: (levelId, startY) => {
     // Clumps from earlier rounds; this round's clump only grows once the mushroom has landed.
     earlierMarks = save.deathMarks[String(levelId)] ?? [];

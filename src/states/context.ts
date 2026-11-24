@@ -1,3 +1,4 @@
+import type { AnimationId } from '../config/animations';
 import type { Pose } from '../render/avatar';
 import type { RewardedAds } from '../ads/ads';
 import type { Audio } from '../audio/audio';
@@ -28,6 +29,8 @@ export interface GameContext {
   lastScore: number | null;
   /** How the mushroom is shown: the home screen sets the avatar pose, other screens let it relax. */
   pose: Pose;
+  /** What the home avatar acts out next time the home screen shows (proud after a new badge); null: just idle. */
+  avatarMood: AnimationId | null;
   /** A fresh round of a level; `startY` carries the hovering mushroom's height over. */
   newWorld(levelId: number, startY?: number): World;
   /** Switch to another screen. */

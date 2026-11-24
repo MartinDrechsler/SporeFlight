@@ -63,7 +63,11 @@ export function checkAchievements(ctx: GameContext): void {
     toast(`🏅 ${achievement.name}${trail}`);
     ctx.audio.ui('achievement');
   }
-  if (unlocked.length > 0) ctx.persist();
+  if (unlocked.length > 0) {
+    // Back home, the avatar shows it off: chest out, chin up.
+    ctx.avatarMood = 'proud';
+    ctx.persist();
+  }
 }
 
 function questProgressFor(event: GameEvent, world: World): [QuestKind, number][] {
