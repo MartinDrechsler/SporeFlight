@@ -1,7 +1,8 @@
 import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
-import { isInvulnerable, type World } from '../gameplay/world';
-import { drawBackground } from './background';
+import { TUNING } from '../config/tuning';
+import { crashSpot, isInvulnerable, type World } from '../gameplay/world';
+import { drawBackground, drawDeathMarks } from './background';
 import type { Surface } from './canvas';
 import { drawPlayer } from './drawPlayer';
 import { drawPickup, drawRoot, drawWind } from './drawRoots';
@@ -11,7 +12,7 @@ export interface Scene {
   world: World;
   skinId: string;
   effects: Effects;
-  /** Distances where recent rounds of this level ended; mushroom clumps grow there. */
+  /** Distances where earlier rounds of this level ended; mushroom clumps grow there. */
   deathMarks: readonly number[];
   /** Seconds since the game launched; drives idle animations. */
   time: number;
@@ -34,7 +35,6 @@ export function renderScene(surface: Surface, scene: Scene): void {
     distance: world.distance,
     time,
     backdropScore: world.level.progressive ? world.stats.score : null,
-    deathMarks: scene.deathMarks,
   });
   for (const zone of world.winds) drawWind(ctx, zone, world.groundY, time);
   for (const pickup of world.pickups) drawPickup(ctx, pickup, time);
@@ -46,6 +46,10 @@ export function renderScene(surface: Surface, scene: Scene): void {
     invulnerable: isInvulnerable(world),
     time,
   });
+  // Clumps sit in front, so the one growing beside a fallen mushroom is not hidden behind it.
+  const newMark =
+    world.landedTime === null ? null : { at: crashSpot(world), grow: Math.min(1, world.landedTime / TUNING.roundOver.clumpGrowSeconds) };
+  drawDeathMarks(ctx, scene.deathMarks, newMark, width, world.groundY, world.distance, time);
   ctx.restore();
   scene.effects.draw(ctx, width, height);
 }

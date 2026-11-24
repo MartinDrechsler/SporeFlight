@@ -45,7 +45,7 @@ export function installTestHooks(
       })),
       pickups: world.pickups.map((p) => ({ kind: p.kind, ...pickupPosition(p) })),
       winds: world.winds.map((w) => ({ kind: w.kind, x: round(w.x), width: round(w.width) })),
-      round: { ...world.stats, shield: world.shield, magnet: round(world.magnetTime), crashed: world.crashed },
+      round: { ...world.stats, shield: world.shield, magnet: round(world.magnetTime), crashed: world.crashed, landedTime: world.landedTime },
       save: ctx.save,
     });
   };

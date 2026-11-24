@@ -24,7 +24,8 @@ export type GameEvent =
   | { type: 'shieldPop'; x: number; y: number }
   | { type: 'milestone'; score: number }
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
-  | { type: 'crash'; x: number; y: number };
+  | { type: 'crash'; x: number; y: number }
+  | { type: 'landed'; x: number; y: number };
 
 /**
  * Everything about one round of play, from the first flap until a crash.
@@ -56,6 +57,8 @@ export interface World extends Field {
   slowMotionTime: number;
   windWarningCooldown: number;
   crashed: boolean;
+  /** Seconds since the crashed mushroom touched the ground; null while still flying or falling. */
+  landedTime: number | null;
   /** Filled during `stepWorld`; the caller reads and clears it. */
   events: GameEvent[];
 }
@@ -87,6 +90,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
     slowMotionTime: 0,
     windWarningCooldown: 0,
     crashed: false,
+    landedTime: null,
     events: [],
   };
 }
@@ -146,12 +150,22 @@ export function stepWorld(world: World, realDt: number): void {
 /** After a crash the mushroom just falls to the ground; nothing else moves. */
 function stepCrashed(world: World, dt: number): void {
   const player = world.player;
-  if (playerHitsGround(player, world.groundY) && player.vy >= 0) {
-    player.y = world.groundY - player.radius;
-    player.vy = 0;
+  if (world.landedTime !== null) {
+    world.landedTime += dt;
     return;
   }
   stepPlayer(player, dt);
+  if (playerHitsGround(player, world.groundY) && player.vy >= 0) {
+    player.y = world.groundY - player.radius;
+    player.vy = 0;
+    world.landedTime = 0;
+    world.events.push({ type: 'landed', x: player.x, y: player.y });
+  }
+}
+
+/** Where along the level the mushroom fell; its mushroom clump grows here. */
+export function crashSpot(world: World): number {
+  return world.distance + world.player.x;
 }
 
 function tickTimers(world: World, dt: number): void {
@@ -172,7 +186,8 @@ function updateWind(world: World, dt: number, speed: number): void {
   for (const zone of world.winds) zone.x -= speed * dt;
   world.winds = world.winds.filter((zone) => zone.x + zone.width > 0);
 
-  if (world.level.wind) {
+  const windFrom = world.level.windFromRoot;
+  if (windFrom !== null && world.rootsPassed >= windFrom) {
     world.distanceToWind -= speed * dt;
     if (world.distanceToWind <= 0) {
       world.winds.push(makeWindZone(world.rng, world.width));

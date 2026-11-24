@@ -12,7 +12,6 @@ export interface BackgroundView {
   /** Endless only: score that unlocks the painted forests. Null hides them. */
   backdropScore: number | null;
   /** Distances of recent crashes, shown as small markers on the ground. */
-  deathMarks: readonly number[];
 }
 
 /**
@@ -33,7 +32,6 @@ export function drawBackground(ctx: CanvasRenderingContext2D, view: BackgroundVi
   drawHills(ctx, theme.hillsFar, width, groundY, distance * 0.2, 110, 0.55);
   drawHills(ctx, theme.hillsNear, width, groundY, distance * 0.45, 70, 0.35);
   drawGround(ctx, theme, width, height, groundY, distance);
-  drawDeathMarks(ctx, view.deathMarks, width, groundY, distance, time);
 }
 
 /** The latest painted forest unlocked by the score, fading in over a few points. */
@@ -114,19 +112,28 @@ function drawGround(ctx: CanvasRenderingContext2D, theme: Theme, width: number, 
  * A clump of small mushrooms grows wherever a recent round ended. Crashes
  * close together grow into one bigger clump, so trouble spots stand out.
  */
-function drawDeathMarks(
+export function drawDeathMarks(
   ctx: CanvasRenderingContext2D,
   marks: readonly number[],
+  newMark: { at: number; grow: number } | null,
   width: number,
   groundY: number,
   distance: number,
   time: number,
 ): void {
-  for (const clump of groupClumps(marks)) {
+  const all = newMark ? [...marks, newMark.at] : marks;
+  for (const clump of groupClumps(all)) {
     const x = clump.at - distance;
     if (x < -40 || x > width + 40) continue;
-    drawClump(ctx, x, groundY, clump.count, time);
+    const isNew = newMark !== null && Math.abs(newMark.at - clump.at) <= TUNING.session.clumpRadius;
+    // A brand-new clump sprouts from the ground; one that joins an old clump swells into the bigger size.
+    const grow = !isNew ? 1 : clump.count === 1 ? easeOut(newMark.grow) : 0.75 + 0.25 * easeOut(newMark.grow);
+    drawClump(ctx, x, groundY, clump.count, time, grow);
   }
+}
+
+function easeOut(t: number): number {
+  return 1 - (1 - t) ** 3;
 }
 
 interface Clump {
@@ -151,9 +158,10 @@ export function groupClumps(marks: readonly number[]): Clump[] {
 }
 
 /** Up to five little mushrooms of varied height, gently swaying. */
-function drawClump(ctx: CanvasRenderingContext2D, x: number, groundY: number, count: number, time: number): void {
+function drawClump(ctx: CanvasRenderingContext2D, x: number, groundY: number, count: number, time: number, grow: number): void {
+  if (grow <= 0) return;
   const caps = Math.min(5, count + 1);
-  const scale = Math.min(1.6, 0.8 + count * 0.2);
+  const scale = Math.min(1.6, 0.8 + count * 0.2) * grow;
   for (let i = 0; i < caps; i++) {
     const offset = (i - (caps - 1) / 2) * 9 * scale;
     const height = (8 + ((i * 7) % 3) * 4) * scale;

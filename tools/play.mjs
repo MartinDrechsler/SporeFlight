@@ -80,6 +80,15 @@ check('start button begins play', (await state()).state === 'playing');
 await test(() => window.__test.setSave({}));
 const maxScore = await fly(900, 200, '03-playing');
 check('scores while flying', maxScore > 0, `max score ${maxScore}`);
+// Without flapping, the mushroom soon crashes.
+for (let i = 0; i < 100 && (await state()).state === 'playing'; i++) await advance(1000 / 30);
+s = await state();
+check('no clump while the mushroom is still falling', s.state === 'roundOver' && s.round.landedTime === null && s.save.deathMarks['0']?.length === 1, `landed ${s.round.landedTime}`);
+for (let i = 0; i < 60 && (await state()).round.landedTime === null; i++) await advance(50);
+await advance(400);
+s = await state();
+check('waits on the ground while the clump grows', s.state === 'roundOver' && s.round.landedTime > 0.3, `${s.state} ${s.round.landedTime}`);
+await shot('03b-clump-growing');
 await advance(3000);
 s = await state();
 check('crash costs a life', s.save.lives === 4, `lives ${s.save.lives}`);

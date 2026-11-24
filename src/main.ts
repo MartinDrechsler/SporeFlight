@@ -50,6 +50,7 @@ const save = loadSave(store);
 // Test runs get an ad that finishes instantly, so flows can be checked quickly.
 const ads: RewardedAds = createMockAds(isTest ? 0 : AD_SECONDS, TUNING.session.adSkippableAfterSeconds);
 
+let earlierMarks: readonly number[] = [];
 const ctx: GameContext = {
   world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), rng),
   save,
@@ -59,7 +60,11 @@ const ctx: GameContext = {
   rng,
   levelId: ENDLESS_LEVEL_ID,
   lastScore: null,
-  newWorld: (levelId) => createWorld(surface.width, surface.height, levelById(levelId), rng),
+  newWorld: (levelId) => {
+    // Clumps from earlier rounds; this round's clump only grows once the mushroom has landed.
+    earlierMarks = save.deathMarks[String(levelId)] ?? [];
+    return createWorld(surface.width, surface.height, levelById(levelId), rng);
+  },
   go: (name) => machine.go(name),
   current: () => machine.current,
   persist: () => writeSave(store, save),
@@ -93,7 +98,7 @@ const loop = createLoop(
       world: ctx.world,
       skinId: save.activeSkin,
       effects: ctx.effects,
-      deathMarks: save.deathMarks[String(ctx.world.level.id)] ?? [],
+      deathMarks: earlierMarks,
       time,
     }),
 );

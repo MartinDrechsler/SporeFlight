@@ -33,7 +33,7 @@ export function autopilot(world: World): void {
 
 /** A world with no roots, pickups or wind, for testing one mechanic at a time. */
 export function emptyWorld(seed = 1, level: LevelConfig = ENDLESS): World {
-  const world = newWorld(seed, { ...level, wind: false });
+  const world = newWorld(seed, { ...level, windFromRoot: null });
   world.distanceSinceSpawn = -1e9;
   return world;
 }

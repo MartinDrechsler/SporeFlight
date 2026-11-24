@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
-import { gapSizeFor, makeRoot, wavePhase } from '../src/gameplay/spawner';
-import { flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
+import { gapSizeFor, makePickup, makeRoot, wavePhase } from '../src/gameplay/spawner';
+import { crashSpot, flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
 import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
 
 const FIELD = { height: HEIGHT, groundY: HEIGHT - TUNING.world.groundHeight };
@@ -220,4 +220,50 @@ describe('power-ups and rewards', () => {
     expect(world.player.y).toBeLessThan(still.player.y);
     expect(world.events.some((e) => e.type === 'wind')).toBe(true);
   });
+
+  it('endless brings magnets only after root 40 and wind only after root 120', () => {
+    const rng = createRandom(3);
+    const kindsAt = (from: number, to: number) => {
+      const kinds = new Set<string>();
+      for (let i = from; i < to; i++) {
+        const root = makeRoot(rng, ENDLESS, FIELD, 0, i, null);
+        const pickup = makePickup(rng, root, i, ENDLESS, FIELD);
+        if (pickup) kinds.add(pickup.kind);
+      }
+      return kinds;
+    };
+    expect(kindsAt(0, 40).has('magnet')).toBe(false);
+    expect(kindsAt(40, 400).has('magnet')).toBe(true);
+
+    const early = newWorld(4);
+    early.rootsPassed = 119;
+    early.distanceToWind = 0;
+    early.distanceSinceSpawn = -1e9;
+    stepWorld(early, 1 / 60);
+    expect(early.winds).toHaveLength(0);
+    early.rootsPassed = 120;
+    stepWorld(early, 1 / 60);
+    expect(early.winds).toHaveLength(1);
+  });
 });
+
+describe('crash and mushroom clump', () => {
+  it('the clump spot is known only once the mushroom has landed', () => {
+    const world = emptyWorld();
+    world.player.y = 100;
+    world.player.vy = 0;
+    world.invulnerableTime = 0;
+    world.roots = [makeRoot(createRandom(1), ENDLESS, FIELD, world.player.x - 30, 0, null)];
+    world.roots[0]!.gapCenter = 600;
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(true);
+    expect(world.landedTime).toBeNull();
+    const spot = crashSpot(world);
+    for (let i = 0; i < 180 && world.landedTime === null; i++) stepWorld(world, 1 / 60);
+    expect(world.landedTime).toBe(0);
+    expect(world.events.some((e) => e.type === 'landed')).toBe(true);
+    expect(world.player.y).toBe(world.groundY - world.player.radius);
+    expect(crashSpot(world)).toBe(spot);
+  });
+});
+

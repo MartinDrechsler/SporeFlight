@@ -20,6 +20,9 @@ challenge. Next: phase 2, the Adventure journey (map path, 10 levels with finish
 - **Mushroom clumps** grow where you crashed, per level (nearby crashes grow one bigger clump).
 - **Coins are scarce**: coins are worth 1 and come only from collecting them. Diamonds: root 30, then every 30th.
 - **Save v3**: death marks per level, rest countdown. Older saves migrate.
+- **Fixes after Martin's review**: a crash's mushroom clump grows only after the mushroom has landed on that
+  spot (the round-over screen waits for it). Endless starts plain: magnets from root 40, wind from root 120
+  (level data `magnetFromRoot`, `windFromRoot`).
 
 ### Built before phase 1 (some details superseded above)
 - **Flight**: fixed 60 Hz physics, roots, gap shrinking and moving gaps with progress, speed-up, ceiling bump.
