@@ -9,9 +9,12 @@ export const TUNING = {
     radius: 18,
     startXFraction: 0.28,
     startYFraction: 0.45,
+    /** Pull while rising: a soft, rounded arc after each tap. */
     gravity: 1368,
+    /** Pull while falling: stronger, so hesitation is punished (Flappy-style). */
+    fallGravity: 2190,
     flapVelocity: -390,
-    maxFallSpeed: 540,
+    maxFallSpeed: 660,
     /** Small upward bounce when crashing. */
     crashHopVelocity: -132,
   },
@@ -67,8 +70,8 @@ export const TUNING = {
     /** Of those: share of shields and magnets; the rest are coins. */
     shieldShare: 0.2,
     magnetShare: 0.24,
-    diamondFirstRoot: 20,
-    diamondEveryRoots: 10,
+    diamondFirstRoot: 30,
+    diamondEveryRoots: 30,
     /** Collection is a little stricter than touching, so it feels earned. */
     collectRadiusFactor: 0.7,
     minVerticalOffset: 45,
@@ -78,16 +81,8 @@ export const TUNING = {
     bottomMargin: 130,
   },
 
-  combo: {
-    windowSeconds: 3.5,
-    /** Combo count needed for each multiplier: index = multiplier - 1. */
-    thresholds: [0, 2, 4, 6, 8],
-    /** At max multiplier (fever), points and coins are doubled again. */
-    feverFactor: 2,
-    /** How much each action extends the combo. */
-    gain: { pass: 1, coin: 1, nearMiss: 2, diamond: 2 },
-  },
 
+  /** A near miss is pure feedback (sparks, a short slow motion); it pays nothing. */
   nearMiss: {
     /** Gap between mushroom and root edge that counts as a near miss. */
     distance: 12,
@@ -119,13 +114,24 @@ export const TUNING = {
     warningCooldownSeconds: 1,
   },
 
-  /** Endless: one-time coin rewards per round for reaching these scores. */
-  benchmarks: [
-    { score: 25, reward: 5 },
-    { score: 50, reward: 10 },
-    { score: 75, reward: 15 },
-    { score: 100, reward: 20 },
-  ],
+  /** Scores celebrated with a big moment. They pay nothing: the moment is the reward. */
+  milestones: [10, 20, 30, 50, 75, 100],
+
+  /**
+   * Endless difficulty comes in waves: every `length` roots, the last
+   * `surgeRoots` are a surge (tighter, more often moving), then the first
+   * `calmRoots` of the next wave are a breather with a better pickup chance.
+   */
+  waves: {
+    length: 10,
+    surgeRoots: 4,
+    calmRoots: 2,
+    surgeGapShrink: 10,
+    surgeGapShrinkPerWave: 3,
+    surgeGapShrinkMax: 22,
+    calmGapBonus: 14,
+    calmPickupFactor: 3,
+  },
 
   /** Endless: the painted forest fades in behind the hills as the score grows. */
   backdrops: [
@@ -135,12 +141,17 @@ export const TUNING = {
 
   session: {
     startLives: 5,
-    /** Lives granted by watching a rewarded ad. */
-    adLives: 10,
+    /** Lives refilled by resting (game open) or by watching an ad. */
+    refillLives: 5,
+    restSeconds: 60,
+    /** The ad can be skipped after this long and still refills lives. */
+    adSkippableAfterSeconds: 3,
     /** Hearts always shown, even when fewer lives remain. */
     heartSlots: 5,
-    /** How many past crash spots are remembered and shown on the ground. */
+    /** How many past crash spots are remembered per level and grown as mushroom clumps. */
     deathMarks: 15,
+    /** Crashes closer than this (px) grow into one bigger clump. */
+    clumpRadius: 40,
     usernameMaxLength: 12,
     defaultUsername: 'SPORE',
   },

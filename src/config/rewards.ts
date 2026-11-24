@@ -10,7 +10,6 @@ export interface RunStats {
   coins: number;
   diamonds: number;
   nearMisses: number;
-  maxMultiplier: number;
 }
 
 export type AchievementStat = keyof RunStats | 'bestAdventureScore';
@@ -30,7 +29,6 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'spore_collector', name: 'SPORE COLLECTOR', description: 'Collect 20 coins in a single run', stat: 'coins', target: 20, reward: 10 },
   { id: 'diamond_hunter', name: 'DIAMOND HUNTER', description: 'Collect 3 diamonds in a single run', stat: 'diamonds', target: 3, reward: 15 },
   { id: 'perfect_explorer', name: 'PERFECT EXPLORER', description: 'Earn 3 stars (25 points) on any adventure level', stat: 'bestAdventureScore', target: 25, reward: 20 },
-  { id: 'hyper_drive', name: 'HYPER-DRIVE', description: 'Reach the x5 combo multiplier', stat: 'maxMultiplier', target: 5, reward: 15 },
 ];
 
 /** What a quest counts. Progress adds up across all rounds of the day. */

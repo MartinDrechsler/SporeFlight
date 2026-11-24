@@ -58,7 +58,7 @@ export const ENDLESS_LEVEL_ID = 0;
 export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 0, name: 'ENDLESS MODE', theme: 'classic', description: 'Survive as long as you can in the deep forest.',
-    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 120, max: 160 }, wind: true, progressive: true,
+    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 }, wind: true, progressive: true,
   }),
   level({
     id: 1, name: 'GLOWFLY VALE', theme: 'glowfly',

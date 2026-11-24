@@ -20,6 +20,7 @@ declare global {
       seed(value: number): void;
       setSave(patch: Record<string, unknown>): void;
       invulnerable(on: boolean): void;
+      skipAd(): void;
     };
   }
 }
@@ -44,7 +45,7 @@ export function installTestHooks(
       })),
       pickups: world.pickups.map((p) => ({ kind: p.kind, ...pickupPosition(p) })),
       winds: world.winds.map((w) => ({ kind: w.kind, x: round(w.x), width: round(w.width) })),
-      round: { ...world.stats, combo: world.combo.multiplier, shield: world.shield, magnet: round(world.magnetTime), crashed: world.crashed },
+      round: { ...world.stats, shield: world.shield, magnet: round(world.magnetTime), crashed: world.crashed },
       save: ctx.save,
     });
   };
@@ -61,6 +62,7 @@ export function installTestHooks(
     invulnerable: (on) => {
       ctx.world.invulnerableTime = on ? Infinity : 0;
     },
+    skipAd: () => document.getElementById('ad-skip')?.click(),
   };
   loop.advance(0);
 }

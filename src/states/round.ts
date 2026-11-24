@@ -3,6 +3,7 @@ import type { QuestKind } from '../config/rewards';
 import { unlockAchievements } from '../meta/achievements';
 import { addQuestProgress } from '../meta/quests';
 import { skinById } from '../config/skins';
+import { THEMES } from '../config/theme';
 import { toast } from '../ui/toast';
 import type { GameContext } from './context';
 
@@ -11,6 +12,11 @@ import type { GameContext } from './context';
  * the mushroom where it was hovering on the menu, so it does not jump.
  */
 export function startRound(ctx: GameContext, levelId: number, options: { fromHover: boolean } = { fromHover: false }): void {
+  // Every way into a round passes here, so this is the one place that checks for lives.
+  if (ctx.save.lives <= 0) {
+    ctx.go('gameOver');
+    return;
+  }
   const hoverY = ctx.world.player.y;
   ctx.levelId = levelId;
   ctx.world = ctx.newWorld(levelId);
@@ -23,9 +29,10 @@ export function startRound(ctx: GameContext, levelId: number, options: { fromHov
 export function deliverEvents(ctx: GameContext): void {
   const { world } = ctx;
   const flapColor = skinById(ctx.save.activeSkin).glow;
+  const accent = THEMES[world.level.theme].accent;
   for (const event of world.events) {
     ctx.audio.react(event);
-    ctx.effects.react(event, world.player.x, world.player.y, world.width, world.height, flapColor);
+    ctx.effects.react(event, world.player.x, world.player.y, world.width, world.height, flapColor, accent);
     for (const [kind, amount] of questProgressFor(event)) addQuest(ctx, kind, amount);
   }
   world.events.length = 0;
@@ -53,11 +60,11 @@ function questProgressFor(event: GameEvent): [QuestKind, number][] {
     case 'flap':
       return [['flaps', 1]];
     case 'pass':
-      return [['score', event.points]];
+      return [['score', 1]];
     case 'pickup':
       return event.coins > 0 ? [['coins', event.coins]] : [];
     case 'nearMiss':
-      return [['nearMisses', 1], ['coins', event.coins]];
+      return [['nearMisses', 1]];
     default:
       return [];
   }

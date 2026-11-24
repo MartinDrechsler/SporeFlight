@@ -28,8 +28,10 @@ export function flap(player: Player): void {
   player.sinceFlap = 0;
 }
 
+/** Rising is soft and round; once falling, gravity pulls harder (Flappy-style). */
 export function stepPlayer(player: Player, dt: number): void {
-  player.vy = Math.min(player.vy + P.gravity * dt, P.maxFallSpeed);
+  const pull = player.vy < 0 ? P.gravity : P.fallGravity;
+  player.vy = Math.min(player.vy + pull * dt, P.maxFallSpeed);
   player.y += player.vy * dt;
   player.sinceFlap += dt;
 }

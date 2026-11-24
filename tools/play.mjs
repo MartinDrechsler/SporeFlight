@@ -84,22 +84,32 @@ await advance(3000);
 s = await state();
 check('crash costs a life', s.save.lives === 4, `lives ${s.save.lives}`);
 check('back to start after crash', s.state === 'start');
-check('crash spot remembered', s.save.deathMarks.length === 1);
+check('crash spot remembered', s.save.deathMarks['0']?.length === 1);
 await shot('04-start-after-round');
 
-// 3. Losing all lives leads to the ad, which refills lives.
-for (let life = 0; life < 4; life++) {
-  await test(() => window.__test.tap());
-  await advance(4000);
+// 3. Out of lives: rest one minute, or watch a short ad.
+async function loseAllLives() {
+  for (let life = 0; life < 5; life++) {
+    await test(() => window.__test.tap());
+    await advance(4000);
+  }
 }
+await loseAllLives();
 s = await state();
-check('out of lives shows game over', s.state === 'gameOver');
+check('out of lives shows the rest screen', s.state === 'gameOver' && s.save.lives === 0, `${s.state} lives ${s.save.lives}`);
+await advance(20000);
+s = await state();
+check('rest counts down while open', s.state === 'gameOver' && s.save.restSecondsLeft < 45, `left ${s.save.restSecondsLeft}`);
 await shot('05-game-over');
+await advance(41000);
+s = await state();
+check('resting refills lives', s.state === 'start' && s.save.lives === 5, `${s.state} lives ${s.save.lives}`);
+await loseAllLives();
 await tapButton('#watch-ad-button');
 await page.waitForTimeout(100); // the test ad resolves on the next tick
 await advance(50);
 s = await state();
-check('watching the ad gives 10 lives', s.state === 'start' && s.save.lives === 10, `${s.state} lives ${s.save.lives}`);
+check('watching the ad gives 5 lives', s.state === 'start' && s.save.lives === 5, `${s.state} lives ${s.save.lives}`);
 
 // 4. Shop.
 await test(() => window.__test.setSave({ coins: 40 }));
@@ -146,7 +156,7 @@ check('level 1 starts on second tap', s.state === 'playing' && s.level.id === 1)
 await fly(400, 60, '11-level-1');
 await advance(3000);
 s = await state();
-check('adventure crash shows level result, keeps lives', s.state === 'adventureOver' && s.save.lives === 10);
+check('adventure crash costs a life and marks the level', s.state === 'adventureOver' && s.save.lives === 4 && s.save.deathMarks['1']?.length === 1, `lives ${s.save.lives}`);
 await shot('12-adventure-over');
 await tapButton('#adventure-retry');
 check('retry restarts the same level', (await state()).level.id === 1);

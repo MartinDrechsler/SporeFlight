@@ -28,7 +28,6 @@ interface FloatingText {
 
 const POOL_SIZE = 220;
 const TEXT_SECONDS = 1.1;
-const RAINBOW = ['#ff3c69', '#ffd700', '#00f2c3', '#3fd8ff', '#bd00ff'];
 
 export class Effects {
   private readonly particles: Particle[] = Array.from({ length: POOL_SIZE }, () => ({
@@ -42,28 +41,18 @@ export class Effects {
   private flashColor = '255, 215, 0';
 
   /** Turns gameplay events into visuals. `px, py` is the player, `width, height` the field. */
-  react(event: GameEvent, px: number, py: number, width: number, height: number, flapColor: string): void {
+  react(event: GameEvent, px: number, py: number, width: number, height: number, flapColor: string, accent: string): void {
     switch (event.type) {
       case 'flap':
         this.burst(px - 10, py + 12, 6, flapColor, 60, 0.4);
         break;
       case 'pass':
-        if (event.points > 1) this.text(`+${event.points}`, px, py - 34, '#ffffff');
-        break;
-      case 'comboUp':
-        this.text(`COMBO x${event.multiplier}!`, px, py - 52, '#ffd700');
-        break;
-      case 'fever':
-        this.text('FEVER MODE!', width / 2, height * 0.28, '#bd00ff', 26);
-        this.burst(px, py, 30, '#bd00ff', 220, 0.8);
-        this.flash('189, 0, 255');
-        break;
-      case 'pickup':
-        this.reactToPickup(event);
+        // A short column of light where the root was cleared.
+        for (let i = 0; i < 8; i++) this.spawn(event.rootX, py + (i - 4) * 14, 0, -40, 0.35, 2, accent);
         break;
       case 'nearMiss':
         this.burst(px, py, 14, '#ffd700', 180, 0.5);
-        this.text(`NEAR MISS! +${event.coins}`, px, py - 30, '#ffd700');
+        this.text('NEAR MISS!', px, py - 30, '#ffd700');
         this.shake(0.13, 2.5);
         break;
       case 'shieldPop':
@@ -71,18 +60,32 @@ export class Effects {
         this.text('SHIELD POPPED!', px, py - 34, '#00baff');
         this.shake(0.3, 8);
         break;
-      case 'benchmark':
-        this.burst(px, py, 30, '#ffd700', 260, 0.9);
-        this.text(`BENCHMARK ${event.score}! +${event.reward}`, width / 2, height * 0.3, '#ffd700', 22);
-        this.flash('255, 215, 0');
+      case 'milestone':
+        this.text(`${event.score}!`, width / 2, height * 0.32, accent, 44);
+        for (let i = 0; i < 40; i++) {
+          this.spawn(Math.random() * width, height - 90, (Math.random() - 0.5) * 60, -160 - Math.random() * 220, 1.2, 2.5, accent);
+        }
+        this.flash(hexToRgb(accent));
+        break;
+      case 'pickup':
+        this.reactToPickup(event);
         break;
       case 'wind':
         this.text(event.kind === 'updraft' ? 'UPDRAFT!' : 'DOWNDRAFT!', px, py - 30, event.kind === 'updraft' ? '#00f2c3' : '#ff3c69');
         break;
       case 'crash':
-        this.burst(event.x, event.y, 28, '#e02476', 240, 0.9);
-        this.shake(0.3, 10);
+        this.burst(event.x, event.y, 34, '#e02476', 260, 0.9);
+        this.shake(0.4, 12);
+        this.flash('224, 36, 118');
         break;
+    }
+  }
+
+  /** Celebrates a new best score at the end of a round. */
+  newBest(width: number, height: number): void {
+    this.text('NEW BEST!', width / 2, height * 0.3, '#ffd23f', 40);
+    for (let i = 0; i < 50; i++) {
+      this.spawn(width / 2, height * 0.3, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : '#ff5e9c');
     }
   }
 
@@ -91,11 +94,7 @@ export class Effects {
     this.text(text, width / 2, height * 0.38, color, 18);
   }
 
-  update(dt: number, fever: boolean, px: number, py: number): void {
-    if (fever && Math.random() < 0.85) {
-      this.spawn(px - 12, py + (Math.random() - 0.5) * 16, -80 - Math.random() * 60, (Math.random() - 0.5) * 30, 0.5, 2.5,
-        RAINBOW[Math.floor(Math.random() * RAINBOW.length)]!);
-    }
+  update(dt: number): void {
     for (const p of this.particles) {
       if (!p.active) continue;
       p.life -= dt;
@@ -165,7 +164,7 @@ export class Effects {
     switch (event.kind) {
       case 'coin':
         this.burst(x, y, 12, '#ffd23f', 150, 0.6);
-        this.text(`+${event.coins}`, x, y - 18, '#ffd23f');
+        this.text('+1', x, y - 18, '#ffd23f');
         break;
       case 'diamond':
         this.burst(x, y, 18, '#3fd8ff', 200, 0.7);
@@ -211,4 +210,9 @@ export class Effects {
   private text(text: string, x: number, y: number, color: string, size = 20): void {
     this.texts.push({ text, x, y, life: TEXT_SECONDS, color, size });
   }
+}
+
+function hexToRgb(hex: string): string {
+  const value = parseInt(hex.slice(1), 16);
+  return `${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}`;
 }

@@ -110,7 +110,10 @@ function drawGround(ctx: CanvasRenderingContext2D, theme: Theme, width: number, 
   ctx.shadowBlur = 0;
 }
 
-/** A small fallen spore and a faint glow wherever a recent round ended. */
+/**
+ * A clump of small mushrooms grows wherever a recent round ended. Crashes
+ * close together grow into one bigger clump, so trouble spots stand out.
+ */
 function drawDeathMarks(
   ctx: CanvasRenderingContext2D,
   marks: readonly number[],
@@ -119,16 +122,52 @@ function drawDeathMarks(
   distance: number,
   time: number,
 ): void {
-  for (const mark of marks) {
-    const x = mark - distance;
-    if (x < -20 || x > width + 20) continue;
-    ctx.globalAlpha = 0.45 + Math.sin(time * 2 + mark) * 0.15;
-    ctx.fillStyle = '#e02476';
-    ctx.beginPath();
-    ctx.ellipse(x, groundY - 5, 7, 5, 0, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = '#f2ead8';
-    ctx.fillRect(x - 2, groundY - 5, 4, 5);
+  for (const clump of groupClumps(marks)) {
+    const x = clump.at - distance;
+    if (x < -40 || x > width + 40) continue;
+    drawClump(ctx, x, groundY, clump.count, time);
   }
-  ctx.globalAlpha = 1;
+}
+
+interface Clump {
+  at: number;
+  count: number;
+}
+
+/** Groups crash spots that lie within the clump radius of each other. */
+export function groupClumps(marks: readonly number[]): Clump[] {
+  const sorted = [...marks].sort((a, b) => a - b);
+  const clumps: Clump[] = [];
+  for (const mark of sorted) {
+    const last = clumps.at(-1);
+    if (last && mark - last.at <= TUNING.session.clumpRadius) {
+      last.at = (last.at * last.count + mark) / (last.count + 1);
+      last.count += 1;
+    } else {
+      clumps.push({ at: mark, count: 1 });
+    }
+  }
+  return clumps;
+}
+
+/** Up to five little mushrooms of varied height, gently swaying. */
+function drawClump(ctx: CanvasRenderingContext2D, x: number, groundY: number, count: number, time: number): void {
+  const caps = Math.min(5, count + 1);
+  const scale = Math.min(1.6, 0.8 + count * 0.2);
+  for (let i = 0; i < caps; i++) {
+    const offset = (i - (caps - 1) / 2) * 9 * scale;
+    const height = (8 + ((i * 7) % 3) * 4) * scale;
+    const sway = Math.sin(time * 1.5 + i + x * 0.01) * 1.5;
+    const mx = x + offset + sway;
+    ctx.fillStyle = '#f2ead8';
+    ctx.fillRect(mx - 1.5 * scale, groundY - height, 3 * scale, height);
+    ctx.fillStyle = i % 2 === 0 ? '#e02476' : '#ff5e9c';
+    ctx.beginPath();
+    ctx.ellipse(mx, groundY - height, 5.5 * scale, 4.5 * scale, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0, 242, 195, 0.8)';
+    ctx.beginPath();
+    ctx.arc(mx - 1.5 * scale, groundY - height - 2 * scale, 1 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }

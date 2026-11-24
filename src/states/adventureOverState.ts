@@ -2,7 +2,6 @@ import { starsFor } from '../config/levels';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
 import { byId, setText, starText } from '../ui/dom';
-import { clearHudEffects } from '../ui/hud';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { startRound } from './round';
@@ -21,7 +20,6 @@ export function adventureOverState(ctx: GameContext): State {
   return {
     enter() {
       const level = ctx.world.level;
-      clearHudEffects();
       const name = byId('adventure-over-level');
       setText(name, level.name);
       name.style.setProperty('--level-color', THEMES[level.theme].accent);

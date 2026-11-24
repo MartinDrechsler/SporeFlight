@@ -10,7 +10,6 @@ import { createLoop } from './core/loop';
 import { createRandom, randomSeed } from './core/random';
 import { browserStore, loadSave, writeSave } from './core/save';
 import { StateMachine } from './core/stateMachine';
-import { isFever } from './gameplay/combo';
 import { createWorld } from './gameplay/world';
 import { createSurface, resizeSurface } from './render/canvas';
 import { Effects } from './render/effects';
@@ -32,7 +31,8 @@ import { usernameState } from './states/usernameState';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
 
-const AD_SECONDS = 2;
+/** Length of the stand-in ad; the real ad network decides this later. */
+const AD_SECONDS = 10;
 
 const params = new URLSearchParams(location.search);
 const isTest = params.has('test');
@@ -48,7 +48,7 @@ const surface = createSurface(canvas);
 const store = browserStore();
 const save = loadSave(store);
 // Test runs get an ad that finishes instantly, so flows can be checked quickly.
-const ads: RewardedAds = createMockAds(isTest ? 0 : AD_SECONDS);
+const ads: RewardedAds = createMockAds(isTest ? 0 : AD_SECONDS, TUNING.session.adSkippableAfterSeconds);
 
 const ctx: GameContext = {
   world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), rng),
@@ -72,7 +72,7 @@ const machine = new StateMachine<StateName>({
   playing: playingState(ctx),
   roundOver: roundOverState(ctx),
   gameOver: gameOverState(ctx),
-  ad: adState(ctx, AD_SECONDS),
+  ad: adState(ctx),
   adventureOver: adventureOverState(ctx),
   shop: shopState(ctx),
   badges: badgesState(ctx),
@@ -86,10 +86,16 @@ const loop = createLoop(
   (dt) => {
     time += dt;
     machine.update(dt);
-    const { world } = ctx;
-    ctx.effects.update(dt, isFever(world.combo) && machine.current === 'playing', world.player.x, world.player.y);
+    ctx.effects.update(dt);
   },
-  () => renderScene(surface, { world: ctx.world, skinId: save.activeSkin, effects: ctx.effects, deathMarks: save.deathMarks, time }),
+  () =>
+    renderScene(surface, {
+      world: ctx.world,
+      skinId: save.activeSkin,
+      effects: ctx.effects,
+      deathMarks: save.deathMarks[String(ctx.world.level.id)] ?? [],
+      time,
+    }),
 );
 
 setupInput();

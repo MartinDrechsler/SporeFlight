@@ -15,8 +15,7 @@ interface Note {
 const SOUNDS = {
   flap: [{ from: 420, to: 620, seconds: 0.09, wave: 'triangle', volume: 0.12 }],
   pass: [{ from: 660, to: 880, seconds: 0.08, wave: 'sine', volume: 0.1 }],
-  combo: [{ from: 700, to: 1100, seconds: 0.12, wave: 'triangle', volume: 0.08 }],
-  fever: [{ from: 520, to: 1040, seconds: 0.35, wave: 'sawtooth', volume: 0.07 }],
+  nearMiss: [{ from: 1500, to: 1900, seconds: 0.1, wave: 'sine', volume: 0.08 }],
   coin: [{ from: 980, to: 1600, seconds: 0.12, wave: 'square', volume: 0.05 }],
   chime: [
     { from: 1320, to: 1320, seconds: 0.15, wave: 'sine', volume: 0.09 },
@@ -94,17 +93,13 @@ function soundFor(event: GameEvent): SoundName | null {
       return 'flap';
     case 'pass':
       return 'pass';
-    case 'comboUp':
-      return 'combo';
-    case 'fever':
-      return 'fever';
     case 'pickup':
       return event.kind === 'coin' || event.kind === 'magnet' ? 'coin' : 'chime';
     case 'nearMiss':
-      return 'coin';
+      return 'nearMiss';
     case 'shieldPop':
       return 'pop';
-    case 'benchmark':
+    case 'milestone':
       return 'reward';
     case 'crash':
       return 'crash';

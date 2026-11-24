@@ -1,7 +1,6 @@
 import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { THEMES } from '../config/theme';
 import { TUNING } from '../config/tuning';
-import { isFever } from '../gameplay/combo';
 import { roundCoins, type World } from '../gameplay/world';
 import type { SaveData } from '../core/save';
 import { byId, setText } from './dom';
@@ -19,21 +18,14 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   setText(byId('hud-best'), endless ? save.bestScore : (save.levelBest[world.level.id] ?? 0));
   setText(byId('hud-username'), save.username ?? TUNING.session.defaultUsername);
 
-  const lives = byId('hud-lives');
-  lives.hidden = !endless;
-  setText(lives, hearts(save.lives));
+  setText(byId('hud-lives'), hearts(save.lives));
 
   const levelBadge = byId('hud-level');
   levelBadge.hidden = endless;
   setText(levelBadge, `LEVEL ${world.level.id}`);
   levelBadge.style.setProperty('--level-color', THEMES[world.level.theme].accent);
 
-  const fever = isFever(world.combo) && !world.crashed;
-  const combo = byId('hud-combo');
-  combo.hidden = world.combo.multiplier <= 1;
-  setText(combo, fever ? `FEVER x${world.combo.multiplier}` : `COMBO x${world.combo.multiplier}`);
-  combo.classList.toggle('fever', fever);
-  byId('game').classList.toggle('fever', fever);
+  popOnChange(byId('hud-score'), world.stats.score);
 
   byId('hud-shield').hidden = !world.shield;
   const magnet = byId('hud-magnet');
@@ -46,7 +38,11 @@ export function hearts(lives: number): string {
   return '♥'.repeat(lives) + '♡'.repeat(slots - lives);
 }
 
-/** Removes in-game decorations when leaving play. */
-export function clearHudEffects(): void {
-  byId('game').classList.remove('fever');
+/** Restarts a short "pop" animation whenever a number changes. */
+function popOnChange(element: HTMLElement, value: number): void {
+  if (element.dataset.value === String(value)) return;
+  element.dataset.value = String(value);
+  element.classList.remove('pop');
+  void element.offsetWidth;
+  element.classList.add('pop');
 }
