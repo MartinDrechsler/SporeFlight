@@ -2,12 +2,12 @@ import type { Skin } from '../config/skins';
 import type { Player } from '../gameplay/player';
 
 const MAX_TILT_UP = (-25 * Math.PI) / 180;
-const MAX_TILT_DOWN = (55 * Math.PI) / 180;
-const TILT_PER_SPEED = 0.001;
+const MAX_TILT_DOWN = (75 * Math.PI) / 180;
+/** Nose tips down quickly as the fall speeds up: the fall should look dangerous. */
+const TILT_PER_SPEED = 0.0018;
 
 export interface PlayerLook {
   crashed: boolean;
-  fever: boolean;
   shield: boolean;
   magnet: boolean;
   /** Blinks while invulnerable after a shield pop. */
@@ -31,9 +31,8 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
   ctx.rotate(look.crashed ? Math.PI * 0.6 : tilt);
   ctx.scale(1 - stretch * 0.9, 1 + stretch);
 
-  const glow = look.fever ? '#ffd700' : skin.glow;
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = (look.fever ? 26 : 14) + Math.sin(look.time * 3) * 4;
+  ctx.shadowColor = skin.glow;
+  ctx.shadowBlur = 14 + Math.sin(look.time * 3) * 4;
 
   // Stem
   ctx.fillStyle = '#f2ead8';

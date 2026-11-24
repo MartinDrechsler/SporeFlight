@@ -85,7 +85,7 @@
   min-width: 22px;
   height: 22px;
   border-radius: 11px;
-  background: var(--fever);
+  background: var(--purple);
   color: white;
   font-size: 1rem;
   line-height: 22px;
@@ -180,7 +180,13 @@
 
 .timer {
   font-size: 4rem;
+  line-height: 1;
   color: var(--accent);
+}
+
+.skip-button {
+  width: auto;
+  padding: 0 28px;
 }
 
 .level-name {
@@ -236,17 +242,14 @@
   text-shadow: 0 0 16px rgba(0, 242, 195, 0.6);
 }
 
-.hud-combo {
-  margin-right: -48px;
-  text-align: center;
-  font-size: 1.5rem;
-  color: var(--gold);
-  text-shadow: 0 0 10px rgba(255, 210, 63, 0.6);
+.hud-score.pop {
+  animation: score-pop 0.25s ease-out;
 }
 
-.hud-combo.fever {
-  color: var(--fever);
-  text-shadow: 0 0 12px var(--fever);
+@keyframes score-pop {
+  40% {
+    transform: scale(1.25);
+  }
 }
 
 .hud-bottom {

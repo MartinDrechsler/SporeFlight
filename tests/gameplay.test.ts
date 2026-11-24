@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
-import { comboValue, createCombo, extendCombo, isFever, stepCombo } from '../src/gameplay/combo';
-import { gapSizeFor, makeRoot } from '../src/gameplay/spawner';
+import { gapSizeFor, makeRoot, wavePhase } from '../src/gameplay/spawner';
 import { flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
 import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
 
@@ -53,31 +52,38 @@ describe('collision', () => {
   });
 });
 
-describe('combo', () => {
-  it('raises the multiplier at the thresholds and reaches fever', () => {
-    const combo = createCombo();
-    const multipliers: number[] = [];
-    for (let i = 0; i < 9; i++) {
-      extendCombo(combo, 1);
-      multipliers.push(combo.multiplier);
+describe('flight feel', () => {
+  it('falls faster than it rises, like Flappy Bird', () => {
+    const world = emptyWorld();
+    flapPlayer(world);
+    const start = world.player.y;
+    let riseTime = 0;
+    while (world.player.vy < 0) {
+      stepWorld(world, 1 / 60);
+      riseTime += 1 / 60;
     }
-    expect(multipliers).toEqual([1, 2, 2, 3, 3, 4, 4, 5, 5]);
-    expect(isFever(combo)).toBe(true);
-    expect(comboValue(combo)).toBe(10);
-  });
-
-  it('bigger actions extend it further, and it breaks after the window', () => {
-    const combo = createCombo();
-    expect(extendCombo(combo, 2)).toBe(2);
-    stepCombo(combo, TUNING.combo.windowSeconds + 0.01);
-    expect(combo).toEqual(createCombo());
+    const apex = world.player.y;
+    let fallTime = 0;
+    while (world.player.y < start) {
+      stepWorld(world, 1 / 60);
+      fallTime += 1 / 60;
+    }
+    expect(start - apex).toBeGreaterThan(30);
+    expect(fallTime).toBeLessThan(riseTime);
   });
 });
 
 describe('spawner', () => {
-  it('endless gap shrinks with progress but never below the minimum', () => {
+  it('endless gap shrinks with progress, with tighter surges and calmer breathers', () => {
     expect(gapSizeFor(ENDLESS, 0)).toBe(ENDLESS.gap.max);
-    expect(gapSizeFor(ENDLESS, 1000)).toBe(ENDLESS.gap.min);
+    expect(wavePhase(ENDLESS, 7)).toBe('surge');
+    expect(wavePhase(ENDLESS, 10)).toBe('calm');
+    expect(wavePhase(ENDLESS, 4)).toBe('normal');
+    expect(gapSizeFor(ENDLESS, 7)).toBeLessThan(gapSizeFor(ENDLESS, 4));
+    expect(gapSizeFor(ENDLESS, 10)).toBeGreaterThan(gapSizeFor(ENDLESS, 9));
+    expect(gapSizeFor(ENDLESS, 1005)).toBe(ENDLESS.gap.min);
+    expect(gapSizeFor(ENDLESS, 1007)).toBeLessThan(ENDLESS.gap.min);
+    expect(makeRoot(createRandom(2), ENDLESS, FIELD, 0, 20, null).motion.kind).toBe('still');
   });
 
   it('keeps random gap centres in the band and within a step of the last', () => {
@@ -127,7 +133,7 @@ describe('a full round', () => {
     const world = newWorld(5);
     run(world, 15, autopilot);
     expect(world.rootsPassed).toBeGreaterThan(3);
-    expect(world.stats.score).toBeGreaterThanOrEqual(world.rootsPassed);
+    expect(world.stats.score).toBe(world.rootsPassed);
   });
 
   // Difficulty itself is judged by playing; this only proves every level runs and builds roots.
@@ -173,22 +179,36 @@ describe('power-ups and rewards', () => {
     const root = world.roots[0]!;
     world.pickups = [{ kind: 'coin', root, offsetX: 280, offsetY: world.player.y - root.gapCenter, vx: 0, vy: 0, collected: false }];
     world.magnetTime = 5;
-    world.player.vy = 0;
-    for (let i = 0; i < 60 && world.pickups.length > 0; i++) {
+    const hoverY = world.player.y;
+    for (let i = 0; i < 90 && world.pickups.length > 0; i++) {
+      // Hold the mushroom still so only the magnet moves the coin.
+      world.player.y = hoverY;
       world.player.vy = 0;
       stepWorld(world, 1 / 60);
     }
     expect(world.stats.coins).toBeGreaterThan(0);
   });
 
-  it('benchmarks pay bonus coins once each', () => {
+  it('milestones are celebrated once each and pay nothing', () => {
     const world = emptyWorld();
-    world.stats.score = 60;
+    world.stats.score = 25;
     stepWorld(world, 1 / 60);
     stepWorld(world, 1 / 60);
-    expect(world.benchmarksReached).toBe(2);
-    expect(world.bonusCoins).toBe(15);
-    expect(roundCoins(world)).toBe(15);
+    expect(world.events.filter((e) => e.type === 'milestone').map((e) => e.type === 'milestone' && e.score)).toEqual([10, 20]);
+    expect(roundCoins(world)).toBe(0);
+  });
+
+  it('coins only come from collecting them: near misses pay nothing', () => {
+    let nearMisses = 0;
+    let coinPickups = 0;
+    for (const seed of [5, 6, 7, 8]) {
+      const world = newWorld(seed);
+      run(world, 20, autopilot);
+      nearMisses += world.stats.nearMisses;
+      coinPickups += world.events.filter((e) => e.type === 'pickup' && e.kind === 'coin').length;
+      expect(world.stats.coins).toBe(world.events.filter((e) => e.type === 'pickup' && e.kind === 'coin').length);
+    }
+    expect(nearMisses + coinPickups).toBeGreaterThan(0);
   });
 
   it('wind zones push the mushroom', () => {

@@ -9,6 +9,18 @@ const R = TUNING.roots;
 const PK = TUNING.pickups;
 const G = TUNING.glowflies;
 const WD = TUNING.wind;
+const WV = TUNING.waves;
+
+/** Where a root sits in endless's rhythm of tension and release. */
+export type WavePhase = 'calm' | 'normal' | 'surge';
+
+export function wavePhase(level: LevelConfig, index: number): WavePhase {
+  if (!level.progressive) return 'normal';
+  const position = index % WV.length;
+  if (position >= WV.length - WV.surgeRoots) return 'surge';
+  if (index >= WV.length && position < WV.calmRoots) return 'calm';
+  return 'normal';
+}
 
 export interface Field {
   height: number;
@@ -52,14 +64,26 @@ export function makeRoot(
 }
 
 export function gapSizeFor(level: LevelConfig, index: number): number {
-  if (level.progressive) return Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot);
+  if (level.progressive) {
+    const base = Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot);
+    const wave = Math.floor(index / WV.length);
+    switch (wavePhase(level, index)) {
+      case 'surge':
+        return base - Math.min(WV.surgeGapShrinkMax, WV.surgeGapShrink + wave * WV.surgeGapShrinkPerWave);
+      case 'calm':
+        return base + WV.calmGapBonus;
+      case 'normal':
+        return base;
+    }
+  }
   if (level.gapPulse) return (level.gap.min + level.gap.max) / 2;
   return level.gap.min;
 }
 
 /** The pickup floating in the open space after a root, if any. */
 export function makePickup(rng: Random, root: Root, index: number, level: LevelConfig, field: Field): Pickup | null {
-  const kind = choosePickupKind(rng, index);
+  const chance = wavePhase(level, index) === 'calm' ? PK.chance * WV.calmPickupFactor : PK.chance;
+  const kind = choosePickupKind(rng, index, chance);
   if (kind === null) return null;
 
   const wantedY = root.gapCenter + rng.sign() * rng.range(PK.minVerticalOffset, PK.maxVerticalOffset);
@@ -81,10 +105,10 @@ export function nextWindDistance(rng: Random): number {
   return rng.range(WD.minInterval, WD.maxInterval);
 }
 
-function choosePickupKind(rng: Random, index: number): PickupKind | null {
+function choosePickupKind(rng: Random, index: number, chance: number): PickupKind | null {
   const isDiamondSlot = index >= PK.diamondFirstRoot && (index - PK.diamondFirstRoot) % PK.diamondEveryRoots === 0;
   if (isDiamondSlot) return 'diamond';
-  if (!rng.chance(PK.chance)) return null;
+  if (!rng.chance(chance)) return null;
   const roll = rng.next();
   if (roll < PK.shieldShare) return 'shield';
   if (roll < PK.shieldShare + PK.magnetShare) return 'magnet';
@@ -122,6 +146,8 @@ function chooseCenter(
 }
 
 function chooseMotion(rng: Random, level: LevelConfig, index: number, center: number): RootMotion {
+  // A breather is always still; tension lives in the surge.
+  if (wavePhase(level, index) === 'calm') return { kind: 'still' };
   const sways = level.sway || (level.progressive && index >= R.endlessSwayFromRoot);
   if (sways) {
     return {

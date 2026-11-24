@@ -3,7 +3,6 @@ import type { RunStats } from '../config/rewards';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import { circlesTouch, isNearMiss, playerHitsGround, playerHitsRoot } from './collision';
-import { comboValue, createCombo, extendCombo, isFever, MAX_MULTIPLIER, stepCombo, type Combo } from './combo';
 import { createPlayer, flap, stepPlayer, type Player } from './player';
 import { isMagnetic, pickupPosition, pullToward, type Pickup, type PickupKind } from './pickups';
 import { rootLeft, stepRoot, type Root } from './roots';
@@ -13,20 +12,17 @@ import { windContains, type WindZone } from './wind';
 const P = TUNING.player;
 const W = TUNING.world;
 const PK = TUNING.pickups;
-const C = TUNING.combo;
 const NM = TUNING.nearMiss;
 const WD = TUNING.wind;
 
 /** Things that happened during a step. Audio, effects, HUD and quests react to these. */
 export type GameEvent =
   | { type: 'flap' }
-  | { type: 'pass'; points: number }
-  | { type: 'comboUp'; multiplier: number }
-  | { type: 'fever' }
+  | { type: 'pass'; score: number; rootX: number }
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; coins: number }
-  | { type: 'nearMiss'; x: number; y: number; coins: number }
+  | { type: 'nearMiss'; x: number; y: number }
   | { type: 'shieldPop'; x: number; y: number }
-  | { type: 'benchmark'; score: number; reward: number }
+  | { type: 'milestone'; score: number }
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
   | { type: 'crash'; x: number; y: number };
 
@@ -42,14 +38,11 @@ export interface World extends Field {
   roots: Root[];
   pickups: Pickup[];
   winds: WindZone[];
-  combo: Combo;
-  /** Numbers for achievements and quests; `stats.score` is the round's score. */
+  /** Numbers for achievements and quests; `stats.score` is the round's score (1 per root). */
   stats: RunStats;
-  /** Coins from benchmarks, on top of the coins collected (`stats.coins`). */
-  bonusCoins: number;
   rootsSpawned: number;
   rootsPassed: number;
-  benchmarksReached: number;
+  milestonesReached: number;
   /** Scroll speed in px/s before the multiplier. */
   baseSpeed: number;
   speedMultiplier: number;
@@ -78,12 +71,10 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
     roots: [],
     pickups: [],
     winds: [],
-    combo: createCombo(),
-    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, maxMultiplier: 1 },
-    bonusCoins: 0,
+    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0 },
     rootsSpawned: 0,
     rootsPassed: 0,
-    benchmarksReached: 0,
+    milestonesReached: 0,
     baseSpeed: level.speed,
     speedMultiplier: level.speedMultiplier,
     distance: 0,
@@ -115,9 +106,9 @@ export function isInvulnerable(world: World): boolean {
   return world.invulnerableTime > 0;
 }
 
-/** All coins earned this round, ready to be banked. */
+/** All coins collected this round, ready to be banked. */
 export function roundCoins(world: World): number {
-  return world.stats.coins + world.bonusCoins;
+  return world.stats.coins;
 }
 
 /** Advances a round by `dt` seconds of real time. */
@@ -148,7 +139,7 @@ export function stepWorld(world: World, realDt: number): void {
   scorePasses(world);
   collectPickups(world);
   checkNearMisses(world);
-  checkBenchmarks(world);
+  checkMilestones(world);
   removeOffscreen(world);
 }
 
@@ -167,7 +158,6 @@ function tickTimers(world: World, dt: number): void {
   world.invulnerableTime = Math.max(0, world.invulnerableTime - dt);
   world.magnetTime = Math.max(0, world.magnetTime - dt);
   world.windWarningCooldown = Math.max(0, world.windWarningCooldown - dt);
-  stepCombo(world.combo, dt);
 }
 
 function updateSpeed(world: World, dt: number): void {
@@ -265,10 +255,8 @@ function scorePasses(world: World): void {
     if (root.passed || rootLeft(root) + root.width >= world.player.x) continue;
     root.passed = true;
     world.rootsPassed += 1;
-    const points = comboValue(world.combo);
-    world.stats.score += points;
-    world.events.push({ type: 'pass', points });
-    addCombo(world, C.gain.pass);
+    world.stats.score += 1;
+    world.events.push({ type: 'pass', score: world.stats.score, rootX: rootLeft(root) + root.width / 2 });
   }
 }
 
@@ -286,15 +274,11 @@ function collectPickups(world: World): void {
 /** Applies a pickup's effect and returns the coins it was worth. */
 function applyPickup(world: World, kind: PickupKind): number {
   switch (kind) {
-    case 'coin': {
-      const coins = comboValue(world.combo);
-      world.stats.coins += coins;
-      addCombo(world, C.gain.coin);
-      return coins;
-    }
+    case 'coin':
+      world.stats.coins += 1;
+      return 1;
     case 'diamond':
       world.stats.diamonds += 1;
-      addCombo(world, C.gain.diamond);
       return 0;
     case 'shield':
       world.shield = true;
@@ -310,29 +294,17 @@ function checkNearMisses(world: World): void {
   for (const root of world.roots) {
     if (root.nearMissCounted || !isNearMiss(world.player, root, world.groundY)) continue;
     root.nearMissCounted = true;
-    const coins = comboValue(world.combo);
-    world.stats.coins += coins;
     world.stats.nearMisses += 1;
     world.slowMotionTime = NM.slowMotionSeconds;
-    world.events.push({ type: 'nearMiss', x: world.player.x, y: world.player.y, coins });
-    addCombo(world, C.gain.nearMiss);
+    world.events.push({ type: 'nearMiss', x: world.player.x, y: world.player.y });
   }
 }
 
-function addCombo(world: World, amount: number): void {
-  const raised = extendCombo(world.combo, amount);
-  if (raised === null) return;
-  world.stats.maxMultiplier = Math.max(world.stats.maxMultiplier, raised);
-  world.events.push({ type: 'comboUp', multiplier: raised });
-  if (raised === MAX_MULTIPLIER && isFever(world.combo)) world.events.push({ type: 'fever' });
-}
-
-function checkBenchmarks(world: World): void {
-  const next = TUNING.benchmarks[world.benchmarksReached];
-  if (!next || world.stats.score < next.score) return;
-  world.benchmarksReached += 1;
-  world.bonusCoins += next.reward;
-  world.events.push({ type: 'benchmark', score: next.score, reward: next.reward });
+function checkMilestones(world: World): void {
+  const next = TUNING.milestones[world.milestonesReached];
+  if (next === undefined || world.stats.score < next) return;
+  world.milestonesReached += 1;
+  world.events.push({ type: 'milestone', score: next });
 }
 
 function removeOffscreen(world: World): void {

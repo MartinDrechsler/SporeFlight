@@ -3,10 +3,25 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: core infrastructure complete (2026-11-23)
-Every feature of the old game is rebuilt. From here on, work is editing and developing the game.
+## Status: phase 1 "Challenge and feel" done (2026-11-24)
+The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Phase 1 makes the game a real Flappy-style
+challenge. Next: phase 2, the Adventure journey (map path, 10 levels with finish gates).
 
-### What exists
+### Phase 1 changes
+- **Flight**: rises softly, falls faster (separate rise and fall gravity), nose dips further when diving.
+- **Score**: exactly 1 point per root. Combo, multipliers, fever and coin benchmarks are removed.
+- **Endless rhythm**: waves of 10 roots: a surge of 4 tighter roots, then 2 calm, still roots with more pickups.
+  Endless gaps start at 140 px and tighten to 115 px.
+- **Milestones** at 10, 20, 30, 50, 75, 100: big number, burst and flash. No coins, the moment is the reward.
+- **Feedback**: light column on every pass, score pop, near-miss sound and slow motion (no coins),
+  stronger crash shake, "new best" celebration.
+- **Lives everywhere**: Adventure crashes cost a life too. Out of lives: rest 1 minute (counts only while
+  the game is open) or watch a short ad (skippable after 3 s). Both give 5 lives.
+- **Mushroom clumps** grow where you crashed, per level (nearby crashes grow one bigger clump).
+- **Coins are scarce**: coins are worth 1 and come only from collecting them. Diamonds: root 30, then every 30th.
+- **Save v3**: death marks per level, rest countdown. Older saves migrate.
+
+### Built before phase 1 (some details superseded above)
 - **Flight**: fixed 60 Hz physics, roots, gap shrinking and moving gaps with progress, speed-up, ceiling bump.
 - **Endless mode**: 5 lives, round score resets each crash, benchmarks at 25/50/75/100 (+5/10/15/20 coins),
   wind zones, the painted forests from the old game fading in at score 20 and 40, markers where recent rounds ended.
@@ -25,7 +40,9 @@ Every feature of the old game is rebuilt. From here on, work is editing and deve
 
 ## Martin's decisions
 - A crash ends the round (endless: one life lost, score resets).
-- Lives come back only by watching an ad: that is the revenue stream. The rest timer is gone.
+- Lives come back by resting 1 minute or by a short skippable ad. No generous refills, no random ads.
+- 1 point per root, no combos or multipliers. Coins hard to get. Keep the name screen first.
+- Endless biome changes every 20 points; Adventure is a map path like Candy Crush.
 - Keep the username screen.
 
 ## Decisions (and why)

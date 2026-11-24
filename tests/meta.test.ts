@@ -5,7 +5,7 @@ import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '../src/core/save';
 import { unlockAchievements } from '../src/meta/achievements';
-import { bankRound, buySkin, grantAdLives, selectSkin, unlockAdventure } from '../src/meta/economy';
+import { bankRound, buySkin, refillLives, rest, selectSkin, unlockAdventure } from '../src/meta/economy';
 import { addQuestProgress, claimableCount, claimQuest, dayKey, refreshQuests } from '../src/meta/quests';
 
 function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
@@ -13,7 +13,7 @@ function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
   return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v) };
 }
 
-const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, maxMultiplier: 1 };
+const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0 };
 
 describe('save', () => {
   it('returns defaults when nothing or garbage is saved', () => {
@@ -30,10 +30,12 @@ describe('save', () => {
     expect(repaired.username).toBeNull();
   });
 
-  it('upgrades the first version of the save', () => {
+  it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
-    const v2 = migrate(v1);
-    expect([v2.version, v2.bestScore, v2.coins, v2.lives, v2.soundOn]).toEqual([2, 40, 7, 3, false]);
+    const fromV1 = migrate(v1);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([3, 40, 7, 3, false]);
+    const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
+    expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
   });
 
   it('round-trips through storage', () => {
@@ -45,25 +47,31 @@ describe('save', () => {
 });
 
 describe('economy', () => {
-  it('endless rounds cost a life and record the best score and crash spot', () => {
+  it('every round costs a life, records the best score and the crash spot per level', () => {
     const save = defaultSave();
-    bankRound(save, { levelId: 0, score: 30, coins: 4, diamonds: 1, distance: 900 });
+    expect(bankRound(save, { levelId: 0, score: 30, coins: 4, diamonds: 1, distance: 900 })).toBe(true);
     expect([save.lives, save.bestScore, save.coins, save.diamonds]).toEqual([TUNING.session.startLives - 1, 30, 4, 1]);
-    expect(save.deathMarks).toEqual([900]);
-  });
-
-  it('adventure rounds keep lives and record the level best', () => {
-    const save = defaultSave();
-    bankRound(save, { levelId: 4, score: 13, coins: 0, diamonds: 0, distance: 0 });
-    expect(save.lives).toBe(TUNING.session.startLives);
+    expect(bankRound(save, { levelId: 4, score: 13, coins: 0, diamonds: 0, distance: 500 })).toBe(true);
+    expect(save.lives).toBe(TUNING.session.startLives - 2);
     expect(save.levelBest[4]).toBe(13);
     expect(starsFor(13)).toBe(2);
+    expect(save.deathMarks).toEqual({ '0': [900], '4': [500] });
+    expect(bankRound(save, { levelId: 0, score: 10, coins: 0, diamonds: 0, distance: 0 })).toBe(false);
   });
 
-  it('a rewarded ad refills lives', () => {
-    const save = { ...defaultSave(), lives: 0 };
-    grantAdLives(save);
-    expect(save.lives).toBe(TUNING.session.adLives);
+  it('out of lives: resting refills them after the rest time, counting only given time', () => {
+    const save = { ...defaultSave(), lives: 1 };
+    bankRound(save, { levelId: 0, score: 0, coins: 0, diamonds: 0, distance: 0 });
+    expect([save.lives, save.restSecondsLeft]).toEqual([0, TUNING.session.restSeconds]);
+    expect(rest(save, 30)).toBe(false);
+    expect(rest(save, 30)).toBe(true);
+    expect([save.lives, save.restSecondsLeft]).toEqual([TUNING.session.refillLives, 0]);
+  });
+
+  it('an ad refills lives at once and ends the rest', () => {
+    const save = { ...defaultSave(), lives: 0, restSecondsLeft: 50 };
+    refillLives(save);
+    expect([save.lives, save.restSecondsLeft]).toEqual([TUNING.session.refillLives, 0]);
   });
 
   it('buys and selects skins only when affordable and owned', () => {

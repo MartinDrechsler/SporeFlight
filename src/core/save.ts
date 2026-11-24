@@ -15,7 +15,7 @@ export interface QuestState {
 }
 
 export interface SaveData {
-  version: 2;
+  version: 3;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
@@ -32,8 +32,10 @@ export interface SaveData {
   achievements: string[];
   /** Today's quests; `day` is the local date they belong to (YYYY-MM-DD). */
   quests: { day: string; list: QuestState[] };
-  /** Distances where recent endless rounds ended, oldest first. */
-  deathMarks: number[];
+  /** Distances where recent rounds ended, per level id, oldest first. Mushroom clumps grow there. */
+  deathMarks: Record<string, number[]>;
+  /** Seconds of rest left before lives refill; 0 when not resting. Counts only while the game is open. */
+  restSecondsLeft: number;
 }
 
 const STORAGE_KEY = 'sporeflight.save';
@@ -41,7 +43,7 @@ const QUEST_KINDS: readonly QuestKind[] = ['flaps', 'coins', 'nearMisses', 'adve
 
 export function defaultSave(): SaveData {
   return {
-    version: 2,
+    version: 3,
     username: null,
     bestScore: 0,
     levelBest: LEVELS.map(() => 0),
@@ -54,7 +56,8 @@ export function defaultSave(): SaveData {
     adventureUnlocked: false,
     achievements: [],
     quests: { day: '', list: [] },
-    deathMarks: [],
+    deathMarks: {},
+    restSecondsLeft: 0,
   };
 }
 
@@ -70,7 +73,7 @@ export function migrate(raw: unknown): SaveData {
   const levelBest = base.levelBest.map((_, i) => count(Array.isArray(data.levelBest) ? data.levelBest[i] : 0, 0));
 
   return {
-    version: 2,
+    version: 3,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
     levelBest,
@@ -83,9 +86,8 @@ export function migrate(raw: unknown): SaveData {
     adventureUnlocked: data.adventureUnlocked === true,
     achievements: stringList(data.achievements),
     quests: cleanQuests(data.quests),
-    deathMarks: Array.isArray(data.deathMarks)
-      ? data.deathMarks.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)).slice(-TUNING.session.deathMarks)
-      : [],
+    deathMarks: cleanDeathMarks(data.deathMarks),
+    restSecondsLeft: Math.min(TUNING.session.restSeconds, count(data.restSecondsLeft, 0)),
   };
 }
 
@@ -142,6 +144,21 @@ function count(value: unknown, fallback: number): number {
 
 function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function numberList(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)).slice(-TUNING.session.deathMarks)
+    : [];
+}
+
+/** Version 2 kept one list for endless; version 3 keeps one list per level. */
+function cleanDeathMarks(value: unknown): Record<string, number[]> {
+  if (Array.isArray(value)) return { '0': numberList(value) };
+  if (typeof value !== 'object' || value === null) return {};
+  const marks: Record<string, number[]> = {};
+  for (const [level, list] of Object.entries(value)) marks[level] = numberList(list);
+  return marks;
 }
 
 function cleanQuests(value: unknown): SaveData['quests'] {

@@ -13,7 +13,6 @@
   <body>
     <main id="game">
       <canvas id="game-canvas"></canvas>
-      <div class="fever-vignette" aria-hidden="true"></div>
 
       <button id="sound-button" class="icon-button" type="button" aria-label="Mute sound"></button>
 
@@ -25,7 +24,6 @@
           <div id="hud-username" class="badge"></div>
         </div>
         <div id="hud-score" class="hud-score">0</div>
-        <div id="hud-combo" class="hud-combo" hidden></div>
         <div class="hud-bottom">
           <span class="hud-stat coins"><span class="icon-coin"></span><span id="hud-coins">0</span></span>
           <span class="hud-stat diamonds"><span class="icon-diamond"></span><span id="hud-diamonds">0</span></span>
@@ -77,16 +75,19 @@
           <div><dt>SCORE</dt><dd id="gameover-score">0</dd></div>
           <div><dt>BEST</dt><dd id="gameover-best">0</dd></div>
         </dl>
-        <p class="panel-text">Watch a short ad to get your lives back.</p>
-        <button id="watch-ad-button" class="primary-button compact blink" type="button">WATCH AD: +10 LIVES</button>
+        <p class="panel-text">Resting... lives return in</p>
+        <p id="gameover-timer" class="timer">1:00</p>
+        <p class="panel-text">or fly again right now:</p>
+        <button id="watch-ad-button" class="primary-button compact blink" type="button">WATCH A SHORT AD</button>
         <p id="ad-error" class="panel-text danger" hidden>The ad could not be shown. Please try again.</p>
       </section>
 
-      <!-- Rewarded ad playing -->
+      <!-- Rewarded ad playing (drawn by the ad provider) -->
       <section id="screen-ad" class="overlay center dim" hidden>
         <h2 class="panel-title">SPONSOR</h2>
-        <p class="panel-text">PLAYING AD...</p>
-        <p id="ad-timer" class="timer">2</p>
+        <p class="panel-text">AD PLAYING...</p>
+        <p id="ad-timer" class="timer">10</p>
+        <button id="ad-skip" class="menu-button skip-button" type="button" hidden>SKIP AD</button>
       </section>
 
       <!-- Adventure crash -->

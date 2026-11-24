@@ -3,7 +3,7 @@ import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
 import { claimableCount, dayKey, refreshQuests } from '../meta/quests';
 import { byId, setText } from '../ui/dom';
-import { clearHudEffects, hearts } from '../ui/hud';
+import { hearts } from '../ui/hud';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
@@ -46,7 +46,6 @@ export function startState(ctx: GameContext): State {
       ctx.levelId = ENDLESS_LEVEL_ID;
       ctx.world = ctx.newWorld(ENDLESS_LEVEL_ID);
       time = 0;
-      clearHudEffects();
       refresh(ctx);
       showScreens('start');
     },
