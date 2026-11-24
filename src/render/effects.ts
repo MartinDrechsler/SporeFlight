@@ -1,3 +1,4 @@
+import { toScreen, type View } from './view';
 import type { GameEvent } from '../gameplay/world';
 
 /**
@@ -19,8 +20,11 @@ interface Particle {
 
 interface FloatingText {
   text: string;
+  /** Where it appeared, in world coordinates. */
   x: number;
   y: number;
+  /** How far it has floated up the screen, px. */
+  rise: number;
   life: number;
   color: string;
   size: number;
@@ -132,7 +136,7 @@ export class Effects {
     }
     for (const t of this.texts) {
       t.life -= dt;
-      t.y -= 45 * dt;
+      t.rise += 45 * dt;
     }
     this.texts = this.texts.filter((t) => t.life > 0);
     this.shakeTime = Math.max(0, this.shakeTime - dt);
@@ -146,13 +150,15 @@ export class Effects {
     return { x: (Math.random() - 0.5) * 2 * strength, y: (Math.random() - 0.5) * 2 * strength };
   }
 
-  draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  /** Draws on top of the world. Positions are world coordinates, shown through the level's view. */
+  draw(ctx: CanvasRenderingContext2D, width: number, height: number, view: View): void {
     for (const p of this.particles) {
       if (!p.active) continue;
+      const at = toScreen(view, width, height, p.x, p.y);
       ctx.globalAlpha = p.life / p.maxLife;
       ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(at.x, at.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.textAlign = 'center';
@@ -162,7 +168,9 @@ export class Effects {
       ctx.fillStyle = t.color;
       ctx.shadowColor = t.color;
       ctx.shadowBlur = 8;
-      ctx.fillText(t.text, t.x, t.y);
+      // Text always reads normally and floats up the screen, whatever the view.
+      const at = toScreen(view, width, height, t.x, t.y);
+      ctx.fillText(t.text, at.x, at.y - t.rise);
     }
     ctx.shadowBlur = 0;
     if (this.flashTime > 0) {
@@ -232,7 +240,7 @@ export class Effects {
   }
 
   private text(text: string, x: number, y: number, color: string, size = 20): void {
-    this.texts.push({ text, x, y, life: TEXT_SECONDS, color, size });
+    this.texts.push({ text, x, y, rise: 0, life: TEXT_SECONDS, color, size });
   }
 }
 

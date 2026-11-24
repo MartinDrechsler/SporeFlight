@@ -18,7 +18,10 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   setText(byId('hud-diamonds'), save.diamonds + pending * world.stats.diamonds);
   setText(byId('hud-best'), save.bestScore);
   byId('hud-best-stat').hidden = !endless;
-  setText(byId('hud-username'), save.username ?? TUNING.session.defaultUsername);
+  // In a level the level badge takes the name's place; small phones have no room for both.
+  const username = byId('hud-username');
+  username.hidden = !endless;
+  setText(username, save.username ?? TUNING.session.defaultUsername);
 
   setText(byId('hud-lives'), hearts(save.lives));
 

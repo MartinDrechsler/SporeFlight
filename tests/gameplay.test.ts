@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { toScreen } from '../src/render/view';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
@@ -352,5 +353,25 @@ describe('the Stone Thrower', () => {
     world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
     stepWorld(world, 1 / 60);
     expect(world.crashed).toBe(true);
+  });
+});
+
+describe('twist levels', () => {
+  it('mirror the picture, never the rules', () => {
+    for (const id of [7, 9]) {
+      const twisted = newWorld(8, level(id));
+      const plain = newWorld(8, { ...level(id), view: 'normal' });
+      run(twisted, 10, autopilot);
+      run(plain, 10, autopilot);
+      expect([twisted.stats.score, twisted.player.y, twisted.crashed]).toEqual([plain.stats.score, plain.player.y, plain.crashed]);
+    }
+    expect(level(7).view).toBe('upsideDown');
+    expect(level(9).view).toBe('backwards');
+  });
+
+  it('upside down puts the ground on top; backwards puts the mushroom on the right', () => {
+    expect(toScreen('upsideDown', 400, 800, 100, 700)).toEqual({ x: 100, y: 100 });
+    expect(toScreen('backwards', 400, 800, 100, 700)).toEqual({ x: 300, y: 700 });
+    expect(toScreen('normal', 400, 800, 100, 700)).toEqual({ x: 100, y: 700 });
   });
 });

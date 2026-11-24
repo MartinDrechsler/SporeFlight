@@ -48,9 +48,16 @@ export interface LevelConfig {
   diamonds: { first: number; every: number | null } | null;
   /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
   progressive: boolean;
+  /**
+   * Twist levels mirror the picture, never the rules: 'upsideDown' (fall up,
+   * a tap pushes you down) or 'backwards' (fly from right to left).
+   */
+  view: 'normal' | 'upsideDown' | 'backwards';
 }
 
-type Defaults = 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide' | 'windFromRoot' | 'magnetFromRoot' | 'diamonds' | 'progressive';
+type Defaults =
+  | 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide'
+  | 'windFromRoot' | 'magnetFromRoot' | 'diamonds' | 'progressive' | 'view';
 
 /** An adventure level: fixed layout, one diamond in the climax, everything else off unless set. */
 const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): LevelConfig => {
@@ -66,6 +73,7 @@ const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): Leve
     magnetFromRoot: 0,
     diamonds: roots > 0 ? { first: roots - 3, every: null } : null,
     progressive: false,
+    view: 'normal',
     ...config,
   };
 };
@@ -111,6 +119,7 @@ export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 7, name: 'UPSIDE-DOWN GROVE', theme: 'green', description: 'Gravity is reversed: you fall up, a tap pushes you down.',
     stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1, spacing: 300, gap: { min: 148, max: 148 },
+    view: 'upsideDown',
   }),
   level({
     id: 8, name: 'CANOPY WINDS', theme: 'canopy', description: 'Updrafts lift you, downdrafts pull you down.',
@@ -120,7 +129,7 @@ export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 9, name: 'THE WAY HOME', theme: 'orange', description: 'Fly back from right to left, through moving gaps.',
     stages: [{ kind: 'roots', count: 32 }], speed: 126, speedMultiplier: 1.05, spacing: 300, gap: { min: 145, max: 145 },
-    drift: { chance: 0.6, speed: 36 },
+    drift: { chance: 0.6, speed: 36 }, view: 'backwards',
   }),
   level({
     id: 10, name: 'HEART OF THE STORM', theme: 'biolume', description: 'A swinging tunnel, then the Stone Thrower returns.',

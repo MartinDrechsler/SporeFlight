@@ -6,6 +6,7 @@ import { drawBackground, drawDeathMarks } from './background';
 import type { Surface } from './canvas';
 import { drawPlayer } from './drawPlayer';
 import { drawBoss } from './drawBoss';
+import { applyView } from './view';
 import { drawGate, drawPickup, drawRoot, drawWind } from './drawRoots';
 import type { Effects } from './effects';
 
@@ -28,6 +29,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
 
   ctx.save();
   ctx.translate(shake.x, shake.y);
+  applyView(ctx, world.level.view, width, height);
   drawBackground(ctx, {
     theme,
     width,
@@ -55,5 +57,5 @@ export function renderScene(surface: Surface, scene: Scene): void {
     world.landedTime === null ? null : { at: crashSpot(world), grow: Math.min(1, world.landedTime / TUNING.roundOver.clumpGrowSeconds) };
   drawDeathMarks(ctx, scene.deathMarks, newMark, width, world.groundY, world.distance, time);
   ctx.restore();
-  scene.effects.draw(ctx, width, height);
+  scene.effects.draw(ctx, width, height, world.level.view);
 }
