@@ -1,5 +1,6 @@
-import type { QuestKind } from '../config/rewards';
+import { ACHIEVEMENTS, QUEST_POOL, type QuestKind } from '../config/rewards';
 import { DEFAULT_SKIN_ID, SKINS } from '../config/skins';
+import { DEFAULT_TRAIL_ID, TRAILS } from '../config/trails';
 import { TUNING } from '../config/tuning';
 
 /**
@@ -14,7 +15,7 @@ export interface QuestState {
 }
 
 export interface SaveData {
-  version: 4;
+  version: 5;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
@@ -27,6 +28,8 @@ export interface SaveData {
   soundOn: boolean;
   ownedSkins: string[];
   activeSkin: string;
+  ownedTrails: string[];
+  activeTrail: string;
   adventureUnlocked: boolean;
   achievements: string[];
   /** Today's quests; `day` is the local date they belong to (YYYY-MM-DD). */
@@ -38,11 +41,11 @@ export interface SaveData {
 }
 
 const STORAGE_KEY = 'sporeflight.save';
-const QUEST_KINDS: readonly QuestKind[] = ['flaps', 'coins', 'nearMisses', 'adventureRuns', 'score'];
+const QUEST_KINDS: readonly QuestKind[] = QUEST_POOL.map((template) => template.kind);
 
 export function defaultSave(): SaveData {
   return {
-    version: 4,
+    version: 5,
     username: null,
     bestScore: 0,
     levelStars: {},
@@ -52,6 +55,8 @@ export function defaultSave(): SaveData {
     soundOn: true,
     ownedSkins: [DEFAULT_SKIN_ID],
     activeSkin: DEFAULT_SKIN_ID,
+    ownedTrails: [DEFAULT_TRAIL_ID],
+    activeTrail: DEFAULT_TRAIL_ID,
     adventureUnlocked: false,
     achievements: [],
     quests: { day: '', list: [] },
@@ -69,9 +74,18 @@ export function migrate(raw: unknown): SaveData {
   const ownedSkins = stringList(data.ownedSkins).filter((id) => SKINS.some((skin) => skin.id === id));
   if (!ownedSkins.includes(DEFAULT_SKIN_ID)) ownedSkins.unshift(DEFAULT_SKIN_ID);
   const activeSkin = typeof data.activeSkin === 'string' && ownedSkins.includes(data.activeSkin) ? data.activeSkin : DEFAULT_SKIN_ID;
+  const achievements = stringList(data.achievements).filter((id) => ACHIEVEMENTS.some((a) => a.id === id));
+  // A badge's trail is always the holder's, even if the save lost it.
+  const badgeTrails = ACHIEVEMENTS.flatMap((a) => (a.trail && achievements.includes(a.id) ? [a.trail] : []));
+  const ownedTrails = [...new Set([DEFAULT_TRAIL_ID, ...stringList(data.ownedTrails), ...badgeTrails])].filter((id) =>
+    TRAILS.some((trail) => trail.id === id),
+  );
+  const activeTrail = typeof data.activeTrail === 'string' && ownedTrails.includes(data.activeTrail) ? data.activeTrail : DEFAULT_TRAIL_ID;
+  // Version 5 changed the quest pool: older quest lists are replaced by a fresh set.
+  const version = typeof data.version === 'number' ? data.version : 0;
 
   return {
-    version: 4,
+    version: 5,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
     // Version 4 brought a new set of levels, so older per-level results do not carry over.
@@ -82,9 +96,11 @@ export function migrate(raw: unknown): SaveData {
     soundOn: typeof data.soundOn === 'boolean' ? data.soundOn : true,
     ownedSkins,
     activeSkin,
+    ownedTrails,
+    activeTrail,
     adventureUnlocked: data.adventureUnlocked === true,
-    achievements: stringList(data.achievements),
-    quests: cleanQuests(data.quests),
+    achievements,
+    quests: version >= 5 ? cleanQuests(data.quests) : { day: '', list: [] },
     deathMarks: cleanDeathMarks(data.deathMarks),
     restSecondsLeft: Math.min(TUNING.session.restSeconds, count(data.restSecondsLeft, 0)),
   };

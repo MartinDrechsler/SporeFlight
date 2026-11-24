@@ -121,13 +121,20 @@ s = await state();
 check('watching the ad gives 5 lives', s.state === 'start' && s.save.lives === 5, `${s.state} lives ${s.save.lives}`);
 
 // 4. Shop.
-await test(() => window.__test.setSave({ coins: 40 }));
+await test(() => window.__test.setSave({ coins: 60, diamonds: 3 }));
 await tapButton('#menu-shop');
 check('shop opens', (await state()).state === 'shop');
 await shot('06-shop');
-await page.tap('#shop-list li:nth-child(2) button');
+// Row 1 is the MUSHROOMS heading, row 2 the free skin, row 3 the first one to buy.
+await page.tap('#shop-list li:nth-child(3) button');
 s = await state();
-check('buying a skin spends coins and selects it', s.save.activeSkin === 'emerald' && s.save.coins === 25);
+check('buying a skin spends coins and wears it', s.save.activeSkin === 'emerald' && s.save.coins === 10);
+await page.tap('#shop-list li:has-text("STARDUST") button');
+s = await state();
+check('buying a trail with diamonds wears it', s.save.activeTrail === 'stardust' && s.save.diamonds === 0);
+await page.evaluate(() => document.querySelector('#shop-list li:has(.trail-preview)')?.scrollIntoView());
+await shot('06b-shop-trails');
+await test(() => window.__test.setSave({ diamonds: 0 }));
 await tapButton('#screen-shop .back-button');
 
 // 5. Badges.

@@ -1,3 +1,5 @@
+import type { Trail } from '../config/trails';
+import { TUNING } from '../config/tuning';
 import { toScreen, type View } from './view';
 import type { GameEvent } from '../gameplay/world';
 
@@ -30,7 +32,7 @@ interface FloatingText {
   size: number;
 }
 
-const POOL_SIZE = 220;
+const POOL_SIZE = 320;
 const TEXT_SECONDS = 1.1;
 
 export class Effects {
@@ -43,6 +45,9 @@ export class Effects {
   private shakeStrength = 0;
   private flashTime = 0;
   private flashColor = '255, 215, 0';
+  /** Trail particles owed, and which colour comes next. */
+  private trailDue = 0;
+  private trailIndex = 0;
 
   /** Turns gameplay events into visuals. `px, py` is the player, `width, height` the field. */
   react(event: GameEvent, px: number, py: number, width: number, height: number, flapColor: string, accent: string): void {
@@ -88,11 +93,40 @@ export class Effects {
         break;
       case 'bossWarn':
         break;
+      case 'veinHit':
+        this.burst(event.x, event.y, 10, '#7fe6ff', 160, 0.45);
+        this.text(`CRACK ${event.hits}/${TUNING.veins.hitsToBreak}`, event.x, event.y - 24, '#7fe6ff');
+        this.shake(0.1, 2.5);
+        break;
+      case 'veinBreak':
+        this.burst(event.x, event.y, 34, '#7fe6ff', 260, 0.9);
+        this.text('+1 DIAMOND!', event.x, event.y - 40, '#3fd8ff', 30);
+        this.flash('0, 229, 255');
+        break;
       case 'finish':
         // The gate opens in light.
         for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);
         this.flash(hexToRgb(accent));
         break;
+    }
+  }
+
+  /** A new biome arrives: its name, large, in its own colour. */
+  biomeArrives(name: string, color: string, width: number, height: number): void {
+    this.text('YOU ENTER', width / 2, height * 0.44, '#ffffff', 16);
+    this.text(name, width / 2, height * 0.49, color, 26);
+    this.flash(hexToRgb(color));
+  }
+
+  /** Leaves the wearer's glow trail behind the flying mushroom. */
+  trail(trail: Trail, x: number, y: number, dt: number): void {
+    if (trail.colors.length === 0) return;
+    this.trailDue += trail.rate * dt;
+    while (this.trailDue >= 1) {
+      this.trailDue -= 1;
+      this.trailIndex = (this.trailIndex + 1) % trail.colors.length;
+      const color = trail.colors[this.trailIndex]!;
+      this.spawn(x - 12, y + (Math.random() - 0.5) * 10, -40 - Math.random() * 30, -trail.rise, 0.6, trail.size, color);
     }
   }
 
@@ -193,6 +227,12 @@ export class Effects {
       case 'coin':
         this.burst(x, y, 12, '#ffd23f', 150, 0.6);
         this.text('+1', x, y - 18, '#ffd23f');
+        break;
+      case 'goldCoin':
+        this.burst(x, y, 30, '#ffd23f', 240, 0.9);
+        this.text(`+${event.coins} GOLDEN!`, x, y - 22, '#ffd23f', 30);
+        this.flash('255, 210, 63');
+        this.shake(0.15, 3);
         break;
       case 'diamond':
         this.burst(x, y, 18, '#3fd8ff', 200, 0.7);

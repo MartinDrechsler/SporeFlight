@@ -365,3 +365,31 @@
     white-space: nowrap;
   }
 }
+
+.list-heading {
+  list-style: none;
+  padding: 10px 4px 2px;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.trail-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 52px;
+  min-width: 52px;
+  color: var(--muted);
+}
+
+.trail-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.trail-unlock {
+  color: var(--gold);
+}

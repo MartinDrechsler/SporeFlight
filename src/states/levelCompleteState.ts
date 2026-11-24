@@ -40,7 +40,7 @@ export function levelCompleteState(ctx: GameContext): State {
         diamonds: world.stats.diamonds,
         diamondsOffered: world.offered.diamonds,
       });
-      addQuest(ctx, 'adventureRuns', 1);
+      addQuest(ctx, 'levelsFinished', 1);
       checkAchievements(ctx);
       ctx.persist();
       updateHud(world, save, { banked: true });

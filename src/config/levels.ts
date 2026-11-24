@@ -10,6 +10,12 @@ export type Stage =
   /** No roots: the Stone Thrower attacks until the time is survived. */
   | { kind: 'boss'; seconds: number };
 
+/** Root indexes: the first, then one every `every` roots (null: just the first). */
+export interface Schedule {
+  first: number;
+  every: number | null;
+}
+
 /**
  * Every mode is described by data. Gameplay code reads these fields and never
  * checks a level's name or number, so a new level is a new entry here.
@@ -47,7 +53,11 @@ export interface LevelConfig {
   /** Now and then a root is left out and a cluster of coins floats in the empty space (from this root on). */
   clearings: { fromRoot: number; chance: number } | null;
   /** Root index of the first diamond, then one every `every` roots (null: just the one). */
-  diamonds: { first: number; every: number | null } | null;
+  diamonds: Schedule | null;
+  /** Roots carrying a crystal vein, on the same kind of schedule. */
+  veins: Schedule | null;
+  /** Chance that a coin is a huge golden one worth 10 (a surprise, so endless only). */
+  goldenCoinChance: number;
   /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
   progressive: boolean;
   /**
@@ -59,9 +69,9 @@ export interface LevelConfig {
 
 type Defaults =
   | 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide'
-  | 'windFromRoot' | 'magnetFromRoot' | 'clearings' | 'diamonds' | 'progressive' | 'view';
+  | 'windFromRoot' | 'magnetFromRoot' | 'clearings' | 'diamonds' | 'veins' | 'goldenCoinChance' | 'progressive' | 'view';
 
-/** An adventure level: fixed layout, one diamond in the climax, everything else off unless set. */
+/** An adventure level: fixed layout, one crystal vein in the climax, everything else off unless set. */
 const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): LevelConfig => {
   const roots = rootCount(config);
   return {
@@ -74,7 +84,9 @@ const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): Leve
     windFromRoot: null,
     magnetFromRoot: 0,
     clearings: null,
-    diamonds: roots > 0 ? { first: roots - 3, every: null } : null,
+    diamonds: null,
+    veins: roots > 0 ? { first: roots - 3, every: null } : null,
+    goldenCoinChance: 0,
     progressive: false,
     view: 'normal',
     ...config,
@@ -90,7 +102,7 @@ export const LEVELS: readonly LevelConfig[] = [
     speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
     // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
     magnetFromRoot: 40, windFromRoot: 120, clearings: { fromRoot: 4, chance: 0.14 },
-    diamonds: { first: 12, every: 20 }, progressive: true,
+    diamonds: { first: 12, every: 20 }, veins: { first: 20, every: 30 }, goldenCoinChance: 0.05, progressive: true,
   }),
   // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.
   level({

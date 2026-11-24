@@ -3,7 +3,8 @@ import { rootLeft, type Root } from './roots';
 
 const M = TUNING.magnet;
 
-export type PickupKind = 'coin' | 'diamond' | 'shield' | 'magnet';
+/** A golden coin is a rare, huge coin worth 10. */
+export type PickupKind = 'coin' | 'goldCoin' | 'diamond' | 'shield' | 'magnet';
 
 /**
  * Something to collect. Most float in the space after a root and ride along
@@ -50,7 +51,7 @@ export function freePickup(kind: PickupKind, x: number, y: number): Pickup {
 
 /** Only valuables are attracted; a magnet never pulls in power-ups. */
 export function isMagnetic(pickup: Pickup): boolean {
-  return pickup.kind === 'coin' || pickup.kind === 'diamond';
+  return pickup.kind === 'coin' || pickup.kind === 'goldCoin' || pickup.kind === 'diamond';
 }
 
 /** Accelerates a nearby valuable toward the mushroom, with damping so it glides in. */

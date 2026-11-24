@@ -55,6 +55,9 @@ export const TUNING = {
 
   pickups: {
     radius: 9,
+    /** A golden coin: drawn bigger, worth 10. */
+    goldenRadius: 14,
+    goldenCoinValue: 10,
     /** Chance that a pickup floats after a root (diamond slots aside). */
     chance: 0.3,
     /** Of those: share of shields and magnets; the rest are coins. */
@@ -114,6 +117,19 @@ export const TUNING = {
     bobSpeed: 1.1,
   },
 
+  /** Crystal veins on root caps: bounce off them three times to break out a diamond. */
+  veins: {
+    hitsToBreak: 3,
+    bounceSpeed: 300,
+    /** A vein above pushes down more gently than one below throws up. */
+    downBounceFactor: 0.6,
+    /** One hit per touch: no second crack for this long, s. */
+    cooldownSeconds: 0.3,
+    crystalHeight: 14,
+    /** The crystal reaches past the column's sides, px. */
+    overhang: 4,
+  },
+
   magnet: {
     seconds: 10,
     range: 100,
@@ -163,12 +179,6 @@ export const TUNING = {
     calmGapBonus: 14,
     calmPickupFactor: 3,
   },
-
-  /** Endless: the painted forest fades in behind the hills as the score grows. */
-  backdrops: [
-    { fromScore: 20, image: 'forest-1' },
-    { fromScore: 40, image: 'forest-2' },
-  ],
 
   session: {
     startLives: 5,
