@@ -7,6 +7,16 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Jump feel
+- **Squeeze and stretch forward** (`render/jump.ts`, drawing only): a tap flattens the mushroom for 50 ms
+  from the very frame of the tap, then it springs long and thin along the jump, leaning right (forward).
+  Upright again at the top of the arc, then it leans further right as the fall speeds up (dive, up to 75
+  degrees). It never leans back to the left any more. The jump itself starts on the tap as before (Schell:
+  answer within a tenth of a second; a crouch before the jump frustrates players).
+- **New flap sound**: a soft squish, then a springy rising "boing" with a puff of air. Each flap is pitched
+  a little up or down at random (6%) so a hundred flaps never sound like one recording (`PITCH_VARIATION`).
+- avatars.html shows one flap frame by frame.
+
 ### Avatar with a face that acts
 - **New look**: the "Button" mushroom Martin picked from four sketches: a wide round red cap with three white
   spots over a chubby white stem, smooth dark outlines, no gills. One drawing (`render/mushroom.ts`) is used in
