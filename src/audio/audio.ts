@@ -106,5 +106,7 @@ function soundFor(event: GameEvent): SoundName | null {
     case 'wind':
     case 'landed':
       return null;
+    case 'finish':
+      return 'reward';
   }
 }

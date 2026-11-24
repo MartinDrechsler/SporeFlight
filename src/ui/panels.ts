@@ -1,10 +1,8 @@
-import { ADVENTURE_LEVELS, starsFor } from '../config/levels';
 import { ACHIEVEMENTS } from '../config/rewards';
 import { SKINS, type Skin } from '../config/skins';
-import { THEMES } from '../config/theme';
 import type { SaveData } from '../core/save';
 import { templateFor } from '../meta/quests';
-import { button, byId, el, setText, starText } from './dom';
+import { button, byId, el, setText } from './dom';
 
 /**
  * Menu lists built from data. Each function only draws; what a button does
@@ -67,20 +65,8 @@ export function renderQuests(save: SaveData, onClaim: (index: number) => void): 
   );
 }
 
-export function renderLevels(save: SaveData, selectedId: number | null, onPick: (levelId: number) => void): void {
-  byId('levels-grid').replaceChildren(
-    ...ADVENTURE_LEVELS.map((level) => {
-      const best = save.levelBest[level.id] ?? 0;
-      const tile = button('', level.id === selectedId ? 'level-tile selected' : 'level-tile', () => onPick(level.id));
-      tile.style.setProperty('--level-color', THEMES[level.theme].accent);
-      tile.append(el('span', 'level-number', String(level.id)), el('span', 'stars', starText(starsFor(best))));
-      return tile;
-    }),
-  );
-}
-
 /** Small drawing of a mushroom in a skin's colours. */
-function skinPreview(skin: Skin): SVGSVGElement {
+export function skinPreview(skin: Skin): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', '-22 -26 44 48');

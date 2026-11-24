@@ -58,8 +58,6 @@ export const TUNING = {
     /** Of those: share of shields and magnets; the rest are coins. */
     shieldShare: 0.2,
     magnetShare: 0.24,
-    diamondFirstRoot: 30,
-    diamondEveryRoots: 30,
     /** Collection is a little stricter than touching, so it feels earned. */
     collectRadiusFactor: 0.7,
     minVerticalOffset: 45,
@@ -110,6 +108,20 @@ export const TUNING = {
    * `surgeRoots` are a surge (tighter, more often moving), then the first
    * `calmRoots` of the next wave are a breather with a better pickup chance.
    */
+  gate: {
+    /** Width of the finish gate's glow, px. */
+    width: 60,
+  },
+
+  /** Inside an adventure level: easy opening, a breather halfway, a climax before the gate. */
+  levelCurve: {
+    openingRoots: 3,
+    breatherRoots: 2,
+    climaxRoots: 5,
+    calmGapBonus: 16,
+    climaxGapShrink: 8,
+  },
+
   waves: {
     length: 10,
     surgeRoots: 4,

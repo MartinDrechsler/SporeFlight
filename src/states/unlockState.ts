@@ -24,7 +24,7 @@ export function unlockState(ctx: GameContext): State {
   return {
     enter() {
       const { coins, diamonds } = ADVENTURE_UNLOCK_COST;
-      setText(byId('unlock-cost'), coins === 0 && diamonds === 0 ? 'FREE' : `${coins} COINS + ${diamonds} DIAMONDS`);
+      setText(byId('unlock-cost'), `${coins} COINS + ${diamonds} DIAMONDS`);
       setText(byId('unlock-have'), `${ctx.save.coins} COINS + ${ctx.save.diamonds} DIAMONDS`);
       byId<HTMLButtonElement>('unlock-confirm').classList.toggle('disabled', !canUnlockAdventure(ctx.save));
       showScreens('unlock');

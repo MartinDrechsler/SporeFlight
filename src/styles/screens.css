@@ -370,3 +370,81 @@
     font-size: 2.1rem;
   }
 }
+
+/* Adventure: how far through the level, with the gate at the end. */
+.hud-progress {
+  position: relative;
+  height: 8px;
+  margin: 10px 8px 0 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hud-progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 4px;
+  background: var(--level-color, var(--accent));
+  box-shadow: 0 0 8px var(--level-color, var(--accent));
+}
+
+.hud-progress-gate {
+  position: absolute;
+  right: -4px;
+  top: -5px;
+  width: 6px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+}
+
+.progress-track {
+  width: 70%;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--level-color, var(--accent));
+}
+
+.panel-title.victory {
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(255, 210, 63, 0.6);
+}
+
+.star-row {
+  display: flex;
+  gap: 14px;
+  font-size: 4.2rem;
+  line-height: 1;
+}
+
+.big-star {
+  color: rgba(143, 184, 173, 0.25);
+}
+
+/* Earned stars fly in one by one; the delay is set per star. */
+.big-star.earned {
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(255, 210, 63, 0.8);
+  animation: star-in 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes star-in {
+  from {
+    opacity: 0;
+    transform: scale(3) rotate(-30deg);
+  }
+}
+
+.panel-text.opened {
+  color: var(--accent);
+}

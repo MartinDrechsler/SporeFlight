@@ -5,7 +5,7 @@ import { crashSpot, isInvulnerable, type World } from '../gameplay/world';
 import { drawBackground, drawDeathMarks } from './background';
 import type { Surface } from './canvas';
 import { drawPlayer } from './drawPlayer';
-import { drawPickup, drawRoot, drawWind } from './drawRoots';
+import { drawGate, drawPickup, drawRoot, drawWind } from './drawRoots';
 import type { Effects } from './effects';
 
 export interface Scene {
@@ -39,6 +39,8 @@ export function renderScene(surface: Surface, scene: Scene): void {
   for (const zone of world.winds) drawWind(ctx, zone, world.groundY, time);
   for (const pickup of world.pickups) drawPickup(ctx, pickup, time);
   for (const root of world.roots) drawRoot(ctx, root, theme, world.groundY, time);
+  const gateX = world.course.gateX;
+  if (gateX !== null) drawGate(ctx, gateX, world.groundY, theme, time, world.course.finished);
   drawPlayer(ctx, world.player, skinById(scene.skinId), {
     crashed: world.crashed,
     shield: world.shield,

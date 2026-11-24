@@ -20,6 +20,7 @@ import { adventureOverState } from './states/adventureOverState';
 import { badgesState } from './states/badgesState';
 import type { GameContext, StateName } from './states/context';
 import { gameOverState } from './states/gameOverState';
+import { levelCompleteState } from './states/levelCompleteState';
 import { levelsState } from './states/levelsState';
 import { playingState } from './states/playingState';
 import { questsState } from './states/questsState';
@@ -79,6 +80,7 @@ const machine = new StateMachine<StateName>({
   gameOver: gameOverState(ctx),
   ad: adState(ctx),
   adventureOver: adventureOverState(ctx),
+  levelComplete: levelCompleteState(ctx),
   shop: shopState(ctx),
   badges: badgesState(ctx),
   quests: questsState(ctx),

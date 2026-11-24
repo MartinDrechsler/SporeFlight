@@ -149,3 +149,34 @@ function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number):
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
 }
+
+/**
+ * The finish gate: two glowing posts with a curtain of light between them,
+ * spanning the whole height. `opened` once the mushroom has flown through.
+ */
+export function drawGate(ctx: CanvasRenderingContext2D, x: number, groundY: number, theme: Theme, time: number, opened: boolean): void {
+  const half = TUNING.gate.width / 2;
+  const curtain = ctx.createLinearGradient(x - half, 0, x + half, 0);
+  const strength = opened ? 0.55 : 0.28 + Math.sin(time * 4) * 0.08;
+  curtain.addColorStop(0, 'rgba(255, 210, 63, 0)');
+  curtain.addColorStop(0.5, `rgba(255, 210, 63, ${strength})`);
+  curtain.addColorStop(1, 'rgba(255, 210, 63, 0)');
+  ctx.fillStyle = curtain;
+  ctx.fillRect(x - half, 0, half * 2, groundY);
+
+  ctx.save();
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = '#ffd23f';
+  for (const side of [-1, 1]) ctx.fillRect(x + side * half - 3, 0, 6, groundY);
+  ctx.restore();
+
+  // Sparks rising through the curtain.
+  ctx.fillStyle = theme.accent;
+  for (let i = 0; i < 10; i++) {
+    const y = groundY - ((time * 90 + i * (groundY / 10)) % groundY);
+    ctx.beginPath();
+    ctx.arc(x + Math.sin(time * 3 + i) * half * 0.6, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}

@@ -13,7 +13,7 @@ export interface Theme {
 }
 
 export type ThemeId =
-  | 'classic' | 'glowfly' | 'amber' | 'ice' | 'purple'
+  | 'classic' | 'dawn' | 'canopy' | 'amber' | 'ice' | 'purple'
   | 'red' | 'orange' | 'green' | 'crimson' | 'biolume';
 
 const theme = (
@@ -29,7 +29,8 @@ const theme = (
 
 export const THEMES: Record<ThemeId, Theme> = {
   classic: theme(['#03100d', '#071c17', '#0b2620'], '#0a1f1b', '#0d2a24', '#06140f', '#00f2c3', '#0b201c', '#1a4a40', 'rgba(0, 242, 195, 0.45)'),
-  glowfly: theme(['#020806', '#051f15', '#0a2a1e'], '#071a13', '#0b281d', '#04140e', '#ffeb3b', '#0b3022', '#114532', 'rgba(255, 230, 80, 0.65)'),
+  dawn: theme(['#0d0710', '#2a1426', '#4a2a30'], '#1c0f1a', '#26141f', '#160b12', '#ffb37a', '#2e1a22', '#4a2c34', 'rgba(255, 179, 122, 0.5)'),
+  canopy: theme(['#020806', '#051f15', '#0a2a1e'], '#071a13', '#0b281d', '#04140e', '#ffeb3b', '#0b3022', '#114532', 'rgba(255, 230, 80, 0.65)'),
   amber: theme(['#070502', '#151006', '#21180a'], '#120d05', '#1c1308', '#1c1305', '#ffaa00', '#382912', '#4f3c1d', 'rgba(255, 170, 0, 0.55)'),
   ice: theme(['#01050a', '#030f1c', '#071a2b'], '#03101c', '#061a2d', '#02101c', '#00e5ff', '#0a263d', '#133e5c', 'rgba(0, 229, 255, 0.55)'),
   purple: theme(['#05010a', '#10031c', '#19062b'], '#0c0216', '#140424', '#11021c', '#bd00ff', '#2b0a3d', '#40135c', 'rgba(189, 0, 255, 0.55)'),

@@ -1,50 +1,54 @@
-import { ENDLESS_LEVEL_ID, levelById } from '../config/levels';
+import { levelById } from '../config/levels';
+import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
-import { byId, setText } from '../ui/dom';
-import { renderLevels } from '../ui/panels';
+import { currentLevelId, isLevelOpen, levelStars } from '../meta/adventure';
+import { byId, setText, starText } from '../ui/dom';
+import { renderMap, scrollMapTo, showMapStars } from '../ui/map';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { onBack } from './menu';
 import { startRound } from './round';
 
-/** Adventure level select: tap a level to read its trial, tap it again to fly. */
+/** The Adventure map: tap a stop on the path to read about it, then fly. */
 export function levelsState(ctx: GameContext): State {
-  let selected: number | null = null;
+  let selected = 1;
   onBack(ctx, 'screen-levels', 'start');
-  byId('level-endless').addEventListener('click', () => {
-    ctx.audio.ui('click');
-    ctx.go('start');
+  byId('map-play').addEventListener('click', () => {
+    if (!isLevelOpen(ctx.save, selected)) return;
+    ctx.audio.unlock();
+    startRound(ctx, selected);
   });
 
   const pick = (levelId: number): void => {
     ctx.audio.unlock();
-    if (selected === levelId) {
-      startRound(ctx, levelId);
-      return;
-    }
+    ctx.audio.ui(isLevelOpen(ctx.save, levelId) ? 'click' : 'error');
     selected = levelId;
-    ctx.audio.ui('click');
     render();
   };
 
   const render = (): void => {
-    renderLevels(ctx.save, selected, pick);
-    const level = selected === null ? null : levelById(selected);
-    const name = byId('level-info-name');
-    setText(name, level ? `${level.id}. ${level.name}` : 'SELECT A LEVEL');
-    name.style.setProperty('--level-color', level ? THEMES[level.theme].accent : '');
-    setText(
-      byId('level-info-text'),
-      level ? `${level.description} Tap again to fly.` : 'Tap a level to see its trial, tap again to fly. Every level starts at score 0.',
-    );
+    const save = ctx.save;
+    renderMap(save, currentLevelId(save), selected, skinById(save.activeSkin), pick);
+    showMapStars(save);
+    const level = levelById(selected);
+    const open = isLevelOpen(save, level.id);
+    const name = byId('map-card-name');
+    setText(name, `${level.id}. ${level.name}`);
+    name.style.setProperty('--level-color', THEMES[level.theme].accent);
+    setText(byId('map-card-stars'), starText(levelStars(save, level.id)));
+    setText(byId('map-card-text'), open ? level.description : `Finish level ${level.id - 1} to open this one.`);
+    byId('map-play').hidden = !open;
   };
 
   return {
     enter() {
-      selected = ctx.levelId === ENDLESS_LEVEL_ID ? null : ctx.levelId;
+      // Coming back from a level shows that level; otherwise the one the player is up to.
+      const last = ctx.levelId;
+      selected = last !== 0 && isLevelOpen(ctx.save, last) ? last : currentLevelId(ctx.save);
       render();
       showScreens('levels');
+      scrollMapTo(selected);
     },
   };
 }

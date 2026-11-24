@@ -1,4 +1,3 @@
-import { LEVELS } from '../config/levels';
 import type { QuestKind } from '../config/rewards';
 import { DEFAULT_SKIN_ID, SKINS } from '../config/skins';
 import { TUNING } from '../config/tuning';
@@ -15,13 +14,13 @@ export interface QuestState {
 }
 
 export interface SaveData {
-  version: 3;
+  version: 4;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
   bestScore: number;
-  /** Best score per adventure level, indexed by level id (index 0 unused). */
-  levelBest: number[];
+  /** Stars (1 to 3) per finished adventure level id. A level opens when the one before has stars. */
+  levelStars: Record<string, number>;
   coins: number;
   diamonds: number;
   lives: number;
@@ -43,10 +42,10 @@ const QUEST_KINDS: readonly QuestKind[] = ['flaps', 'coins', 'nearMisses', 'adve
 
 export function defaultSave(): SaveData {
   return {
-    version: 3,
+    version: 4,
     username: null,
     bestScore: 0,
-    levelBest: LEVELS.map(() => 0),
+    levelStars: {},
     coins: 0,
     diamonds: 0,
     lives: TUNING.session.startLives,
@@ -70,13 +69,13 @@ export function migrate(raw: unknown): SaveData {
   const ownedSkins = stringList(data.ownedSkins).filter((id) => SKINS.some((skin) => skin.id === id));
   if (!ownedSkins.includes(DEFAULT_SKIN_ID)) ownedSkins.unshift(DEFAULT_SKIN_ID);
   const activeSkin = typeof data.activeSkin === 'string' && ownedSkins.includes(data.activeSkin) ? data.activeSkin : DEFAULT_SKIN_ID;
-  const levelBest = base.levelBest.map((_, i) => count(Array.isArray(data.levelBest) ? data.levelBest[i] : 0, 0));
 
   return {
-    version: 3,
+    version: 4,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
-    levelBest,
+    // Version 4 brought a new set of levels, so older per-level results do not carry over.
+    levelStars: cleanStars(data.levelStars),
     coins: count(data.coins, 0),
     diamonds: count(data.diamonds, 0),
     lives: count(data.lives, base.lives),
@@ -159,6 +158,16 @@ function cleanDeathMarks(value: unknown): Record<string, number[]> {
   const marks: Record<string, number[]> = {};
   for (const [level, list] of Object.entries(value)) marks[level] = numberList(list);
   return marks;
+}
+
+function cleanStars(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  const stars: Record<string, number> = {};
+  for (const [level, n] of Object.entries(value)) {
+    const clean = Math.min(3, count(n, 0));
+    if (clean > 0) stars[level] = clean;
+  }
+  return stars;
 }
 
 function cleanQuests(value: unknown): SaveData['quests'] {

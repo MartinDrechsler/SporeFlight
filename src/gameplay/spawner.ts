@@ -1,4 +1,4 @@
-import type { LevelConfig } from '../config/levels';
+import { rootCount, type LevelConfig } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import type { Pickup, PickupKind } from './pickups';
@@ -9,15 +9,27 @@ const R = TUNING.roots;
 const PK = TUNING.pickups;
 const WD = TUNING.wind;
 const WV = TUNING.waves;
+const LC = TUNING.levelCurve;
 
-/** Where a root sits in endless's rhythm of tension and release. */
+/** Where a root sits in the rhythm of tension and release. Calm roots are still and wider; surges are tighter. */
 export type WavePhase = 'calm' | 'normal' | 'surge';
 
+/**
+ * Endless runs in repeating waves. An adventure level follows one interest
+ * curve: an easy opening, a breather halfway, and a climax before the gate.
+ */
 export function wavePhase(level: LevelConfig, index: number): WavePhase {
-  if (!level.progressive) return 'normal';
-  const position = index % WV.length;
-  if (position >= WV.length - WV.surgeRoots) return 'surge';
-  if (index >= WV.length && position < WV.calmRoots) return 'calm';
+  if (level.progressive) {
+    const position = index % WV.length;
+    if (position >= WV.length - WV.surgeRoots) return 'surge';
+    if (index >= WV.length && position < WV.calmRoots) return 'calm';
+    return 'normal';
+  }
+  const total = rootCount(level);
+  const half = Math.floor(total / 2);
+  if (index < LC.openingRoots) return 'calm';
+  if (index >= half && index < half + LC.breatherRoots) return 'calm';
+  if (index >= total - LC.climaxRoots) return 'surge';
   return 'normal';
 }
 
@@ -51,7 +63,9 @@ export function makeRoot(
     centerMin,
     centerMax,
     motion: chooseMotion(rng, level, index, gapCenter),
-    gapPulse: level.gapPulse ? { min: level.gap.min, max: level.gap.max, phase: rng.range(0, Math.PI * 2) } : null,
+    gapPulse: level.gapPulse
+      ? { min: level.gap.min + gapBonus(level, index), max: level.gap.max + gapBonus(level, index), phase: rng.range(0, Math.PI * 2) }
+      : null,
     slidePhase: level.slide ? rng.range(0, Math.PI * 2) : null,
     passed: false,
     nearMissCounted: false,
@@ -59,26 +73,34 @@ export function makeRoot(
 }
 
 export function gapSizeFor(level: LevelConfig, index: number): number {
-  if (level.progressive) {
-    const base = Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot);
-    const wave = Math.floor(index / WV.length);
-    switch (wavePhase(level, index)) {
-      case 'surge':
-        return base - Math.min(WV.surgeGapShrinkMax, WV.surgeGapShrink + wave * WV.surgeGapShrinkPerWave);
-      case 'calm':
-        return base + WV.calmGapBonus;
-      case 'normal':
-        return base;
-    }
+  const base = level.progressive
+    ? Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot)
+    : (level.gap.min + level.gap.max) / 2;
+  return base + gapBonus(level, index);
+}
+
+/** Extra gap from the rhythm: positive on calm roots, negative in a surge. */
+function gapBonus(level: LevelConfig, index: number): number {
+  const phase = wavePhase(level, index);
+  if (!level.progressive) {
+    if (phase === 'calm') return LC.calmGapBonus;
+    return phase === 'surge' ? -LC.climaxGapShrink : 0;
   }
-  if (level.gapPulse) return (level.gap.min + level.gap.max) / 2;
-  return level.gap.min;
+  const wave = Math.floor(index / WV.length);
+  switch (phase) {
+    case 'surge':
+      return -Math.min(WV.surgeGapShrinkMax, WV.surgeGapShrink + wave * WV.surgeGapShrinkPerWave);
+    case 'calm':
+      return WV.calmGapBonus;
+    case 'normal':
+      return 0;
+  }
 }
 
 /** The pickup floating in the open space after a root, if any. */
 export function makePickup(rng: Random, root: Root, index: number, level: LevelConfig, field: Field): Pickup | null {
   const chance = wavePhase(level, index) === 'calm' ? PK.chance * WV.calmPickupFactor : PK.chance;
-  const kind = choosePickupKind(rng, index, chance, index >= level.magnetFromRoot);
+  const kind = choosePickupKind(rng, level, index, chance);
   if (kind === null) return null;
 
   const wantedY = root.gapCenter + rng.sign() * rng.range(PK.minVerticalOffset, PK.maxVerticalOffset);
@@ -100,14 +122,20 @@ export function nextWindDistance(rng: Random): number {
   return rng.range(WD.minInterval, WD.maxInterval);
 }
 
-function choosePickupKind(rng: Random, index: number, chance: number, magnetAllowed: boolean): PickupKind | null {
-  const isDiamondSlot = index >= PK.diamondFirstRoot && (index - PK.diamondFirstRoot) % PK.diamondEveryRoots === 0;
-  if (isDiamondSlot) return 'diamond';
+function choosePickupKind(rng: Random, level: LevelConfig, index: number, chance: number): PickupKind | null {
+  if (isDiamondRoot(level, index)) return 'diamond';
+  const magnetAllowed = index >= level.magnetFromRoot;
   if (!rng.chance(chance)) return null;
   const roll = rng.next();
   if (roll < PK.shieldShare) return 'shield';
   if (roll < PK.shieldShare + PK.magnetShare) return magnetAllowed ? 'magnet' : 'coin';
   return 'coin';
+}
+
+function isDiamondRoot(level: LevelConfig, index: number): boolean {
+  const d = level.diamonds;
+  if (!d || index < d.first) return false;
+  return d.every === null ? index === d.first : (index - d.first) % d.every === 0;
 }
 
 function chooseCenter(

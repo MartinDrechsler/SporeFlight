@@ -82,14 +82,28 @@ export class Effects {
         // A puff of spores where the mushroom lands; its clump grows from here.
         this.burst(event.x, event.y + 14, 14, '#f2ead8', 90, 0.6);
         break;
+      case 'finish':
+        // The gate opens in light.
+        for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);
+        this.flash(hexToRgb(accent));
+        break;
     }
   }
 
   /** Celebrates a new best score at the end of a round. */
   newBest(width: number, height: number): void {
     this.text('NEW BEST!', width / 2, height * 0.42, '#ffd23f', 40);
+    this.confetti(width / 2, height * 0.42, '#ff5e9c');
+  }
+
+  /** Confetti of spores for a finished level. */
+  celebrate(width: number, height: number, accent: string): void {
+    this.confetti(width / 2, height * 0.2, accent);
+  }
+
+  private confetti(x: number, y: number, color: string): void {
     for (let i = 0; i < 50; i++) {
-      this.spawn(width / 2, height * 0.42, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : '#ff5e9c');
+      this.spawn(x, y, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : color);
     }
   }
 
