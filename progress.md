@@ -23,6 +23,9 @@ app stores, playtesting).
   glassy diamond, shield and magnet pickups, near-miss swish, shield pop, crash thud, landing, wind gust,
   boss growl and throw, vein clink and shatter, milestone, finish fanfare, badge fanfare, quest, new best,
   level stars, new biome, shop purchase, menu click, error. The speaker button mutes all of it.
+- **Fixed: no sound on iPhone.** iPhone Safari only starts audio from the end of a touch or a click; the game
+  unlocked it at the start of a touch. Every finished touch now unlocks it (and resumes it after iOS
+  interrupts it). Note: with the iPhone's silent switch on, iOS mutes web audio.
 
 ### Phase 4 changes
 - **World and country leaderboard** for endless, opt-in: JOIN shows what is stored (name, country, best
