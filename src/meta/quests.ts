@@ -20,7 +20,8 @@ export function dayKey(time: number): string {
 /** Picks a fresh set of quests when the day has changed. Returns true if it did. */
 export function refreshQuests(save: SaveData, today: string, rng: Random): boolean {
   if (save.quests.day === today && save.quests.list.length > 0) return false;
-  const pool = [...QUEST_POOL];
+  // Adventure quests only once Adventure is open, so every quest can be done today.
+  const pool = QUEST_POOL.filter((template) => save.adventureUnlocked || !template.needsAdventure);
   const list: QuestState[] = [];
   while (list.length < QUESTS_PER_DAY && pool.length > 0) {
     const [template] = pool.splice(Math.floor(rng.next() * pool.length), 1);
@@ -30,14 +31,18 @@ export function refreshQuests(save: SaveData, today: string, rng: Random): boole
   return true;
 }
 
-/** Adds progress and returns the quests that just reached their target. */
+/**
+ * Adds progress and returns the quests that just reached their target. For a
+ * 'best' quest, `amount` is the current run's value and the best one counts.
+ */
 export function addQuestProgress(save: SaveData, kind: QuestKind, amount: number): QuestTemplate[] {
   const completed: QuestTemplate[] = [];
   for (const quest of save.quests.list) {
     if (quest.kind !== kind || quest.claimed) continue;
     const template = templateFor(kind);
     const before = quest.progress;
-    quest.progress = Math.min(template.target, quest.progress + amount);
+    const value = template.mode === 'best' ? Math.max(quest.progress, amount) : quest.progress + amount;
+    quest.progress = Math.min(template.target, value);
     if (before < template.target && quest.progress >= template.target) completed.push(template);
   }
   return completed;

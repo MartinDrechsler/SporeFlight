@@ -1,3 +1,4 @@
+import { trailById } from '../config/trails';
 import type { State } from '../core/stateMachine';
 import { flapPlayer, stepWorld } from '../gameplay/world';
 import { updateHud } from '../ui/hud';
@@ -16,6 +17,8 @@ export function playingState(ctx: GameContext): State {
 
     update(dt) {
       stepWorld(ctx.world, dt);
+      const { player } = ctx.world;
+      ctx.effects.trail(trailById(ctx.save.activeTrail), player.x, player.y, dt);
       deliverEvents(ctx);
       checkAchievements(ctx);
       updateHud(ctx.world, ctx.save);

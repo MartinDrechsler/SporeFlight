@@ -96,7 +96,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
     roots: [],
     pickups: [],
     winds: [],
-    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0 },
+    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0 },
     offered: { coins: 0, diamonds: 0 },
     rootsSpawned: 0,
     rootsPassed: 0,

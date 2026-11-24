@@ -1,5 +1,6 @@
 import { ADVENTURE_UNLOCK_COST, ENDLESS_LEVEL_ID } from '../config/levels';
-import { SKINS } from '../config/skins';
+import { SKINS, type Price } from '../config/skins';
+import { TRAILS } from '../config/trails';
 import { TUNING } from '../config/tuning';
 import type { SaveData } from '../core/save';
 
@@ -36,20 +37,45 @@ export function bankRound(save: SaveData, result: RoundResult): boolean {
 
 export type PurchaseResult = 'bought' | 'owned' | 'tooExpensive';
 
-export function buySkin(save: SaveData, skinId: string): PurchaseResult {
-  const skin = SKINS.find((s) => s.id === skinId);
-  if (!skin) return 'tooExpensive';
-  if (save.ownedSkins.includes(skinId)) return 'owned';
-  if (save.coins < skin.cost) return 'tooExpensive';
-  save.coins -= skin.cost;
-  save.ownedSkins.push(skinId);
-  save.activeSkin = skinId;
+/** The two kinds of looks: cap colours and glow trails. */
+export type LookKind = 'skin' | 'trail';
+
+function catalog(kind: LookKind): readonly { id: string; price: Price }[] {
+  return kind === 'skin' ? SKINS : TRAILS;
+}
+
+function owned(save: SaveData, kind: LookKind): string[] {
+  return kind === 'skin' ? save.ownedSkins : save.ownedTrails;
+}
+
+export function ownsLook(save: SaveData, kind: LookKind, id: string): boolean {
+  return owned(save, kind).includes(id);
+}
+
+/** True when the player has enough coins or diamonds. Badge looks cannot be bought. */
+export function canAfford(save: SaveData, price: Price): boolean {
+  if ('coins' in price) return save.coins >= price.coins;
+  if ('diamonds' in price) return save.diamonds >= price.diamonds;
+  return false;
+}
+
+/** Buys a look and wears it straight away. */
+export function buyLook(save: SaveData, kind: LookKind, id: string): PurchaseResult {
+  const look = catalog(kind).find((item) => item.id === id);
+  if (!look) return 'tooExpensive';
+  if (ownsLook(save, kind, id)) return 'owned';
+  if (!canAfford(save, look.price)) return 'tooExpensive';
+  if ('coins' in look.price) save.coins -= look.price.coins;
+  if ('diamonds' in look.price) save.diamonds -= look.price.diamonds;
+  owned(save, kind).push(id);
+  selectLook(save, kind, id);
   return 'bought';
 }
 
-export function selectSkin(save: SaveData, skinId: string): boolean {
-  if (!save.ownedSkins.includes(skinId)) return false;
-  save.activeSkin = skinId;
+export function selectLook(save: SaveData, kind: LookKind, id: string): boolean {
+  if (!ownsLook(save, kind, id)) return false;
+  if (kind === 'skin') save.activeSkin = id;
+  else save.activeTrail = id;
   return true;
 }
 

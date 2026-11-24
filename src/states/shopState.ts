@@ -1,19 +1,19 @@
 import type { State } from '../core/stateMachine';
-import { buySkin, selectSkin } from '../meta/economy';
+import { buyLook, selectLook } from '../meta/economy';
 import { renderShop } from '../ui/panels';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { onBack } from './menu';
 
-/** Buy and choose mushroom skins with coins. */
+/** Buy and wear mushroom colours and glow trails. */
 export function shopState(ctx: GameContext): State {
   onBack(ctx, 'screen-shop', 'start');
 
   const render = (): void =>
     renderShop(
       ctx.save,
-      (skin) => {
-        if (buySkin(ctx.save, skin.id) === 'bought') {
+      (item) => {
+        if (buyLook(ctx.save, item.kind, item.id) === 'bought') {
           ctx.audio.ui('buy');
           ctx.persist();
         } else {
@@ -21,8 +21,8 @@ export function shopState(ctx: GameContext): State {
         }
         render();
       },
-      (skin) => {
-        selectSkin(ctx.save, skin.id);
+      (item) => {
+        selectLook(ctx.save, item.kind, item.id);
         ctx.audio.ui('click');
         ctx.persist();
         render();

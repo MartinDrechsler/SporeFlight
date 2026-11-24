@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ADVENTURE_UNLOCK_COST } from '../src/config/levels';
-import { QUESTS_PER_DAY } from '../src/config/rewards';
+import { QUEST_POOL, QUESTS_PER_DAY } from '../src/config/rewards';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '../src/core/save';
 import { finishLevel, isLevelOpen, starsFor, currentLevelId } from '../src/meta/adventure';
 import { unlockAchievements } from '../src/meta/achievements';
-import { bankRound, buySkin, refillLives, rest, selectSkin, unlockAdventure } from '../src/meta/economy';
+import { bankRound, buyLook, refillLives, rest, selectLook, unlockAdventure } from '../src/meta/economy';
 import { addQuestProgress, claimableCount, claimQuest, dayKey, refreshQuests } from '../src/meta/quests';
 
 function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
@@ -14,7 +14,7 @@ function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
   return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v) };
 }
 
-const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0 };
+const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, endless: true };
 
 describe('save', () => {
   it('returns defaults when nothing or garbage is saved', () => {
@@ -34,13 +34,23 @@ describe('save', () => {
   it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
     const fromV1 = migrate(v1);
-    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([4, 40, 7, 3, false]);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([5, 40, 7, 3, false]);
     const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
     expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
     // Version 4 replaced the levels: old per-level scores do not become stars.
     const fromV3 = migrate({ version: 3, levelBest: [0, 25, 12], levelStars: { '2': 9, '3': 'x' } });
     expect(fromV3.levelStars).toEqual({ '2': 3 });
     expect('levelBest' in fromV3).toBe(false);
+    // Version 5: new quest pool (old quests replaced), trails added, removed badges dropped, badge trails owned.
+    const fromV4 = migrate({
+      version: 4,
+      achievements: ['fledgling_flapper', 'near_miss_master'],
+      quests: { day: '2026-11-24', list: [{ kind: 'flaps', progress: 3, claimed: false }] },
+    });
+    expect(fromV4.quests).toEqual({ day: '', list: [] });
+    expect(fromV4.achievements).toEqual(['near_miss_master']);
+    expect(fromV4.ownedTrails).toEqual(['none', 'gold']);
+    expect(fromV4.activeTrail).toBe('none');
   });
 
   it('round-trips through storage', () => {
@@ -77,14 +87,22 @@ describe('economy', () => {
     expect([save.lives, save.restSecondsLeft]).toEqual([TUNING.session.refillLives, 0]);
   });
 
-  it('buys and selects skins only when affordable and owned', () => {
-    const save = { ...defaultSave(), coins: 20 };
-    expect(buySkin(save, 'cosmic')).toBe('tooExpensive');
-    expect(selectSkin(save, 'cosmic')).toBe(false);
-    expect(buySkin(save, 'emerald')).toBe('bought');
-    expect([save.coins, save.activeSkin]).toEqual([5, 'emerald']);
-    expect(buySkin(save, 'emerald')).toBe('owned');
-    expect(selectSkin(save, 'classic')).toBe(true);
+  it('buys looks with coins or diamonds, only when affordable, and wears them', () => {
+    const save = { ...defaultSave(), coins: 60, diamonds: 4 };
+    expect(buyLook(save, 'skin', 'cosmic')).toBe('tooExpensive');
+    expect(selectLook(save, 'skin', 'cosmic')).toBe(false);
+    expect(buyLook(save, 'skin', 'emerald')).toBe('bought');
+    expect([save.coins, save.activeSkin]).toEqual([10, 'emerald']);
+    expect(buyLook(save, 'skin', 'emerald')).toBe('owned');
+    expect(buyLook(save, 'skin', 'crystal')).toBe('tooExpensive');
+    expect(buyLook(save, 'trail', 'stardust')).toBe('bought');
+    expect([save.diamonds, save.activeTrail]).toEqual([1, 'stardust']);
+    expect(selectLook(save, 'skin', 'classic')).toBe(true);
+  });
+
+  it('badge trails cannot be bought, whatever you have', () => {
+    const save = { ...defaultSave(), coins: 9999, diamonds: 999 };
+    expect(buyLook(save, 'trail', 'rainbow')).toBe('tooExpensive');
   });
 
   it('unlocks adventure mode for its price', () => {
@@ -95,18 +113,36 @@ describe('economy', () => {
 });
 
 describe('achievements', () => {
-  it('unlocks once and pays its reward', () => {
+  it('badges are honour: unlocked once, no coins, and only endless scores count for endless badges', () => {
     const save = defaultSave();
+    expect(unlockAchievements(save, { ...noStats, score: 30, endless: false })).toEqual([]);
     const first = unlockAchievements(save, { ...noStats, score: 10 });
-    expect(first.map((a) => a.id)).toEqual(['fledgling_flapper']);
-    expect(save.coins).toBe(5);
-    expect(unlockAchievements(save, { ...noStats, score: 50 })).toEqual([]);
+    expect(first.map((a) => a.id)).toEqual(['sprout']);
+    expect(save.coins).toBe(0);
+    expect(unlockAchievements(save, { ...noStats, score: 10 })).toEqual([]);
+  });
+
+  it('a badge brings its trail, which can then be worn', () => {
+    const save = defaultSave();
+    unlockAchievements(save, { ...noStats, score: 50 });
+    expect(save.achievements).toContain('forest_legend');
+    expect(save.ownedTrails).toContain('rainbow');
+    expect(selectLook(save, 'trail', 'rainbow')).toBe(true);
+  });
+
+  it('adventure badges follow finished levels and stars', () => {
+    const save = defaultSave();
+    for (let id = 1; id <= 5; id++) save.levelStars[String(id)] = 1;
+    expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['stone_breaker']);
+    for (let id = 1; id <= 10; id++) save.levelStars[String(id)] = 3;
+    expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['storm_rider', 'perfect_explorer', 'forest_master']);
+    expect(save.ownedTrails).toEqual(expect.arrayContaining(['lightning', 'aurora']));
   });
 
   it('three stars on any level earns the explorer badge', () => {
     const save = defaultSave();
     save.levelStars['3'] = 3;
-    expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['perfect_explorer']);
+    expect(unlockAchievements(save, { ...noStats, endless: false }).map((a) => a.id)).toEqual(['perfect_explorer']);
   });
 });
 
@@ -150,16 +186,35 @@ describe('daily quests', () => {
     expect(refreshQuests(save, '2026-11-24', createRandom(2))).toBe(true);
   });
 
-  it('completes, claims once and pays', () => {
+  it('completes, claims once and pays a small reward', () => {
     const save = defaultSave();
     save.quests = { day: 'x', list: [{ kind: 'flaps', progress: 0, claimed: false }] };
-    expect(addQuestProgress(save, 'flaps', 59)).toEqual([]);
+    expect(addQuestProgress(save, 'flaps', 99)).toEqual([]);
     expect(addQuestProgress(save, 'flaps', 5).map((q) => q.kind)).toEqual(['flaps']);
-    expect(save.quests.list[0]!.progress).toBe(60);
+    expect(save.quests.list[0]!.progress).toBe(100);
     expect(claimableCount(save)).toBe(1);
-    expect(claimQuest(save, 0)).toBe(20);
+    expect(claimQuest(save, 0)).toBe(5);
     expect(claimQuest(save, 0)).toBe(0);
-    expect(save.coins).toBe(20);
+    expect(save.coins).toBe(5);
+  });
+
+  it("a 'best' quest takes the best single run, not a sum", () => {
+    const save = defaultSave();
+    save.quests = { day: 'x', list: [{ kind: 'endlessScore', progress: 0, claimed: false }] };
+    addQuestProgress(save, 'endlessScore', 9);
+    addQuestProgress(save, 'endlessScore', 7);
+    expect(save.quests.list[0]!.progress).toBe(9);
+    expect(addQuestProgress(save, 'endlessScore', 15).map((q) => q.kind)).toEqual(['endlessScore']);
+  });
+
+  it('every quest pays 5 to 15 coins, and Adventure quests wait until Adventure is open', () => {
+    for (const template of QUEST_POOL) expect(template.reward).toBeGreaterThanOrEqual(5);
+    for (const template of QUEST_POOL) expect(template.reward).toBeLessThanOrEqual(15);
+    for (let seed = 1; seed < 30; seed++) {
+      const save = defaultSave();
+      refreshQuests(save, 'd', createRandom(seed));
+      expect(save.quests.list.some((q) => q.kind === 'levelsFinished')).toBe(false);
+    }
   });
 
   it('formats the local day', () => {

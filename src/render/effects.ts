@@ -1,3 +1,4 @@
+import type { Trail } from '../config/trails';
 import { toScreen, type View } from './view';
 import type { GameEvent } from '../gameplay/world';
 
@@ -30,7 +31,7 @@ interface FloatingText {
   size: number;
 }
 
-const POOL_SIZE = 220;
+const POOL_SIZE = 320;
 const TEXT_SECONDS = 1.1;
 
 export class Effects {
@@ -43,6 +44,9 @@ export class Effects {
   private shakeStrength = 0;
   private flashTime = 0;
   private flashColor = '255, 215, 0';
+  /** Trail particles owed, and which colour comes next. */
+  private trailDue = 0;
+  private trailIndex = 0;
 
   /** Turns gameplay events into visuals. `px, py` is the player, `width, height` the field. */
   react(event: GameEvent, px: number, py: number, width: number, height: number, flapColor: string, accent: string): void {
@@ -93,6 +97,18 @@ export class Effects {
         for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);
         this.flash(hexToRgb(accent));
         break;
+    }
+  }
+
+  /** Leaves the wearer's glow trail behind the flying mushroom. */
+  trail(trail: Trail, x: number, y: number, dt: number): void {
+    if (trail.colors.length === 0) return;
+    this.trailDue += trail.rate * dt;
+    while (this.trailDue >= 1) {
+      this.trailDue -= 1;
+      this.trailIndex = (this.trailIndex + 1) % trail.colors.length;
+      const color = trail.colors[this.trailIndex]!;
+      this.spawn(x - 12, y + (Math.random() - 0.5) * 10, -40 - Math.random() * 30, -trail.rise, 0.6, trail.size, color);
     }
   }
 

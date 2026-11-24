@@ -1,5 +1,7 @@
 import { ACHIEVEMENTS } from '../config/rewards';
-import { SKINS, type Skin } from '../config/skins';
+import { SKINS, type Price, type Skin } from '../config/skins';
+import { TRAILS, trailById, type Trail } from '../config/trails';
+import { canAfford, ownsLook, type LookKind } from '../meta/economy';
 import type { SaveData } from '../core/save';
 import { templateFor } from '../meta/quests';
 import { button, byId, el, setText } from './dom';
@@ -8,24 +10,64 @@ import { button, byId, el, setText } from './dom';
  * Menu lists built from data. Each function only draws; what a button does
  * is passed in by the state that owns the screen.
  */
-export function renderShop(save: SaveData, onBuy: (skin: Skin) => void, onSelect: (skin: Skin) => void): void {
-  setText(byId('shop-coins'), save.coins);
-  const list = byId('shop-list');
-  list.replaceChildren(
-    ...SKINS.map((skin) => {
-      const item = el('li', 'item');
-      item.append(skinPreview(skin));
-      const info = el('div', 'item-info');
-      info.append(el('span', 'item-name', skin.name), el('span', 'item-detail coins', skin.cost === 0 ? 'FREE' : `${skin.cost} COINS`));
-      item.append(info);
+/** A look in the shop, with what it costs and whether the player can wear it. */
+export interface ShopItem {
+  kind: LookKind;
+  id: string;
+  name: string;
+  price: Price;
+  preview: () => Element;
+}
 
-      const owned = save.ownedSkins.includes(skin.id);
-      if (save.activeSkin === skin.id) item.append(button('SELECTED', 'item-button', null));
-      else if (owned) item.append(button('SELECT', 'item-button', () => onSelect(skin)));
-      else item.append(button(`BUY ${skin.cost}`, 'item-button buy', save.coins >= skin.cost ? () => onBuy(skin) : null));
-      return item;
-    }),
+/** The shop: mushroom colours, then glow trails. */
+export function renderShop(save: SaveData, onBuy: (item: ShopItem) => void, onSelect: (item: ShopItem) => void): void {
+  setText(byId('shop-coins'), save.coins);
+  setText(byId('shop-diamonds'), save.diamonds);
+  const skins: ShopItem[] = SKINS.map((skin) => ({ kind: 'skin', id: skin.id, name: skin.name, price: skin.price, preview: () => skinPreview(skin) }));
+  const trails: ShopItem[] = TRAILS.map((trail) => ({ kind: 'trail', id: trail.id, name: trail.name, price: trail.price, preview: () => trailPreview(trail) }));
+  const row = (item: ShopItem): HTMLElement => {
+    const li = el('li', 'item');
+    li.append(item.preview());
+    const info = el('div', 'item-info');
+    info.append(el('span', 'item-name', item.name), el('span', `item-detail ${priceClass(item.price)}`, priceText(item.price)));
+    li.append(info);
+    const active = item.kind === 'skin' ? save.activeSkin : save.activeTrail;
+    if (active === item.id) li.append(button('WEARING', 'item-button', null));
+    else if (ownsLook(save, item.kind, item.id)) li.append(button('WEAR', 'item-button', () => onSelect(item)));
+    else if ('badge' in item.price) li.append(button('BADGE', 'item-button', null));
+    else li.append(button('BUY', 'item-button buy', canAfford(save, item.price) ? () => onBuy(item) : null));
+    return li;
+  };
+  byId('shop-list').replaceChildren(
+    el('li', 'list-heading', 'MUSHROOMS'),
+    ...skins.map(row),
+    el('li', 'list-heading', 'GLOW TRAILS'),
+    ...trails.map(row),
   );
+}
+
+function priceText(price: Price): string {
+  if ('badge' in price) return `BADGE: ${ACHIEVEMENTS.find((a) => a.id === price.badge)?.name ?? '?'}`;
+  if ('diamonds' in price) return `${price.diamonds} DIAMONDS`;
+  return price.coins === 0 ? 'FREE' : `${price.coins} COINS`;
+}
+
+function priceClass(price: Price): string {
+  if ('badge' in price) return '';
+  return 'diamonds' in price ? 'diamonds' : 'coins';
+}
+
+/** A row of the trail's colours, as dots that fade out behind. */
+function trailPreview(trail: Trail): Element {
+  const box = el('span', 'trail-preview');
+  trail.colors.forEach((color, i) => {
+    const dot = el('span', 'trail-dot');
+    dot.style.background = color;
+    dot.style.boxShadow = `0 0 6px ${color}`;
+    dot.style.opacity = String(1 - i / (trail.colors.length + 1));
+    box.append(dot);
+  });
+  return box;
 }
 
 export function renderBadges(save: SaveData): void {
@@ -36,7 +78,8 @@ export function renderBadges(save: SaveData): void {
       item.append(el('span', 'item-icon', unlocked ? '🏅' : '🔒'));
       const info = el('div', 'item-info');
       info.append(el('span', 'item-name', achievement.name), el('span', 'item-detail', achievement.description));
-      item.append(info, el('span', 'item-reward coins', `+${achievement.reward}`));
+      if (achievement.trail) info.append(el('span', 'item-detail trail-unlock', `✨ Unlocks the ${trailById(achievement.trail).name} trail`));
+      item.append(info);
       return item;
     }),
   );

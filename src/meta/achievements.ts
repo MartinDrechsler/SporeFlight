@@ -1,19 +1,38 @@
-import { ACHIEVEMENTS, type Achievement, type RunStats } from '../config/rewards';
+import { ADVENTURE_LEVELS } from '../config/levels';
+import { ACHIEVEMENTS, type Achievement, type BadgeStat, type RunStats } from '../config/rewards';
 import type { SaveData } from '../core/save';
-import { bestLevelStars } from './adventure';
+import { bestLevelStars, levelStars } from './adventure';
+
+/** The round just played; `endless` says whether its score counts for endless badges. */
+export interface RunResult extends RunStats {
+  endless: boolean;
+}
 
 /**
- * Unlocks every achievement whose target is now met, pays its reward and
- * returns the newly unlocked ones so the game can celebrate them.
+ * Unlocks every badge whose target is now met and returns the new ones so
+ * the game can celebrate them. Badges pay nothing; a badge's trail becomes
+ * the player's to wear.
  */
-export function unlockAchievements(save: SaveData, stats: RunStats): Achievement[] {
-  const values: Record<Achievement['stat'], number> = { ...stats, bestLevelStars: bestLevelStars(save) };
+export function unlockAchievements(save: SaveData, run: RunResult): Achievement[] {
+  const values = badgeValues(save, run);
   const unlocked = ACHIEVEMENTS.filter(
     (achievement) => !save.achievements.includes(achievement.id) && values[achievement.stat] >= achievement.target,
   );
   for (const achievement of unlocked) {
     save.achievements.push(achievement.id);
-    save.coins += achievement.reward;
+    if (achievement.trail && !save.ownedTrails.includes(achievement.trail)) save.ownedTrails.push(achievement.trail);
   }
   return unlocked;
+}
+
+function badgeValues(save: SaveData, run: RunResult): Record<BadgeStat, number> {
+  const finished = ADVENTURE_LEVELS.filter((level) => levelStars(save, level.id) > 0).map((level) => level.id);
+  return {
+    endlessScore: run.endless ? run.score : 0,
+    nearMisses: run.nearMisses,
+    runDiamonds: run.diamonds,
+    highestLevel: Math.max(0, ...finished),
+    bestLevelStars: bestLevelStars(save),
+    perfectLevels: ADVENTURE_LEVELS.filter((level) => levelStars(save, level.id) === 3).length,
+  };
 }
