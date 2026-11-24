@@ -7,6 +7,7 @@ import { createRandom } from '../src/core/random';
 import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '../src/core/save';
 import { finishLevel, isLevelOpen, starsFor, currentLevelId } from '../src/meta/adventure';
 import { unlockAchievements } from '../src/meta/achievements';
+import { accepted, join, leave, refused, rememberRun, setCountry, submissionFor } from '../src/meta/leaderboard';
 import { bankRound, buyLook, refillLives, rest, selectLook, unlockAdventure } from '../src/meta/economy';
 import { addQuestProgress, claimableCount, claimQuest, dayKey, refreshQuests } from '../src/meta/quests';
 
@@ -35,7 +36,7 @@ describe('save', () => {
   it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
     const fromV1 = migrate(v1);
-    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([5, 40, 7, 3, false]);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([6, 40, 7, 3, false]);
     const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
     expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
     // Version 4 replaced the levels: old per-level scores do not become stars.
@@ -247,5 +248,62 @@ describe('the endless journey', () => {
     expect(ids).toEqual(expect.arrayContaining(['biome_twilight', 'biome_woodland']));
     expect(ids).not.toContain('biome_meadow');
     expect(unlockAchievements(defaultSave(), { ...noStats, score: 45, endless: false })).toEqual([]);
+  });
+});
+
+describe('the leaderboard on the phone', () => {
+  const record = { rulesVersion: 1, seed: 7, width: 390, height: 700, startY: 300, taps: [0, 20, 41] };
+
+  it('keeps only the best endless run, and sends nothing before the player joins', () => {
+    const save = defaultSave();
+    expect(rememberRun(save, 12, record)).toBe(true);
+    expect(rememberRun(save, 9, record)).toBe(false);
+    expect(rememberRun(save, 0, record)).toBe(false);
+    expect(save.leaderboard.best?.score).toBe(12);
+    expect(submissionFor(save)).toBeNull();
+  });
+
+  it('after joining, sends the best run once, then only news: a better run, a new name or country', () => {
+    const save = { ...defaultSave(), username: 'Martin' };
+    rememberRun(save, 12, record);
+    join(save, 'c'.repeat(32), 'CH');
+    const first = submissionFor(save)!;
+    expect(first).toMatchObject({ playerId: 'c'.repeat(32), name: 'Martin', country: 'CH', score: 12 });
+    accepted(save, first);
+    expect(submissionFor(save)).toBeNull();
+    setCountry(save, 'AT');
+    expect(submissionFor(save)?.country).toBe('AT');
+    accepted(save, submissionFor(save)!);
+    save.username = 'Marti';
+    expect(submissionFor(save)?.name).toBe('Marti');
+    accepted(save, submissionFor(save)!);
+    rememberRun(save, 20, record);
+    expect(submissionFor(save)?.score).toBe(20);
+  });
+
+  it('a refused name waits for a new one; a run that fails its check is dropped', () => {
+    const save = { ...defaultSave(), username: 'Martin' };
+    rememberRun(save, 12, record);
+    join(save, 'c'.repeat(32), null);
+    refused(save, 'name');
+    expect([save.leaderboard.nameRefused, save.leaderboard.best?.score]).toEqual([true, 12]);
+    refused(save, 'replay');
+    expect(save.leaderboard.best).toBeNull();
+  });
+
+  it('leaving forgets the player id but keeps the best run to rejoin with', () => {
+    const save = defaultSave();
+    rememberRun(save, 12, record);
+    join(save, 'c'.repeat(32), 'CH');
+    accepted(save, submissionFor(save)!);
+    leave(save);
+    expect([save.leaderboard.playerId, save.leaderboard.sent, save.leaderboard.best?.score]).toEqual([null, null, 12]);
+  });
+
+  it('save v6 keeps a valid leaderboard state and drops broken parts', () => {
+    const kept = migrate({ version: 6, leaderboard: { playerId: 'c'.repeat(32), country: 'CH', best: { score: 9, run: record } } });
+    expect(kept.leaderboard).toMatchObject({ playerId: 'c'.repeat(32), country: 'CH', best: { score: 9 } });
+    const broken = migrate({ version: 6, leaderboard: { playerId: 'x', country: 'ZZ', best: { score: 9, run: { taps: 'no' } } } });
+    expect(broken.leaderboard).toEqual({ playerId: null, country: null, best: null, sent: null, nameRefused: false });
   });
 });

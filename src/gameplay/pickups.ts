@@ -1,3 +1,4 @@
+import { hypot } from '../core/fmath';
 import { TUNING } from '../config/tuning';
 import { rootLeft, type Root } from './roots';
 
@@ -59,12 +60,13 @@ export function pullToward(pickup: Pickup, targetX: number, targetY: number, dt:
   const { x, y } = pickupPosition(pickup);
   const dx = targetX - x;
   const dy = targetY - y;
-  const distance = Math.hypot(dx, dy);
+  const distance = hypot(dx, dy);
   if (distance >= M.range || distance === 0) return;
 
   pickup.vx += (dx / distance) * M.pull * dt;
   pickup.vy += (dy / distance) * M.pull * dt;
-  const keep = M.damping ** (dt * 60);
+  // Per-frame damping scaled to this step (linear, so it is exact on every device).
+  const keep = Math.max(0, 1 - (1 - M.damping) * dt * 60);
   pickup.vx *= keep;
   pickup.vy *= keep;
   pickup.offsetX += pickup.vx * dt;

@@ -46,6 +46,7 @@
         <form id="username-form" class="username-form">
           <label for="username-input" class="label">Name your mushroom</label>
           <input id="username-input" class="text-input" type="text" maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="SPORE" />
+          <p id="username-error" class="panel-text danger" hidden>That name can't be used. Please choose another.</p>
           <button class="primary-button" type="submit">START!</button>
         </form>
       </section>
@@ -62,6 +63,7 @@
           <button id="menu-badges" class="menu-button" type="button">BADGES</button>
           <button id="menu-adventure" class="menu-button" type="button">ADVENTURE <span id="adventure-lock" class="lock">🔒</span></button>
           <button id="menu-quests" class="menu-button" type="button">QUESTS <span id="quests-badge" class="alert" hidden>0</span></button>
+          <button id="menu-ranks" class="menu-button wide" type="button">🏆 LEADERBOARD</button>
         </div>
         <dl class="stats">
           <div><dt>BEST</dt><dd id="start-best">0</dd></div>
@@ -132,6 +134,35 @@
         <h2 class="panel-title">SPORE SHOP</h2>
         <p class="panel-text">COINS <strong id="shop-coins" class="coins">0</strong> · DIAMONDS <strong id="shop-diamonds" class="diamonds">0</strong></p>
         <ul id="shop-list" class="item-list"></ul>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <!-- World and country leaderboard -->
+      <section id="screen-ranks" class="overlay panel" hidden>
+        <h2 class="panel-title">LEADERBOARD</h2>
+        <div class="tabs">
+          <button id="ranks-tab-world" class="tab active" type="button">WORLD</button>
+          <button id="ranks-tab-country" class="tab" type="button">COUNTRY</button>
+        </div>
+        <p id="ranks-status" class="panel-text" hidden></p>
+        <ol id="ranks-list" class="item-list ranks-list"></ol>
+        <p id="ranks-you" class="ranks-you" hidden></p>
+        <div id="ranks-join" class="ranks-box" hidden>
+          <p class="panel-text small">
+            Join as <strong id="ranks-name"></strong>. The leaderboard keeps only your name, country and best endless
+            score, with a random player number stored on this phone. Leave any time to delete your entry.
+          </p>
+          <label class="field">COUNTRY <select id="ranks-join-country"></select></label>
+          <button id="ranks-join-button" class="primary-button compact" type="button">JOIN</button>
+        </div>
+        <div id="ranks-member" class="ranks-box" hidden>
+          <p id="ranks-name-refused" class="panel-text danger small" hidden>Your name can't be shown. Please change it.</p>
+          <label class="field">COUNTRY <select id="ranks-country"></select></label>
+          <div class="button-row">
+            <button id="ranks-rename" class="menu-button small" type="button">CHANGE NAME</button>
+            <button id="ranks-leave" class="menu-button small" type="button">LEAVE</button>
+          </div>
+        </div>
         <button class="menu-button back-button" type="button">BACK</button>
       </section>
 

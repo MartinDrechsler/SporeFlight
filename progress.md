@@ -3,9 +3,25 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: phase 3 "Biomes and rewards" done (2026-11-24)
-The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 4, the leaderboard (backend,
-replay check of scores, country, privacy).
+## Status: phase 4 "Leaderboard" built (2026-11-24); waiting for storage to be connected
+The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
+app stores, playtesting).
+
+### Phase 4 changes
+- **World and country leaderboard** for endless, opt-in: JOIN shows what is stored (name, country, best
+  score, a random player number on the phone). Tabs World / country, your rank, report a name, change
+  country or name, LEAVE deletes the entry. Privacy notice in PRIVACY.md.
+- **Scores are checked by replay**: every round records its seed, screen size, start height and the step of
+  every tap. The server replays the run with the same rules and accepts the score only if it matches exactly.
+  To make that possible the flight rules use `core/fmath.ts` (exact on every device) instead of Math.sin etc.
+- **Server** (`server/`): Vercel functions built in Vercel's Build Output format by `npm run build`, store in
+  Upstash Redis. Rate limits per address; names checked (offensive words refused, 3 reports hide a name).
+- **Offline-friendly**: the best run waits on the phone and is sent when the connection is back.
+- **Save v6**: leaderboard state.
+- **To turn it on** (Martin, once): Vercel dashboard, project sporeflightclaude, Storage tab, create an Upstash
+  Redis database (free plan) and connect it to the project, then redeploy. Check:
+  https://sporeflightclaude.vercel.app/api/leaderboard shows `{"entries":[]...}` (before connecting it says
+  `{"error":"offline"}`, which already proves the functions are deployed).
 
 ### Phase 3 changes
 - **Endless biomes** (config/biomes.ts): a new world every 20 points, 8 in all: Dark Enchanted Forest,
@@ -119,6 +135,9 @@ replay check of scores, country, privacy).
 - **Stars as layers of challenge** (Schell): finishing moves you on; stars give skilled players a reason
   to replay.
 - **Boss throws are announced** (Schell, Lens of Fairness): a hit should always feel like your own mistake.
+- **Never trust a score from outside** (Pragmatic Programmer, Pragmatic Paranoia): the server replays every run.
+- **Device-independent maths in the rules** (Ousterhout, define errors out of existence): instead of tolerating
+  tiny differences between phones and server, the rules cannot produce them.
 - **Fixed layouts per level, random boss attacks**: levels are learned by replaying; the boss stays tense.
 
 ## Changed from the old game on purpose
@@ -134,10 +153,11 @@ replay check of scores, country, privacy).
 - The resting-mushroom picture is used on the game over and adventure crash screens.
 
 ## Open questions for Martin
+- **Leaderboard**: weekly board as well as all-time? (not built; the plan's default was all-time only)
 - **Ad network**: AdMob (needs the app-store wrapper) or a web ad network for the browser version.
 - **Balance** after playing: gap sizes per level, boss speed, Heart of the Storm's difficulty.
 
 ## Roadmap
 Phases from the plan: 1 challenge and feel (done), 2 Adventure journey (done), 3 biomes and rewards (done),
-4 leaderboard (backend, replay check, country, privacy), 5 launch prep (real ads, PWA, app stores,
+4 leaderboard (built; storage to connect), 5 launch prep (real ads, PWA, app stores,
 playtesting).

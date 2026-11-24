@@ -25,7 +25,17 @@ if (process.env.CHROME_PATH) launchOptions.executablePath = process.env.CHROME_P
 const browser = await chromium.launch(launchOptions);
 const page = await (await browser.newContext({ ...device })).newPage();
 const errors = [];
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+// The browser logs every failed request; the one the harness causes on purpose (a 503 while
+// simulating the leaderboard offline) is expected, everything else counts.
+let expectedFailures = 0;
+page.on('console', (m) => {
+  if (m.type() !== 'error') return;
+  if (expectedFailures > 0 && m.text().includes('status of 503')) {
+    expectedFailures -= 1;
+    return;
+  }
+  errors.push(m.text());
+});
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
 const state = () => page.evaluate(() => JSON.parse(window.render_game_to_text()));
@@ -156,6 +166,71 @@ await page.tap('#quests-list li:first-child .item-button');
 s = await state();
 check('claiming a quest pays coins once', s.save.coins > coinsBefore && s.save.quests.list[0].claimed);
 await tapButton('#screen-quests .back-button');
+
+// 6b. Leaderboard: a stand-in server answers /api, so the screens and flows can be checked.
+const posted = [];
+let apiDown = false;
+await page.route('**/api/**', async (route) => {
+  // Without storage connected, the real server answers 503 'offline'.
+  if (apiDown) {
+    expectedFailures += 1;
+    return route.fulfill({ status: 503, json: { error: 'offline' } });
+  }
+  const url = new URL(route.request().url());
+  if (url.pathname === '/api/scores') {
+    posted.push(JSON.parse(route.request().postData() ?? '{}'));
+    return route.fulfill({ json: { best: posted.at(-1).score, rank: 3, countryRank: 1 } });
+  }
+  if (url.pathname === '/api/forget') return route.fulfill({ json: { ok: true } });
+  const you = url.searchParams.get('player') !== null;
+  return route.fulfill({
+    json: {
+      entries: [
+        { rank: 1, pub: 'a'.repeat(20), name: 'Mia', country: 'CH', score: 61, you: false },
+        { rank: 2, pub: 'b'.repeat(20), name: 'Jonas', country: 'DE', score: 44, you: false },
+        { rank: 3, pub: 'c'.repeat(20), name: 'martin', country: 'CH', score: 5, you },
+      ],
+      you: you ? { rank: 3, score: 5 } : null,
+      detectedCountry: 'CH',
+    },
+  });
+});
+await test(() => window.__test.setSave({ leaderboard: { playerId: null, country: null, best: null, sent: null, nameRefused: false } }));
+await test(() => window.__test.go('start'));
+// A run first, so there is a best run to send when joining.
+await test(() => window.__test.tap());
+await fly(200);
+for (let i = 0; i < 100 && (await state()).state === 'playing'; i++) await advance(1000 / 30);
+await advance(4000);
+s = await state();
+check('the best endless run is kept with its record', s.save.leaderboard.best?.run.taps.length > 0, JSON.stringify(s.save.leaderboard.best?.score));
+check('nothing is sent before joining', posted.length === 0);
+await tapButton('#menu-ranks');
+await page.waitForTimeout(150);
+check('leaderboard shows the world top before joining', (await page.locator('#ranks-list li').count()) === 3 && (await page.isVisible('#ranks-join')));
+check('the country is suggested from the connection', (await page.inputValue('#ranks-join-country')) === 'CH');
+await shot('08b-leaderboard-join');
+await tapButton('#ranks-join-button');
+await page.waitForTimeout(150);
+s = await state();
+check('joining sends the best run with name and country', posted.length === 1 && posted[0].country === 'CH' && posted[0].run.taps.length > 0 && s.save.leaderboard.sent?.score === posted[0].score);
+check('after joining, your row and rank show', (await page.isVisible('#ranks-member')) && (await page.isVisible('#ranks-list li.you')));
+await shot('08c-leaderboard');
+await tapButton('#ranks-tab-country');
+await page.waitForTimeout(150);
+check('the country board opens', (await page.textContent('#ranks-tab-country')).includes('CH'));
+await tapButton('#ranks-leave');
+await tapButton('#ranks-leave');
+await page.waitForTimeout(150);
+s = await state();
+check('leaving deletes the entry and the player id', s.save.leaderboard.playerId === null && (await page.isVisible('#ranks-join')));
+apiDown = true;
+await tapButton('#ranks-tab-world');
+await page.waitForTimeout(150);
+check('offline, the leaderboard says so instead of failing', (await page.textContent('#ranks-status')).includes("CAN'T BE REACHED"));
+await tapButton('#screen-ranks .back-button');
+apiDown = false;
+await test(() => window.__test.setSave({ lives: 5 }));
 
 // 7. Adventure: unlock with coins and diamonds, open the map, fly level 1, crash.
 await tapButton('#menu-adventure');

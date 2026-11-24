@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { toScreen } from '../src/render/view';
+import { recordProblem, replayScore, runRecord } from '../src/gameplay/replay';
 import { freePickup, pickupPosition, type Pickup } from '../src/gameplay/pickups';
 import { gapBottom, gapTop } from '../src/gameplay/roots';
 import { TUNING } from '../src/config/tuning';
@@ -520,5 +521,43 @@ describe('golden coins', () => {
     world.pickups = [freePickup('goldCoin', world.player.x, world.player.y)];
     stepWorld(world, 1 / 60);
     expect(world.stats.coins).toBe(10);
+  });
+});
+
+describe('replaying a run for the leaderboard', () => {
+  /** Plays an endless round with the autopilot (tapping through flapPlayer, like a player). */
+  const playRound = (seed: number) => {
+    const world = newWorld(seed);
+    flapPlayer(world);
+    run(world, 120, autopilot);
+    for (let i = 0; i < 600 && !world.crashed; i++) stepWorld(world, 1 / 60);
+    return world;
+  };
+
+  it('a recorded round replays to exactly the same score', () => {
+    for (const seed of [3, 17, 99]) {
+      const world = playRound(seed);
+      expect(world.crashed).toBe(true);
+      const record = runRecord(world);
+      expect(recordProblem(record)).toBeNull();
+      expect(replayScore(record)).toBe(world.stats.score);
+    }
+  });
+
+  it('a record with changed taps does not reach the claimed score', () => {
+    const world = playRound(17);
+    expect(world.stats.score).toBeGreaterThan(5);
+    const record = runRecord(world);
+    const tampered = { ...record, taps: record.taps.slice(0, Math.floor(record.taps.length / 2)) };
+    expect(replayScore(tampered)).toBeLessThan(world.stats.score);
+  });
+
+  it('rejects malformed records before replaying them', () => {
+    const record = runRecord(playRound(3));
+    expect(recordProblem({ ...record, rulesVersion: 0 })).toBe('old game version');
+    expect(recordProblem({ ...record, width: 5000 })).toBe('bad screen size');
+    expect(recordProblem({ ...record, taps: [5, 2] })).toBe('bad taps');
+    expect(recordProblem({ ...record, taps: [] })).toBe('bad taps');
+    expect(recordProblem({ ...record, seed: -1 })).toBe('bad seed');
   });
 });

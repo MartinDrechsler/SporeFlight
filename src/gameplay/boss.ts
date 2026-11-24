@@ -1,3 +1,4 @@
+import { atan2, cos, sin } from '../core/fmath';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import { circlesTouch } from './collision';
@@ -114,7 +115,7 @@ function moveBody(world: World, boss: Boss, dt: number): void {
   const target = boss.leaving ? world.width + B.bodyRadius * 3 : home;
   const speed = (world.width / B.enterSeconds) * dt;
   boss.x += Math.max(-speed, Math.min(speed, target - boss.x));
-  boss.y = world.height * 0.42 + Math.sin(boss.time * B.bobSpeed) * B.bobAmplitude;
+  boss.y = world.height * 0.42 + sin(boss.time * B.bobSpeed) * B.bobAmplitude;
 }
 
 function moveRocks(world: World, boss: Boss, dt: number): void {
@@ -142,9 +143,9 @@ function choosePattern(rng: Random, progress: number): ThrowPattern {
 function throwRocks(world: World, boss: Boss, progress: number): void {
   const speed = B.startRockSpeed + (B.endRockSpeed - B.startRockSpeed) * progress;
   const from = { x: boss.x - B.bodyRadius * 0.6, y: boss.y };
-  const aim = Math.atan2(world.player.y - from.y, world.player.x - from.x);
+  const aim = atan2(world.player.y - from.y, world.player.x - from.x);
   const add = (x: number, y: number, angle: number): void => {
-    boss.rocks.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, spin: 0, passed: false });
+    boss.rocks.push({ x, y, vx: cos(angle) * speed, vy: sin(angle) * speed, spin: 0, passed: false });
   };
   switch (boss.pattern) {
     case 'aimed':

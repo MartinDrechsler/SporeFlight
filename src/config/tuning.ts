@@ -180,6 +180,20 @@ export const TUNING = {
     calmPickupFactor: 3,
   },
 
+  /** Endless scores sent to the world leaderboard are replayed on the server to check them. */
+  leaderboard: {
+    /**
+     * Raise this whenever a change to the flight rules would make old runs
+     * replay differently; the server then only accepts runs from the new rules.
+     */
+    rulesVersion: 1,
+    /** Longest run the server will replay: 45 minutes of steps. */
+    maxSteps: 60 * 60 * 45,
+    /** Screen sizes a run may come from, CSS px. */
+    width: { min: 240, max: 1200 },
+    height: { min: 400, max: 1600 },
+  },
+
   session: {
     startLives: 5,
     /** Lives refilled by resting (game open) or by watching an ad. */

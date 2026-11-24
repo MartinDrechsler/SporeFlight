@@ -47,7 +47,15 @@ export type GameEvent =
  */
 export interface World extends Field {
   readonly width: number;
-  /** Randomness for this attempt (boss attacks). */
+  /** The round's seed: with the taps below, enough to replay the round exactly. */
+  readonly seed: number;
+  /** Where the mushroom started, px from the top. */
+  readonly startY: number;
+  /** Steps played so far (while flying). */
+  steps: number;
+  /** The step at which each flap happened, in order. */
+  taps: number[];
+  /** Randomness for this attempt (boss attacks), from `seed`. */
   readonly rng: Random;
   /** Randomness for roots, pickups and wind; seeded by the level when its layout is fixed. */
   readonly layoutRng: Random;
@@ -87,19 +95,30 @@ export interface World extends Field {
   events: GameEvent[];
 }
 
-export function createWorld(width: number, height: number, level: LevelConfig, rng: Random): World {
+/**
+ * A new round. `startY` lets the menu's hovering mushroom carry straight on
+ * into the round without jumping.
+ */
+export function createWorld(width: number, height: number, level: LevelConfig, seed: number, startY?: number): World {
+  const rng = createRandom(seed);
   // A fixed layout is the same on every attempt: its randomness is seeded by the level alone.
   const layoutRng = level.fixedLayout ? createRandom(LAYOUT_SEED + level.id) : rng;
+  const player = createPlayer(width, height);
+  if (startY !== undefined) player.y = startY;
   return {
     width,
     height,
     groundY: height - W.groundHeight,
+    seed: seed >>> 0,
+    startY: player.y,
+    steps: 0,
+    taps: [],
     rng,
     layoutRng,
     level,
     course: createCourse(),
     boss: null,
-    player: createPlayer(width, height),
+    player,
     roots: [],
     pickups: [],
     winds: [],
@@ -126,8 +145,10 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
   };
 }
 
+/** The only way to flap. It also records the step, so the round can be replayed. */
 export function flapPlayer(world: World): void {
   if (world.crashed) return;
+  world.taps.push(world.steps);
   flap(world.player);
   world.stats.flaps += 1;
   world.events.push({ type: 'flap' });
@@ -156,6 +177,7 @@ export function stepWorld(world: World, realDt: number): void {
     stepFinished(world, realDt);
     return;
   }
+  world.steps += 1;
 
   // A near miss briefly slows the whole world down.
   const dt = world.slowMotionTime > 0 ? realDt * NM.slowMotionFactor : realDt;

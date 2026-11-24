@@ -21,8 +21,7 @@ export function startRound(ctx: GameContext, levelId: number, options: { fromHov
   }
   const hoverY = ctx.world.player.y;
   ctx.levelId = levelId;
-  ctx.world = ctx.newWorld(levelId);
-  if (options.fromHover) ctx.world.player.y = hoverY;
+  ctx.world = ctx.newWorld(levelId, options.fromHover ? hoverY : undefined);
   ctx.go('playing');
   flapPlayer(ctx.world);
 }
