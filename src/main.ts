@@ -117,6 +117,7 @@ const loop = createLoop(
 );
 
 setupInput();
+setupAudioUnlock();
 setupLifecycle();
 setupSoundToggle();
 
@@ -161,6 +162,18 @@ function setupInput(): void {
     ctx.audio.unlock();
     machine.tap();
   });
+}
+
+/**
+ * iPhone Safari only lets a page start sound from the end of a touch or a click,
+ * never from its start (where flaps happen, for speed). So every finished touch,
+ * click or key press anywhere offers audio a chance to start, or to resume after
+ * iOS interrupted it (a call, another app).
+ */
+function setupAudioUnlock(): void {
+  for (const type of ['touchend', 'pointerup', 'click', 'keydown']) {
+    document.addEventListener(type, () => ctx.audio.unlock(), { capture: true, passive: true });
+  }
 }
 
 /** Pause everything when the app goes to the background, and resize with the screen. */
