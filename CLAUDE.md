@@ -22,7 +22,8 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 
 - `src/config/`: all data. `tuning.ts` (every number, px and seconds), `levels.ts` (endless + 10 adventure
   levels as stages, described by flags, never by name), `biomes.ts` (the 8 endless biomes), `theme.ts`
-  (11 level colour themes), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool).
+  (11 level colour themes), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool), `sprites.ts`
+  (pixel icons: hearts, coin, diamond).
 - `src/core/`: fixed-step loop, state machine, seeded random, versioned save file, run record, and `fmath.ts`
   (sin, cos, atan2, hypot from basic arithmetic, identical on every device). Game-agnostic.
 - `src/gameplay/`: the flight rules as plain data + pure functions. No DOM, no timers, no `Math.random`.
@@ -39,8 +40,10 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 - `src/render/`: canvas drawing. Reads the world, never changes it. `effects.ts` is visual only. `view.ts`
   mirrors the picture for twist levels (upside down, backwards); the rules never change. `obstacles.ts` and
   `scenery.ts` draw each biome's obstacles, distant world and life in the air; `backdrops.ts` the adventure
-  levels' distant worlds.
-- `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast.
+  levels' distant worlds. `sprites.ts` draws the pixel icons; `avatar.ts` is the home screen pose (shift, size,
+  glances, blinks), drawing only.
+- `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast, and
+  `icons.ts` (hands the pixel sprites to CSS as `--icon-*`).
 - `src/states/`: one file per screen with `enter/exit/update/onTap`. They connect gameplay, meta and UI.
 - `src/audio/`: `sounds.ts` (every effect as data, synthesized), `audio.ts` (plays them for `GameEvent`s and menus),
   `music.ts` (the menu and flight loops in `audio/music/`, crossfaded; main.ts picks the loop per screen).

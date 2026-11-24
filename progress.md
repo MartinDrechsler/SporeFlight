@@ -7,6 +7,20 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Settings, pixel icons, home avatar
+- **Settings** (gear on the home screen): a music volume slider, off to 100%, heard while dragging and saved
+  (save v7, default 70%). Sound effects keep their level; the speaker button still mutes everything.
+  Music at 0 is stopped, not just silent.
+- **Pixel icons**: hearts (full and empty), a gold coin with a rim, stamped ring and shine, and a brilliant-cut
+  diamond (table, crown, girdle, pavilion). Defined once as data in `config/sprites.ts`, drawn on the canvas
+  for pickups (the coin turns on its edge, the golden coin is the same coin, bigger, with sparkles; the
+  diamond glints instead of spinning) and handed to CSS for the HUD, home screen stats and lives.
+- **Home avatar**: the mushroom floats in the middle of the home screen, as big as the screen has room for
+  (up to 1.7x), glances left and right with a small head turn, blinks (sometimes twice), and has a shine in
+  its eyes. On tap it glides to its flight place. Drawing only (`render/avatar.ts`): the flight is untouched.
+- **Fixed**: a page opened in a hidden or tiny window froze (a negative size in the background drawing
+  stopped the loop). The loop now survives a bad frame.
+
 ### Polish and sound (after Martin played phases 1 to 4)
 - **Endless is pure speed**: every gap is 132 px and still; only the speed rises (every 10 roots). Moving,
   breathing and tighter gaps, surges and wind are adventure-only. Waves in endless now only shape rewards
@@ -179,5 +193,5 @@ app stores, playtesting).
 
 ## Roadmap
 Phases from the plan: 1 challenge and feel (done), 2 Adventure journey (done), 3 biomes and rewards (done),
-4 leaderboard (built; storage to connect), 5 launch prep (real ads, PWA, app stores,
+4 leaderboard (live), 5 launch prep (real ads, PWA, app stores,
 playtesting).

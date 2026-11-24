@@ -153,6 +153,20 @@ check('badges open', (await state()).state === 'badges');
 await shot('07-badges');
 await tapButton('#screen-badges .back-button');
 
+// 5b. Settings: the music slider sets and saves the music volume.
+await tapButton('#settings-button');
+check('settings open', (await state()).state === 'settings');
+await page.evaluate(() => {
+  const slider = document.getElementById('music-volume');
+  slider.value = '40';
+  slider.dispatchEvent(new Event('input'));
+  slider.dispatchEvent(new Event('change'));
+});
+s = await state();
+check('the music slider sets and saves the volume', s.save.musicVolume === 0.4 && (await page.textContent('#music-volume-value')) === '40%');
+await shot('07b-settings');
+await tapButton('#screen-settings .back-button');
+
 // 6. Quests: finish the first one and claim it.
 await test(() => {
   const save = JSON.parse(window.render_game_to_text()).save;
