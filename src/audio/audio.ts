@@ -30,6 +30,14 @@ export class Audio {
 
   unlock(): void {
     if (!this.context) this.create();
+    const ctx = this.context;
+    // iOS starts a context only when a sound is played inside the gesture, so play a silent one.
+    if (ctx && ctx.state !== 'running' && this.enabled && !this.hidden) {
+      const silence = ctx.createBufferSource();
+      silence.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      silence.connect(ctx.destination);
+      silence.start();
+    }
     this.applyState();
   }
 
@@ -79,8 +87,12 @@ export class Audio {
   private applyState(): void {
     const ctx = this.context;
     if (!ctx) return;
-    if (this.enabled && !this.hidden) void ctx.resume();
-    else void ctx.suspend();
+    // 'interrupted' (iOS) counts as stopped too, so it is resumed on the next gesture.
+    if (this.enabled && !this.hidden) {
+      if (ctx.state !== 'running') void ctx.resume();
+    } else if (ctx.state === 'running') {
+      void ctx.suspend();
+    }
   }
 
   private play(name: SoundName): void {
