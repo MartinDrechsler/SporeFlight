@@ -28,6 +28,9 @@ export interface Scene {
 export function renderScene(surface: Surface, scene: Scene): void {
   const { ctx, width, height } = surface;
   const { world, time } = scene;
+  // A page opened in a hidden or tiny window has no room above the ground yet; shapes would get
+  // negative sizes, which the canvas rejects. Draw nothing until there is room (a resize rebuilds the field).
+  if (world.groundY <= 0) return;
   // Endless travels through biomes; a level keeps its own theme.
   const journey = world.level.progressive ? biomeBlend(journeyProgress(world)) : null;
   const theme = journey ? mixTheme(journey.from.colors, journey.to.colors, journey.t) : THEMES[world.level.theme];

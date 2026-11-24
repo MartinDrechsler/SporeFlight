@@ -23,6 +23,8 @@ export function createLoop(update: (dt: number) => void, render: () => void): Lo
 
   const frame = (now: number): void => {
     if (!running) return;
+    // Ask for the next frame first: an error in one frame must not stop the game for good.
+    frameId = requestAnimationFrame(frame);
     const elapsed = Math.min((now - lastTime) / 1000, MAX_FRAME_SECONDS);
     lastTime = now;
     accumulator += elapsed;
@@ -31,7 +33,6 @@ export function createLoop(update: (dt: number) => void, render: () => void): Lo
       accumulator -= STEP_SECONDS;
     }
     render();
-    frameId = requestAnimationFrame(frame);
   };
 
   return {
