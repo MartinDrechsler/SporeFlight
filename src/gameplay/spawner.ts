@@ -62,7 +62,7 @@ export function makeRoot(
     width: R.width,
     xOffset: 0,
     gapCenter,
-    gapSize: gapSizeFor(level, index) + movingGapBonus(level, motion),
+    gapSize: gapSizeFor(level, index),
     centerMin,
     centerMax,
     motion,
@@ -77,42 +77,18 @@ export function makeRoot(
 }
 
 export function gapSizeFor(level: LevelConfig, index: number): number {
-  const base = level.progressive
-    ? Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot)
-    : (level.gap.min + level.gap.max) / 2;
-  return base + gapBonus(level, index);
+  return (level.gap.min + level.gap.max) / 2 + gapBonus(level, index);
 }
 
-/** Endless: a gap that moves opens wider, so it stays manageable to fly through. */
-function movingGapBonus(level: LevelConfig, motion: RootMotion): number {
-  if (!level.progressive) return 0;
-  const M = R.endlessMovingGap;
-  switch (motion.kind) {
-    case 'drift':
-      return M.drift + motion.speed * M.perDriftSpeed;
-    case 'sway':
-      return M.sway;
-    case 'still':
-      return 0;
-  }
-}
-
-/** Extra gap from the rhythm: positive on calm roots, negative in a surge. */
+/**
+ * Extra gap from the level's interest curve: wider on calm roots, tighter in
+ * the climax. Endless keeps every gap the same size; only its speed rises.
+ */
 function gapBonus(level: LevelConfig, index: number): number {
+  if (level.progressive) return 0;
   const phase = wavePhase(level, index);
-  if (!level.progressive) {
-    if (phase === 'calm') return LC.calmGapBonus;
-    return phase === 'surge' ? -LC.climaxGapShrink : 0;
-  }
-  const wave = Math.floor(index / WV.length);
-  switch (phase) {
-    case 'surge':
-      return -Math.min(WV.surgeGapShrinkMax, WV.surgeGapShrink + wave * WV.surgeGapShrinkPerWave);
-    case 'calm':
-      return WV.calmGapBonus;
-    case 'normal':
-      return 0;
-  }
+  if (phase === 'calm') return LC.calmGapBonus;
+  return phase === 'surge' ? -LC.climaxGapShrink : 0;
 }
 
 /** The pickup floating in the open space after a root, if any. */
@@ -203,8 +179,7 @@ function chooseCenter(
 function chooseMotion(rng: Random, level: LevelConfig, index: number, center: number): RootMotion {
   // A breather is always still; tension lives in the surge.
   if (wavePhase(level, index) === 'calm') return { kind: 'still' };
-  const sways = level.sway || (level.progressive && index >= R.endlessSwayFromRoot);
-  if (sways) {
+  if (level.sway) {
     return {
       kind: 'sway',
       baseCenter: center,
@@ -213,18 +188,7 @@ function chooseMotion(rng: Random, level: LevelConfig, index: number, center: nu
       phase: rng.range(0, Math.PI * 2),
     };
   }
-  const drift = driftFor(level, index);
+  const drift = level.drift;
   if (drift && rng.chance(drift.chance)) return { kind: 'drift', speed: drift.speed, direction: rng.sign() };
   return { kind: 'still' };
-}
-
-function driftFor(level: LevelConfig, index: number): { chance: number; speed: number } | null {
-  if (!level.progressive) return level.drift;
-  const d = R.endlessDrift;
-  if (index < d.fromRoot) return null;
-  const rootsInto = index - d.fromRoot;
-  return {
-    chance: Math.min(d.maxChance, d.startChance + rootsInto * d.chancePerRoot),
-    speed: Math.min(d.maxSpeed, d.baseSpeed + rootsInto * d.extraSpeedPerRoot),
-  };
 }

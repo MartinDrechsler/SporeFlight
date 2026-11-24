@@ -58,7 +58,7 @@ export interface LevelConfig {
   veins: Schedule | null;
   /** Chance that a coin is a huge golden one worth 10 (a surprise, so endless only). */
   goldenCoinChance: number;
-  /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
+  /** Endless only: the run never ends, speed keeps rising, the backdrop changes with progress. Gaps stay the same. */
   progressive: boolean;
   /**
    * Twist levels mirror the picture, never the rules: 'upsideDown' (fall up,
@@ -99,9 +99,9 @@ export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 0, name: 'ENDLESS MODE', theme: 'classic', description: 'Survive as long as you can in the deep forest.',
     stages: [{ kind: 'roots', count: null }], fixedLayout: false,
-    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
-    // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
-    magnetFromRoot: 40, windFromRoot: 120, clearings: { fromRoot: 4, chance: 0.14 },
+    // Every gap the same size and still: only the speed rises. Moving and tighter gaps belong to adventure.
+    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 132, max: 132 },
+    magnetFromRoot: 40, clearings: { fromRoot: 4, chance: 0.14 },
     diamonds: { first: 12, every: 20 }, veins: { first: 20, every: 30 }, goldenCoinChance: 0.05, progressive: true,
   }),
   // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.

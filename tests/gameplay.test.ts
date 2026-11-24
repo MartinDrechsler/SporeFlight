@@ -79,16 +79,26 @@ describe('flight feel', () => {
 });
 
 describe('spawner', () => {
-  it('endless gap shrinks with progress, with tighter surges and calmer breathers', () => {
-    expect(gapSizeFor(ENDLESS, 0)).toBe(ENDLESS.gap.max);
-    expect(wavePhase(ENDLESS, 7)).toBe('surge');
-    expect(wavePhase(ENDLESS, 10)).toBe('calm');
-    expect(wavePhase(ENDLESS, 4)).toBe('normal');
-    expect(gapSizeFor(ENDLESS, 7)).toBeLessThan(gapSizeFor(ENDLESS, 4));
-    expect(gapSizeFor(ENDLESS, 10)).toBeGreaterThan(gapSizeFor(ENDLESS, 9));
-    expect(gapSizeFor(ENDLESS, 1005)).toBe(ENDLESS.gap.min);
-    expect(gapSizeFor(ENDLESS, 1007)).toBeLessThan(ENDLESS.gap.min);
-    expect(makeRoot(createRandom(2), ENDLESS, FIELD, 0, 20, null).motion.kind).toBe('still');
+  it('endless keeps every gap the same size and still; only the speed rises', () => {
+    const rng = createRandom(2);
+    for (let i = 0; i < 300; i++) {
+      const root = makeRoot(rng, ENDLESS, FIELD, 0, i, null);
+      expect(root.gapSize).toBe(ENDLESS.gap.min);
+      expect(root.motion.kind).toBe('still');
+      expect(root.gapPulse).toBeNull();
+    }
+    const world = newWorld(1);
+    const start = world.speedMultiplier;
+    world.rootsPassed = 40;
+    run(world, 30, (w) => { w.player.y = w.height / 2; w.roots = []; });
+    expect(world.speedMultiplier).toBeGreaterThan(start);
+  });
+
+  it('adventure gaps widen on calm roots and tighten in the climax', () => {
+    const plain = level(1);
+    const total = rootCount(plain);
+    expect(gapSizeFor(plain, 0)).toBeGreaterThan(gapSizeFor(plain, 5));
+    expect(gapSizeFor(plain, total - 1)).toBeLessThan(gapSizeFor(plain, 5));
   });
 
   it('keeps random gap centres in the band and within a step of the last', () => {
@@ -101,12 +111,6 @@ describe('spawner', () => {
       if (previous !== null) expect(Math.abs(root.gapCenter - previous)).toBeLessThanOrEqual(TUNING.roots.maxCenterStep);
       previous = root.gapCenter;
     }
-  });
-
-  it('endless roots start still and begin to sway later', () => {
-    const rng = createRandom(3);
-    expect(makeRoot(rng, ENDLESS, FIELD, 0, 0, null).motion.kind).toBe('still');
-    expect(makeRoot(rng, ENDLESS, FIELD, 0, TUNING.roots.endlessSwayFromRoot, null).motion.kind).toBe('sway');
   });
 
   it('each adventure mechanic comes from its level data', () => {
@@ -260,7 +264,7 @@ describe('power-ups and rewards', () => {
     expect(world.events.some((e) => e.type === 'wind')).toBe(true);
   });
 
-  it('endless brings magnets only after root 40 and wind only after root 120', () => {
+  it('endless brings magnets only after root 40 and never wind', () => {
     const rng = createRandom(3);
     const kindsAt = (from: number, to: number) => {
       const kinds = new Set<string>();
@@ -274,15 +278,12 @@ describe('power-ups and rewards', () => {
     expect(kindsAt(0, 40).has('magnet')).toBe(false);
     expect(kindsAt(40, 400).has('magnet')).toBe(true);
 
-    const early = newWorld(4);
-    early.rootsPassed = 119;
-    early.distanceToWind = 0;
-    early.distanceSinceSpawn = -1e9;
-    stepWorld(early, 1 / 60);
-    expect(early.winds).toHaveLength(0);
-    early.rootsPassed = 120;
-    stepWorld(early, 1 / 60);
-    expect(early.winds).toHaveLength(1);
+    const late = newWorld(4);
+    late.rootsPassed = 500;
+    late.distanceToWind = 0;
+    late.distanceSinceSpawn = -1e9;
+    stepWorld(late, 1 / 60);
+    expect(late.winds).toHaveLength(0);
   });
 });
 
@@ -401,7 +402,7 @@ describe('missed pickups', () => {
   });
 });
 
-describe('more coins, fairer moving gaps', () => {
+describe('more coins', () => {
   it('endless leaves a root out now and then for a cluster of 7 coins, never in a surge', () => {
     const rng = createRandom(9);
     let clearings = 0;
@@ -427,14 +428,6 @@ describe('more coins, fairer moving gaps', () => {
     expect(world.offered.coins).toBeGreaterThan(world.rootsSpawned * 0.25);
   });
 
-  it('in endless a moving gap is wider than a still one at the same place', () => {
-    const rng = () => createRandom(4);
-    const still = makeRoot(rng(), { ...ENDLESS, progressive: true }, FIELD, 0, 5, null);
-    const moving = makeRoot(rng(), ENDLESS, FIELD, 0, 45, null);
-    expect(still.motion.kind).toBe('still');
-    expect(moving.motion.kind).not.toBe('still');
-    expect(moving.gapSize - gapSizeFor(ENDLESS, 45)).toBeGreaterThanOrEqual(TUNING.roots.endlessMovingGap.drift);
-  });
 });
 
 describe('crystal veins', () => {
