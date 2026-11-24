@@ -68,14 +68,12 @@ export const TUNING = {
   },
 
 
-  /** A near miss is pure feedback (sparks, a short slow motion); it pays nothing. */
+  /** A near miss is pure feedback (sparks, a glow ring, a sound); it never changes time and pays nothing. */
   nearMiss: {
     /** Gap between mushroom and root edge that counts as a near miss. */
     distance: 12,
     /** Horizontal reach beyond the root's sides. */
     horizontalMargin: 10,
-    slowMotionFactor: 0.4,
-    slowMotionSeconds: 0.15,
   },
 
   shield: {

@@ -35,7 +35,8 @@ export interface Root {
   /** A crystal vein on one of the caps, if this root has one. */
   vein: Vein | null;
   passed: boolean;
-  nearMissCounted: boolean;
+  /** 'close' once the mushroom brushed it; it only becomes a near miss ('counted') when the mushroom gets past alive. */
+  nearMiss: 'none' | 'close' | 'counted';
 }
 
 export function rootLeft(root: Root): number {

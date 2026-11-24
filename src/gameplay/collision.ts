@@ -47,14 +47,19 @@ export function playerHitsRoot(player: Player, root: Root, groundY: number): boo
   return gapToRoot(player, root, groundY) < 0;
 }
 
-/** True when the mushroom slips past a root within the near-miss distance without touching it. */
+/** True when the mushroom is beside a root and within the near-miss distance without touching it. */
 export function isNearMiss(player: Player, root: Root, groundY: number): boolean {
   const margin = TUNING.nearMiss.horizontalMargin;
   const left = rootLeft(root);
-  const besideRoot = player.x + player.radius >= left - margin && player.x - player.radius <= left + root.width + margin;
+  const besideRoot = player.x + player.radius >= left - margin && !isPastNearMissZone(player, root);
   if (!besideRoot) return false;
   const gap = gapToRoot(player, root, groundY);
   return gap >= 0 && gap < TUNING.nearMiss.distance;
+}
+
+/** True once the mushroom has left the stretch where it could still brush this root. */
+export function isPastNearMissZone(player: Player, root: Root): boolean {
+  return player.x - player.radius > rootLeft(root) + root.width + TUNING.nearMiss.horizontalMargin;
 }
 
 export function playerHitsGround(player: Player, groundY: number): boolean {

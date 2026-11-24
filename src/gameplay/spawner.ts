@@ -72,7 +72,7 @@ export function makeRoot(
     slidePhase: level.slide ? rng.range(0, Math.PI * 2) : null,
     vein: onSchedule(level.veins, index) ? { side: rng.chance(0.5) ? 'top' : 'bottom', hits: 0 } : null,
     passed: false,
-    nearMissCounted: false,
+    nearMiss: 'none',
   };
 }
 

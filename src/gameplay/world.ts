@@ -2,7 +2,7 @@ import type { LevelConfig } from '../config/levels';
 import type { RunStats } from '../config/rewards';
 import { TUNING } from '../config/tuning';
 import { createRandom, type Random } from '../core/random';
-import { circlesTouch, isNearMiss, playerHitsGround, playerHitsRoot } from './collision';
+import { circlesTouch, isNearMiss, isPastNearMissZone, playerHitsGround, playerHitsRoot } from './collision';
 import { createPlayer, flap, stepPlayer, type Player } from './player';
 import { detach, isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
 import { rootLeft, stepRoot, type Root } from './roots';
@@ -15,7 +15,6 @@ import { windContains, type WindZone } from './wind';
 const P = TUNING.player;
 const W = TUNING.world;
 const PK = TUNING.pickups;
-const NM = TUNING.nearMiss;
 const WD = TUNING.wind;
 /** Base of the per-level seed for fixed layouts. */
 const LAYOUT_SEED = 7_000;
@@ -86,7 +85,6 @@ export interface World extends Field {
   magnetTime: number;
   /** Seconds until a crystal vein can crack again (one crack per touch). */
   veinCooldown: number;
-  slowMotionTime: number;
   windWarningCooldown: number;
   crashed: boolean;
   /** Seconds since the crashed mushroom touched the ground; null while still flying or falling. */
@@ -137,7 +135,6 @@ export function createWorld(width: number, height: number, level: LevelConfig, s
     invulnerableTime: 0,
     magnetTime: 0,
     veinCooldown: 0,
-    slowMotionTime: 0,
     windWarningCooldown: 0,
     crashed: false,
     landedTime: null,
@@ -167,21 +164,17 @@ export function roundCoins(world: World): number {
   return world.stats.coins;
 }
 
-/** Advances a round by `dt` seconds of real time. */
-export function stepWorld(world: World, realDt: number): void {
+/** Advances a round by `dt` seconds. */
+export function stepWorld(world: World, dt: number): void {
   if (world.crashed) {
-    stepCrashed(world, realDt);
+    stepCrashed(world, dt);
     return;
   }
   if (world.course.finished) {
-    stepFinished(world, realDt);
+    stepFinished(world, dt);
     return;
   }
   world.steps += 1;
-
-  // A near miss briefly slows the whole world down.
-  const dt = world.slowMotionTime > 0 ? realDt * NM.slowMotionFactor : realDt;
-  world.slowMotionTime = Math.max(0, world.slowMotionTime - realDt);
   tickTimers(world, dt);
 
   updateSpeed(world, dt);
@@ -374,13 +367,16 @@ function applyPickup(world: World, kind: PickupKind): number {
   }
 }
 
+/**
+ * A root brushed closely becomes a near miss only once the mushroom is past it
+ * alive: this runs after the hit checks, so a crash never shows one.
+ */
 function checkNearMisses(world: World): void {
-  if (isInvulnerable(world)) return;
   for (const root of world.roots) {
-    if (root.nearMissCounted || !isNearMiss(world.player, root, world.groundY)) continue;
-    root.nearMissCounted = true;
+    if (root.nearMiss === 'none' && !isInvulnerable(world) && isNearMiss(world.player, root, world.groundY)) root.nearMiss = 'close';
+    if (root.nearMiss !== 'close' || !isPastNearMissZone(world.player, root)) continue;
+    root.nearMiss = 'counted';
     world.stats.nearMisses += 1;
-    world.slowMotionTime = NM.slowMotionSeconds;
     world.events.push({ type: 'nearMiss', x: world.player.x, y: world.player.y });
   }
 }

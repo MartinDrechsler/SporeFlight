@@ -8,7 +8,7 @@ import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
 import { gapSizeFor, isClearing, makeCoinCluster, makePickup, makeRoot, wavePhase } from '../src/gameplay/spawner';
 import { ADVENTURE_LEVELS, rootCount } from '../src/config/levels';
-import { crashSpot, flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
+import { crashSpot, flapPlayer, roundCoins, scrollSpeed, stepWorld } from '../src/gameplay/world';
 import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
 
 const FIELD = { height: HEIGHT, groundY: HEIGHT - TUNING.world.groundHeight };
@@ -428,6 +428,56 @@ describe('more coins', () => {
     expect(world.offered.coins).toBeGreaterThan(world.rootsSpawned * 0.25);
   });
 
+});
+
+describe('near miss', () => {
+  /** One still root just ahead; the mushroom is held 6 px above its lower edge. */
+  const brushWorld = () => {
+    const world = emptyWorld();
+    world.invulnerableTime = 0;
+    const root = makeRoot(createRandom(1), ENDLESS, FIELD, world.player.x + 20, 5, null);
+    root.motion = { kind: 'still' };
+    root.gapCenter = 400;
+    root.gapSize = 150;
+    root.vein = null;
+    world.roots = [root];
+    const hold = (w: typeof world) => { w.player.vy = 0; w.player.y = gapBottom(root) - w.player.radius - 6; };
+    return { world, root, hold };
+  };
+
+  it('shows only once the mushroom is past the root alive, and never changes time', () => {
+    const { world, root, hold } = brushWorld();
+    const events: string[] = [];
+    for (let i = 0; i < 120 && !world.crashed; i++) {
+      hold(world);
+      world.events = [];
+      const before = world.distance;
+      stepWorld(world, 1 / 60);
+      expect(world.distance - before).toBeCloseTo(scrollSpeed(world) / 60, 6);
+      for (const e of world.events) events.push(e.type);
+      if (root.nearMiss === 'close') expect(events).not.toContain('nearMiss');
+    }
+    expect(world.crashed).toBe(false);
+    expect(events.filter((e) => e === 'nearMiss')).toHaveLength(1);
+    expect(root.nearMiss).toBe('counted');
+    expect(world.stats.nearMisses).toBe(1);
+  });
+
+  it('a brush that ends in a crash is a collision, not a near miss', () => {
+    const { world, root, hold } = brushWorld();
+    const events: string[] = [];
+    for (let i = 0; i < 120 && !world.crashed; i++) {
+      if (root.nearMiss === 'close') world.player.y = gapBottom(root) + 5;
+      else hold(world);
+      world.events = [];
+      stepWorld(world, 1 / 60);
+      for (const e of world.events) events.push(e.type);
+    }
+    expect(world.crashed).toBe(true);
+    expect(root.nearMiss).toBe('close');
+    expect(events).not.toContain('nearMiss');
+    expect(world.stats.nearMisses).toBe(0);
+  });
 });
 
 describe('crystal veins', () => {
