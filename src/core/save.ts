@@ -1,4 +1,6 @@
 import { ACHIEVEMENTS, QUEST_POOL, type QuestKind } from '../config/rewards';
+import type { RunRecord } from './runRecord';
+import { isCountryCode } from '../config/countries';
 import { DEFAULT_SKIN_ID, SKINS } from '../config/skins';
 import { DEFAULT_TRAIL_ID, TRAILS } from '../config/trails';
 import { TUNING } from '../config/tuning';
@@ -14,8 +16,27 @@ export interface QuestState {
   claimed: boolean;
 }
 
+/** A run good enough to send to the leaderboard, with the record that proves it. */
+export interface BestRun {
+  score: number;
+  run: RunRecord;
+}
+
+/** The player's place on the online leaderboard. */
+export interface LeaderboardState {
+  /** Secret id that owns the entry; null until the player joins (opt-in). */
+  playerId: string | null;
+  country: string | null;
+  /** The best endless run since the leaderboard came, kept until the server has it. */
+  best: BestRun | null;
+  /** What the server last accepted, so only news is sent. */
+  sent: { score: number; name: string; country: string | null } | null;
+  /** The server refused the name; the player is asked to choose another. */
+  nameRefused: boolean;
+}
+
 export interface SaveData {
-  version: 5;
+  version: 6;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
@@ -38,6 +59,7 @@ export interface SaveData {
   deathMarks: Record<string, number[]>;
   /** Seconds of rest left before lives refill; 0 when not resting. Counts only while the game is open. */
   restSecondsLeft: number;
+  leaderboard: LeaderboardState;
 }
 
 const STORAGE_KEY = 'sporeflight.save';
@@ -45,7 +67,7 @@ const QUEST_KINDS: readonly QuestKind[] = QUEST_POOL.map((template) => template.
 
 export function defaultSave(): SaveData {
   return {
-    version: 5,
+    version: 6,
     username: null,
     bestScore: 0,
     levelStars: {},
@@ -62,6 +84,7 @@ export function defaultSave(): SaveData {
     quests: { day: '', list: [] },
     deathMarks: {},
     restSecondsLeft: 0,
+    leaderboard: { playerId: null, country: null, best: null, sent: null, nameRefused: false },
   };
 }
 
@@ -85,7 +108,7 @@ export function migrate(raw: unknown): SaveData {
   const version = typeof data.version === 'number' ? data.version : 0;
 
   return {
-    version: 5,
+    version: 6,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
     // Version 4 brought a new set of levels, so older per-level results do not carry over.
@@ -103,7 +126,38 @@ export function migrate(raw: unknown): SaveData {
     quests: version >= 5 ? cleanQuests(data.quests) : { day: '', list: [] },
     deathMarks: cleanDeathMarks(data.deathMarks),
     restSecondsLeft: Math.min(TUNING.session.restSeconds, count(data.restSecondsLeft, 0)),
+    leaderboard: cleanLeaderboard(data.leaderboard),
   };
+}
+
+function cleanLeaderboard(value: unknown): LeaderboardState {
+  const empty: LeaderboardState = { playerId: null, country: null, best: null, sent: null, nameRefused: false };
+  if (typeof value !== 'object' || value === null) return empty;
+  const raw = value as Record<string, unknown>;
+  const playerId = typeof raw.playerId === 'string' && /^[a-f0-9]{32}$/.test(raw.playerId) ? raw.playerId : null;
+  const best = raw.best as Record<string, unknown> | null | undefined;
+  const sent = raw.sent as Record<string, unknown> | null | undefined;
+  return {
+    playerId,
+    country: isCountryCode(raw.country) ? raw.country : null,
+    // A broken record is simply dropped; the next good run replaces it.
+    best: best && typeof best.score === 'number' && isRunRecord(best.run) ? { score: count(best.score, 0), run: best.run } : null,
+    sent:
+      playerId && sent && typeof sent.score === 'number' && typeof sent.name === 'string'
+        ? { score: count(sent.score, 0), name: sent.name, country: isCountryCode(sent.country) ? sent.country : null }
+        : null,
+    nameRefused: raw.nameRefused === true,
+  };
+}
+
+function isRunRecord(value: unknown): value is RunRecord {
+  if (typeof value !== 'object' || value === null) return false;
+  const run = value as Record<string, unknown>;
+  return (
+    ['rulesVersion', 'seed', 'width', 'height', 'startY'].every((key) => typeof run[key] === 'number') &&
+    Array.isArray(run.taps) &&
+    run.taps.every((tap) => typeof tap === 'number')
+  );
 }
 
 /** Trims and shortens a name; returns null for anything unusable. */

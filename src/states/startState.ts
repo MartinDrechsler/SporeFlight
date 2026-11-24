@@ -8,6 +8,7 @@ import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
 import { startRound } from './round';
+import { syncLeaderboard } from './syncLeaderboard';
 
 /** Title screen and main menu: the mushroom hovers while the forest drifts by. */
 export function startState(ctx: GameContext): State {
@@ -22,6 +23,7 @@ export function startState(ctx: GameContext): State {
   menu('menu-shop', 'shop');
   menu('menu-badges', 'badges');
   menu('menu-quests', 'quests');
+  menu('menu-ranks', 'ranks');
   byId('menu-adventure').addEventListener('click', () => {
     ctx.audio.unlock();
     ctx.audio.ui('click');
@@ -48,6 +50,8 @@ export function startState(ctx: GameContext): State {
       time = 0;
       refresh(ctx);
       showScreens('start');
+      // A run that could not be sent earlier (offline) goes now.
+      void syncLeaderboard(ctx);
     },
 
     update(dt) {

@@ -393,3 +393,120 @@
 .trail-unlock {
   color: var(--gold);
 }
+
+/* Leaderboard */
+.menu-button.wide {
+  grid-column: 1 / -1;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.tab {
+  flex: 1;
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--panel-line);
+  background: var(--panel);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 1.2rem;
+}
+
+.tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tab:disabled {
+  opacity: 0.4;
+}
+
+.ranks-list {
+  min-height: 96px;
+}
+
+.ranks-list .item {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 2.6em 1.6em 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 0;
+}
+
+.ranks-list .item.you {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.rank-number {
+  color: var(--muted);
+}
+
+.rank-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-score {
+  color: var(--accent);
+}
+
+.report-button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 1rem;
+  padding: 2px 4px;
+}
+
+.ranks-you {
+  color: var(--gold);
+  font-size: 1.3rem;
+}
+
+.ranks-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.panel-text.small {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.field select {
+  max-width: 220px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-line);
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.1rem;
+}
+
+.menu-button.small {
+  width: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 1.1rem;
+}

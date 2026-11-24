@@ -25,6 +25,7 @@ import { levelsState } from './states/levelsState';
 import { playingState } from './states/playingState';
 import { questsState } from './states/questsState';
 import { roundOverState } from './states/roundOverState';
+import { ranksState } from './states/ranksState';
 import { shopState } from './states/shopState';
 import { startState } from './states/startState';
 import { unlockState } from './states/unlockState';
@@ -83,6 +84,7 @@ const machine = new StateMachine<StateName>({
   adventureOver: adventureOverState(ctx),
   levelComplete: levelCompleteState(ctx),
   shop: shopState(ctx),
+  ranks: ranksState(ctx),
   badges: badgesState(ctx),
   quests: questsState(ctx),
   levels: levelsState(ctx),

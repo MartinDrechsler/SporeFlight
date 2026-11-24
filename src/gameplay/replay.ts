@@ -1,23 +1,12 @@
 import { ENDLESS_LEVEL_ID, levelById } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import { STEP_SECONDS } from '../core/loop';
+import type { RunRecord } from '../core/runRecord';
 import { createWorld, flapPlayer, stepWorld, type World } from './world';
 
 const LB = TUNING.leaderboard;
 
-/**
- * Everything needed to play an endless round again, exactly: the rules are
- * deterministic, so the same seed, screen and taps always give the same score.
- */
-export interface RunRecord {
-  rulesVersion: number;
-  seed: number;
-  width: number;
-  height: number;
-  startY: number;
-  /** The step at which each flap happened, in order. */
-  taps: number[];
-}
+export type { RunRecord };
 
 /** The record of an endless round, for sending to the leaderboard. */
 export function runRecord(world: World): RunRecord {

@@ -6,6 +6,9 @@ import { bankRound } from '../meta/economy';
 import { updateHud } from '../ui/hud';
 import type { GameContext } from './context';
 import { checkAchievements, deliverEvents } from './round';
+import { syncLeaderboard } from './syncLeaderboard';
+import { rememberRun } from '../meta/leaderboard';
+import { runRecord } from '../gameplay/replay';
 
 /**
  * The moment after a crash: the round's coins are banked, a life is lost
@@ -25,6 +28,8 @@ export function roundOverState(ctx: GameContext): State {
         diamonds: world.stats.diamonds,
         distance: crashSpot(world),
       });
+      // The best endless run is kept with its record, for the leaderboard.
+      if (world.level.progressive && rememberRun(save, world.stats.score, runRecord(world))) void syncLeaderboard(ctx);
       if (newBest && world.stats.score > 0) {
         ctx.effects.newBest(world.width, world.height);
         ctx.audio.ui('reward');

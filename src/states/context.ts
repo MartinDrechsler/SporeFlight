@@ -7,7 +7,7 @@ import type { Effects } from '../render/effects';
 
 export type StateName =
   | 'username' | 'start' | 'playing' | 'roundOver' | 'gameOver' | 'ad' | 'adventureOver' | 'levelComplete'
-  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock';
+  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks';
 
 /**
  * What the states share. A state reads and changes this, then switches to
