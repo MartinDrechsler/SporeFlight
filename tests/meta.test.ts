@@ -25,6 +25,10 @@ describe('save', () => {
   });
 
   it('repairs invalid fields and keeps valid ones', () => {
+    expect(migrate({ version: 6, musicVolume: 0.3 }).musicVolume).toBe(0.3);
+    expect(migrate({ version: 6 }).musicVolume).toBe(TUNING.audio.defaultMusicVolume);
+    expect(migrate({ musicVolume: 7 }).musicVolume).toBe(1);
+    expect(migrate({ musicVolume: 'loud' }).musicVolume).toBe(TUNING.audio.defaultMusicVolume);
     const repaired = migrate({ bestScore: 12, coins: -3, ownedSkins: ['golden', 'fake'], activeSkin: 'fake', username: '   ' });
     expect(repaired.bestScore).toBe(12);
     expect(repaired.coins).toBe(0);
@@ -36,7 +40,7 @@ describe('save', () => {
   it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
     const fromV1 = migrate(v1);
-    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([6, 40, 7, 3, false]);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([7, 40, 7, 3, false]);
     const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
     expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
     // Version 4 replaced the levels: old per-level scores do not become stars.

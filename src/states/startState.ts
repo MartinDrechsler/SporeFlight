@@ -24,6 +24,7 @@ export function startState(ctx: GameContext): State {
   menu('menu-badges', 'badges');
   menu('menu-quests', 'quests');
   menu('menu-ranks', 'ranks');
+  menu('settings-button', 'settings');
   byId('menu-adventure').addEventListener('click', () => {
     ctx.audio.unlock();
     ctx.audio.ui('click');

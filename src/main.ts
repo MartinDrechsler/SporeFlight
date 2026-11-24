@@ -29,6 +29,7 @@ import { ranksState } from './states/ranksState';
 import { shopState } from './states/shopState';
 import { startState } from './states/startState';
 import { unlockState } from './states/unlockState';
+import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
@@ -55,7 +56,7 @@ let earlierMarks: readonly number[] = [];
 const ctx: GameContext = {
   world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), nextSeed(rng)),
   save,
-  audio: new Audio(save.soundOn),
+  audio: new Audio(save.soundOn, save.musicVolume),
   effects: new Effects(),
   ads,
   rng,
@@ -88,11 +89,12 @@ const machine = new StateMachine<StateName>({
   quests: questsState(ctx),
   levels: levelsState(ctx),
   unlock: unlockState(ctx),
+  settings: settingsState(ctx),
 });
 
 /** The music behind each screen: the calm loop in menus, the faster one in flight, none during an ad. */
 const MUSIC: Record<StateName, Track | null> = {
-  username: 'menu', start: 'menu', shop: 'menu', ranks: 'menu', badges: 'menu', quests: 'menu', levels: 'menu', unlock: 'menu',
+  username: 'menu', start: 'menu', settings: 'menu', shop: 'menu', ranks: 'menu', badges: 'menu', quests: 'menu', levels: 'menu', unlock: 'menu',
   gameOver: 'menu', adventureOver: 'menu', levelComplete: 'menu',
   playing: 'flight', roundOver: 'flight',
   ad: null,

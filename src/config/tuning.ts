@@ -76,6 +76,11 @@ export const TUNING = {
     horizontalMargin: 10,
   },
 
+  audio: {
+    /** Music loudness for a new player, 0 to 1 (the settings slider). */
+    defaultMusicVolume: 0.7,
+  },
+
   shield: {
     /** Invulnerable time after the shield pops. */
     graceSeconds: 1.5,
