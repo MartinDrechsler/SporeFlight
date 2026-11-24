@@ -32,7 +32,16 @@ interface FloatingText {
   size: number;
 }
 
+/** A glowing ring that widens and fades around a spot. */
+interface Ring {
+  x: number;
+  y: number;
+  life: number;
+  color: string;
+}
+
 const POOL_SIZE = 320;
+const RING_SECONDS = 0.45;
 const TEXT_SECONDS = 1.1;
 
 export class Effects {
@@ -40,6 +49,7 @@ export class Effects {
     active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1, size: 2, color: '#fff',
   }));
   private texts: FloatingText[] = [];
+  private rings: Ring[] = [];
   private shakeTime = 0;
   private shakeDuration = 1;
   private shakeStrength = 0;
@@ -56,9 +66,10 @@ export class Effects {
         this.burst(px - 10, py + 12, 6, flapColor, 60, 0.4);
         break;
       case 'nearMiss':
-        this.burst(px, py, 14, '#ffd700', 180, 0.5);
+        // Seen, never felt: no shake and no slow motion, so the next flap lands exactly as expected.
+        this.rings.push({ x: px, y: py, life: RING_SECONDS, color: '#ffd700' });
+        for (let i = 0; i < 12; i++) this.spawn(px - 8, py + (Math.random() - 0.5) * 16, -220 - Math.random() * 160, (Math.random() - 0.5) * 60, 0.45, 2, '#ffd700');
         this.text('NEAR MISS!', px, py - 30, '#ffd700');
-        this.shake(0.13, 2.5);
         break;
       case 'shieldPop':
         this.burst(px, py, 24, '#00baff', 200, 0.7);
@@ -169,6 +180,8 @@ export class Effects {
       t.rise += 45 * dt;
     }
     this.texts = this.texts.filter((t) => t.life > 0);
+    for (const ring of this.rings) ring.life -= dt;
+    this.rings = this.rings.filter((ring) => ring.life > 0);
     this.shakeTime = Math.max(0, this.shakeTime - dt);
     this.flashTime = Math.max(0, this.flashTime - dt);
   }
@@ -190,6 +203,18 @@ export class Effects {
       ctx.beginPath();
       ctx.arc(at.x, at.y, p.size, 0, Math.PI * 2);
       ctx.fill();
+    }
+    ctx.lineWidth = 3;
+    for (const ring of this.rings) {
+      const t = 1 - ring.life / RING_SECONDS;
+      const at = toScreen(view, width, height, ring.x, ring.y);
+      ctx.globalAlpha = 1 - t;
+      ctx.strokeStyle = ring.color;
+      ctx.shadowColor = ring.color;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 18 + t * 34, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.textAlign = 'center';
     for (const t of this.texts) {
@@ -217,6 +242,7 @@ export class Effects {
   clear(): void {
     for (const p of this.particles) p.active = false;
     this.texts = [];
+    this.rings = [];
     this.shakeTime = 0;
     this.flashTime = 0;
   }

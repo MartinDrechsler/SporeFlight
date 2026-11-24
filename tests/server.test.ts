@@ -9,10 +9,11 @@ import { memoryStore, upstashStore, type ScoreStore } from '../server/store';
 import { autopilot, newWorld, run } from './helpers';
 
 /** A real endless round played by the autopilot, and its record. */
-function playedRun(seed: number): { record: RunRecord; score: number } {
+/** A round flown by the autopilot for `seconds`, then left to fall. */
+function playedRun(seed: number, seconds = 120): { record: RunRecord; score: number } {
   const world = newWorld(seed);
   flapPlayer(world);
-  run(world, 120, autopilot);
+  run(world, seconds, autopilot);
   for (let i = 0; i < 600 && !world.crashed; i++) stepWorld(world, 1 / 60);
   return { record: runRecord(world), score: world.stats.score };
 }
@@ -137,7 +138,7 @@ describe.each(stores)('leaderboard API (%s store)', (_, makeStore) => {
     expect(swiss.body.entries.map((e: any) => e.name)).toEqual(['Alice']);
 
     // A worse run later keeps the best; a new country moves the entry.
-    const worse = playedRun(5);
+    const worse = playedRun(5, 10);
     expect(worse.score).toBeLessThan(a.score);
     await submit(store, { playerId: ALICE, name: 'Alice', country: 'AT', score: worse.score, run: worse.record });
     expect((await boardOf(store, { scope: 'country', country: 'CH' })).body.entries).toEqual([]);

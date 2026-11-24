@@ -39,17 +39,10 @@ export const TUNING = {
     centerMaxFraction: 0.65,
     /** Largest jump in gap centre between neighbouring roots. */
     maxCenterStep: 130,
-    /** Endless: gap shrinks from gap.max by this per root spawned, down to gap.min. */
-    gapShrinkPerRoot: 1.6,
     gapPulseSpeed: 2.4,
     slideAmplitude: 45,
     slideSpeed: 2.1,
     tunnel: { centerFraction: 0.43, amplitudeFraction: 0.18, stepPerRoot: 0.55 },
-    /** Endless difficulty: moving gaps appear with progress. Counted in roots spawned, not points. */
-    endlessDrift: { fromRoot: 10, startChance: 0.25, chancePerRoot: 0.05, maxChance: 0.8, baseSpeed: 30, extraSpeedPerRoot: 2.4, maxSpeed: 120 },
-    endlessSwayFromRoot: 15,
-    /** Endless: a moving gap opens wider so it stays passable (drift grows with its speed). */
-    endlessMovingGap: { drift: 24, perDriftSpeed: 0.15, sway: 34 },
     sway: { minAmplitude: 55, maxAmplitude: 80, minFrequency: 1.5, maxFrequency: 2.4 },
   },
 
@@ -75,14 +68,12 @@ export const TUNING = {
   },
 
 
-  /** A near miss is pure feedback (sparks, a short slow motion); it pays nothing. */
+  /** A near miss is pure feedback (sparks, a glow ring, a sound); it never changes time and pays nothing. */
   nearMiss: {
     /** Gap between mushroom and root edge that counts as a near miss. */
     distance: 12,
     /** Horizontal reach beyond the root's sides. */
     horizontalMargin: 10,
-    slowMotionFactor: 0.4,
-    slowMotionSeconds: 0.15,
   },
 
   shield: {
@@ -150,11 +141,6 @@ export const TUNING = {
   /** Scores celebrated with a big moment. They pay nothing: the moment is the reward. */
   milestones: [10, 20, 30, 50, 75, 100],
 
-  /**
-   * Endless difficulty comes in waves: every `length` roots, the last
-   * `surgeRoots` are a surge (tighter, more often moving), then the first
-   * `calmRoots` of the next wave are a breather with a better pickup chance.
-   */
   gate: {
     /** Width of the finish gate's glow, px. */
     width: 60,
@@ -169,14 +155,15 @@ export const TUNING = {
     climaxGapShrink: 8,
   },
 
+  /**
+   * Endless runs in waves of `length` roots. The gaps never change, so a wave
+   * only shapes rewards: no clearing during the last `surgeRoots`, then the
+   * first `calmRoots` of the next wave are a breather with more pickups.
+   */
   waves: {
     length: 10,
     surgeRoots: 4,
     calmRoots: 2,
-    surgeGapShrink: 10,
-    surgeGapShrinkPerWave: 3,
-    surgeGapShrinkMax: 22,
-    calmGapBonus: 14,
     calmPickupFactor: 3,
   },
 
@@ -186,7 +173,7 @@ export const TUNING = {
      * Raise this whenever a change to the flight rules would make old runs
      * replay differently; the server then only accepts runs from the new rules.
      */
-    rulesVersion: 1,
+    rulesVersion: 2,
     /** Longest run the server will replay: 45 minutes of steps. */
     maxSteps: 60 * 60 * 45,
     /** Screen sizes a run may come from, CSS px. */

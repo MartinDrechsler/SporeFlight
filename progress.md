@@ -3,9 +3,26 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: phase 4 "Leaderboard" built (2026-11-24); waiting for storage to be connected
+## Status: phase 4 live (leaderboard connected); polish and sound after playing (2026-11-24)
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
+
+### Polish and sound (after Martin played phases 1 to 4)
+- **Endless is pure speed**: every gap is 132 px and still; only the speed rises (every 10 roots). Moving,
+  breathing and tighter gaps, surges and wind are adventure-only. Waves in endless now only shape rewards
+  (calm roots bring more pickups, no clearings in a surge). Leaderboard `rulesVersion` 2.
+- **Near miss only when you live**: a root brushed closely becomes a near miss once you are past it alive,
+  so a crash is never one. No slow motion and no shake any more (they broke the rhythm of flaps, Schell:
+  direct feedback, no distractions); a gold ring, sparks streaming back and the text show it instead.
+- **Adventure backdrops**: each level names a distant world in its data (forest, peaks, old town, towers,
+  ruins, castle, windmills), drawn in the level's own colours with small lights in its accent colour.
+- **Music**: Martin's two loops (xtremefreddy, Pixabay licence, free for games, no credit required; credited in
+  CREDITS.md anyway). The calm one plays in menus, the faster one in flight, none during an ad; they crossfade
+  between screens and are cut to whole musical phrases so they loop on the beat.
+- **Sound for everything** (`audio/sounds.ts`, all synthesized): flap whoosh, metal coin, golden coin cascade,
+  glassy diamond, shield and magnet pickups, near-miss swish, shield pop, crash thud, landing, wind gust,
+  boss growl and throw, vein clink and shatter, milestone, finish fanfare, badge fanfare, quest, new best,
+  level stars, new biome, shop purchase, menu click, error. The speaker button mutes all of it.
 
 ### Phase 4 changes
 - **World and country leaderboard** for endless, opt-in: JOIN shows what is stored (name, country, best
@@ -18,8 +35,8 @@ app stores, playtesting).
   Upstash Redis. Rate limits per address; names checked (offensive words refused, 3 reports hide a name).
 - **Offline-friendly**: the best run waits on the phone and is sent when the connection is back.
 - **Save v6**: leaderboard state.
-- **To turn it on** (Martin, once): Vercel dashboard, project sporeflightclaude, Storage tab, create an Upstash
-  Redis database (free plan) and connect it to the project, then redeploy. Check:
+- **To turn it on** (done by Martin): Vercel dashboard, Integrations, Browse Marketplace, Upstash Redis (free
+  plan), connect it to project sporeflightclaude, then redeploy. Check:
   https://sporeflightclaude.vercel.app/api/leaderboard shows `{"entries":[]...}` (before connecting it says
   `{"error":"offline"}`, which already proves the functions are deployed).
 
@@ -83,9 +100,9 @@ app stores, playtesting).
 - **Flight**: rises softly, falls faster (separate rise and fall gravity), nose dips further when diving.
 - **Score**: exactly 1 point per root. Combo, multipliers, fever and coin benchmarks are removed.
 - **Endless rhythm**: waves of 10 roots: a surge of 4 tighter roots, then 2 calm, still roots with more pickups.
-  Endless gaps start at 140 px and tighten to 115 px.
+  (Later changed: endless gaps stay one size; see "Polish and sound".)
 - **Milestones** at 10, 20, 30, 50, 75, 100: big number, burst and flash. No coins, the moment is the reward.
-- **Feedback**: light column on every pass, score pop, near-miss sound and slow motion (no coins),
+- **Feedback**: light column on every pass, score pop, near-miss sound and sparks (no coins),
   stronger crash shake, "new best" celebration.
 - **Lives everywhere**: Adventure crashes cost a life too. Out of lives: rest 1 minute (counts only while
   the game is open) or watch a short ad (skippable after 3 s). Both give 5 lives.

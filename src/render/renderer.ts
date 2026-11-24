@@ -44,6 +44,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
     distance: world.distance,
     time,
     journey,
+    backdrop: world.level.backdrop,
   });
   for (const zone of world.winds) drawWind(ctx, zone, world.groundY, time);
   for (const pickup of world.pickups) drawPickup(ctx, pickup, time);

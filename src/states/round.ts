@@ -45,13 +45,13 @@ function announceBiome(ctx: GameContext, score: number): void {
   const biome = biomeAt(score);
   if (score === 0 || biome.fromScore !== score) return;
   ctx.effects.biomeArrives(biome.name, biome.colors.accent, ctx.world.width, ctx.world.height);
-  ctx.audio.ui('reward');
+  ctx.audio.ui('biome');
 }
 
 export function addQuest(ctx: GameContext, kind: QuestKind, amount: number): void {
   for (const quest of addQuestProgress(ctx.save, kind, amount)) {
     ctx.effects.announce(`QUEST DONE: ${quest.text.toUpperCase()}`, '#bd00ff', ctx.world.width, ctx.world.height);
-    ctx.audio.ui('reward');
+    ctx.audio.ui('quest');
   }
 }
 
@@ -61,7 +61,7 @@ export function checkAchievements(ctx: GameContext): void {
   for (const achievement of unlocked) {
     const trail = achievement.trail ? `  · ${trailById(achievement.trail).name} UNLOCKED` : '';
     toast(`🏅 ${achievement.name}${trail}`);
-    ctx.audio.ui('reward');
+    ctx.audio.ui('achievement');
   }
   if (unlocked.length > 0) ctx.persist();
 }

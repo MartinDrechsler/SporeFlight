@@ -1,53 +1,27 @@
 import type { GameEvent } from '../gameplay/world';
+import { Music, type Track } from './music';
+import { SOUNDS, type SoundName, type Voice } from './sounds';
 
 /** Sounds for menus and rewards that are not gameplay events. */
-export type UiSound = 'click' | 'buy' | 'reward' | 'error';
+export type UiSound = 'click' | 'buy' | 'reward' | 'error' | 'quest' | 'achievement' | 'biome' | 'star' | 'newBest';
 
-interface Note {
-  from: number;
-  to: number;
-  seconds: number;
-  wave: OscillatorType;
-  volume: number;
-  delay?: number;
-}
-
-const SOUNDS = {
-  flap: [{ from: 420, to: 620, seconds: 0.09, wave: 'triangle', volume: 0.12 }],
-  pass: [{ from: 660, to: 880, seconds: 0.08, wave: 'sine', volume: 0.1 }],
-  nearMiss: [{ from: 1500, to: 1900, seconds: 0.1, wave: 'sine', volume: 0.08 }],
-  coin: [{ from: 980, to: 1600, seconds: 0.12, wave: 'square', volume: 0.05 }],
-  chime: [
-    { from: 1320, to: 1320, seconds: 0.15, wave: 'sine', volume: 0.09 },
-    { from: 1760, to: 1760, seconds: 0.2, wave: 'sine', volume: 0.08, delay: 0.08 },
-  ],
-  pop: [{ from: 600, to: 120, seconds: 0.25, wave: 'square', volume: 0.08 }],
-  crash: [{ from: 220, to: 60, seconds: 0.4, wave: 'sawtooth', volume: 0.15 }],
-  clink: [{ from: 2200, to: 1800, seconds: 0.09, wave: 'triangle', volume: 0.09 }],
-  goldCoin: [
-    { from: 880, to: 1320, seconds: 0.1, wave: 'square', volume: 0.05 },
-    { from: 1320, to: 1980, seconds: 0.16, wave: 'square', volume: 0.05, delay: 0.08 },
-  ],
-  growl: [{ from: 90, to: 70, seconds: 0.45, wave: 'sawtooth', volume: 0.1 }],
-  throw: [{ from: 320, to: 140, seconds: 0.18, wave: 'triangle', volume: 0.1 }],
-  click: [{ from: 520, to: 560, seconds: 0.05, wave: 'triangle', volume: 0.08 }],
-  error: [{ from: 200, to: 140, seconds: 0.18, wave: 'square', volume: 0.07 }],
-  reward: [
-    { from: 660, to: 660, seconds: 0.1, wave: 'triangle', volume: 0.09 },
-    { from: 880, to: 880, seconds: 0.1, wave: 'triangle', volume: 0.09, delay: 0.09 },
-    { from: 1320, to: 1320, seconds: 0.18, wave: 'triangle', volume: 0.09, delay: 0.18 },
-  ],
-} satisfies Record<string, Note[]>;
-
-type SoundName = keyof typeof SOUNDS;
+/** Master volume of the effects, above the music. */
+const EFFECTS_VOLUME = 0.9;
 
 /**
- * Small synthesized sound effects (no audio files to load). Browsers only
- * allow sound after a user gesture, so `unlock` is called on the first tap.
- * Every method is safe to call at any time, even if audio is unavailable.
+ * Music and sound effects. Effects are synthesized (no files); the music is
+ * two loops loaded when first wanted. Browsers only allow sound after a user
+ * gesture, so `unlock` is called on the first tap. Every method is safe to
+ * call at any time, even if audio is unavailable.
  */
 export class Audio {
   private context: AudioContext | null = null;
+  private effects: GainNode | null = null;
+  private music: Music | null = null;
+  private noise: AudioBuffer | null = null;
+  /** The track wanted before audio was unlocked, started on unlock. */
+  private track: Track | null = null;
+  private hidden = false;
   enabled: boolean;
 
   constructor(enabled: boolean) {
@@ -55,15 +29,26 @@ export class Audio {
   }
 
   unlock(): void {
-    if (this.context) {
-      void this.context.resume();
-      return;
-    }
-    try {
-      this.context = new AudioContext();
-    } catch {
-      this.context = null;
-    }
+    if (!this.context) this.create();
+    this.applyState();
+  }
+
+  /** Sound on or off (the speaker button). */
+  setEnabled(on: boolean): void {
+    this.enabled = on;
+    this.applyState();
+  }
+
+  /** The app went to the background or came back. */
+  setHidden(hidden: boolean): void {
+    this.hidden = hidden;
+    this.applyState();
+  }
+
+  /** Which loop should play now; called every frame, it only acts on a change. */
+  setMusic(track: Track | null): void {
+    this.track = track;
+    this.music?.want(track);
   }
 
   react(event: GameEvent): void {
@@ -72,57 +57,109 @@ export class Audio {
   }
 
   ui(sound: UiSound): void {
-    this.play(sound === 'buy' ? 'coin' : sound);
+    this.play(sound);
+  }
+
+  private create(): void {
+    try {
+      const ctx = new AudioContext();
+      this.effects = ctx.createGain();
+      this.effects.gain.value = EFFECTS_VOLUME;
+      this.effects.connect(ctx.destination);
+      this.noise = whiteNoise(ctx);
+      this.music = new Music(ctx, ctx.destination);
+      this.music.want(this.track);
+      this.context = ctx;
+    } catch {
+      this.context = null;
+    }
+  }
+
+  /** Muted or hidden: the whole audio clock stops, so nothing plays and no battery is spent. */
+  private applyState(): void {
+    const ctx = this.context;
+    if (!ctx) return;
+    if (this.enabled && !this.hidden) void ctx.resume();
+    else void ctx.suspend();
   }
 
   private play(name: SoundName): void {
     const ctx = this.context;
-    if (!this.enabled || !ctx || ctx.state !== 'running') return;
-    for (const note of SOUNDS[name] as Note[]) {
-      const start = ctx.currentTime + (note.delay ?? 0);
+    if (!this.enabled || !ctx || !this.effects || ctx.state !== 'running') return;
+    for (const voice of SOUNDS[name] as Voice[]) this.voice(ctx, this.effects, voice);
+  }
+
+  private voice(ctx: AudioContext, output: AudioNode, voice: Voice): void {
+    const start = ctx.currentTime + (voice.delay ?? 0);
+    const end = start + voice.seconds;
+    const attack = Math.min(voice.attack ?? 0.004, voice.seconds / 2);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(voice.volume, start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    gain.connect(output);
+
+    let source: AudioScheduledSourceNode;
+    if (voice.kind === 'tone') {
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = note.wave;
-      osc.frequency.setValueAtTime(note.from, start);
-      osc.frequency.exponentialRampToValueAtTime(note.to, start + note.seconds);
-      gain.gain.setValueAtTime(note.volume, start);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + note.seconds);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + note.seconds);
+      osc.type = voice.wave;
+      osc.frequency.setValueAtTime(voice.from, start);
+      if (voice.to) osc.frequency.exponentialRampToValueAtTime(voice.to, end);
+      osc.connect(gain);
+      source = osc;
+    } else {
+      const hiss = ctx.createBufferSource();
+      hiss.buffer = this.noise;
+      hiss.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = voice.filter;
+      filter.Q.value = voice.q ?? 1;
+      filter.frequency.setValueAtTime(voice.from, start);
+      if (voice.to) filter.frequency.exponentialRampToValueAtTime(voice.to, end);
+      hiss.connect(filter).connect(gain);
+      source = hiss;
     }
+    source.start(start);
+    source.stop(end + 0.02);
   }
 }
 
-function soundFor(event: GameEvent): SoundName | null {
+function whiteNoise(ctx: AudioContext): AudioBuffer {
+  const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+export function soundFor(event: GameEvent): SoundName | null {
   switch (event.type) {
     case 'flap':
       return 'flap';
     case 'pass':
       return 'pass';
     case 'pickup':
-      if (event.kind === 'goldCoin') return 'goldCoin';
-      return event.kind === 'coin' || event.kind === 'magnet' ? 'coin' : 'chime';
+      return event.kind;
     case 'nearMiss':
       return 'nearMiss';
     case 'shieldPop':
-      return 'pop';
+      return 'shieldPop';
     case 'milestone':
-      return 'reward';
+      return 'milestone';
     case 'crash':
       return 'crash';
     case 'wind':
+      return 'wind';
     case 'landed':
-      return null;
+      return 'landed';
     case 'finish':
-      return 'reward';
+      return 'finish';
     case 'bossWarn':
-      return 'growl';
+      return 'bossWarn';
     case 'bossThrow':
-      return 'throw';
+      return 'bossThrow';
     case 'veinHit':
-      return 'clink';
+      return 'veinHit';
     case 'veinBreak':
-      return 'chime';
+      return 'veinBreak';
   }
 }

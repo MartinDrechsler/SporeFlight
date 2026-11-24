@@ -1,6 +1,8 @@
 import type { Theme } from '../config/theme';
 import { TUNING } from '../config/tuning';
 import type { Biome } from '../config/biomes';
+import type { Backdrop } from '../config/levels';
+import { drawBackdrop } from './backdrops';
 import { drawLife, drawScenery } from './scenery';
 
 export interface BackgroundView {
@@ -12,6 +14,8 @@ export interface BackgroundView {
   time: number;
   /** Endless only: the biomes being travelled through; null in a level (theme colours only). */
   journey: { from: Biome; to: Biome; t: number } | null;
+  /** A level's distant world; null in endless. */
+  backdrop: Backdrop | null;
 }
 
 /**
@@ -38,6 +42,7 @@ export function drawBackground(ctx: CanvasRenderingContext2D, view: BackgroundVi
     drawScenery(ctx, journey.to.scenery, journey.t, scenery);
     drawLife(ctx, journey.to.life, journey.t, scenery);
   } else {
+    if (view.backdrop) drawBackdrop(ctx, view.backdrop, scenery);
     drawLife(ctx, 'spores', 1, scenery);
   }
   drawHills(ctx, theme.hillsFar, width, groundY, distance * 0.2, 110, 0.55);

@@ -10,6 +10,9 @@ export type Stage =
   /** No roots: the Stone Thrower attacks until the time is survived. */
   | { kind: 'boss'; seconds: number };
 
+/** The distant world behind an adventure level, drawn in the level's theme colours. */
+export type Backdrop = 'forest' | 'peaks' | 'skyline' | 'towers' | 'ruins' | 'castle' | 'windmills';
+
 /** Root indexes: the first, then one every `every` roots (null: just the first). */
 export interface Schedule {
   first: number;
@@ -25,6 +28,8 @@ export interface LevelConfig {
   name: string;
   description: string;
   theme: ThemeId;
+  /** Adventure: what stands on the horizon. Endless (null) travels through its biomes instead. */
+  backdrop: Backdrop | null;
   stages: readonly Stage[];
   /** Same roots, gaps and pickups on every attempt, so the level can be learned. */
   fixedLayout: boolean;
@@ -58,7 +63,7 @@ export interface LevelConfig {
   veins: Schedule | null;
   /** Chance that a coin is a huge golden one worth 10 (a surprise, so endless only). */
   goldenCoinChance: number;
-  /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
+  /** Endless only: the run never ends, speed keeps rising, the backdrop changes with progress. Gaps stay the same. */
   progressive: boolean;
   /**
    * Twist levels mirror the picture, never the rules: 'upsideDown' (fall up,
@@ -97,58 +102,58 @@ export const ENDLESS_LEVEL_ID = 0;
 
 export const LEVELS: readonly LevelConfig[] = [
   level({
-    id: 0, name: 'ENDLESS MODE', theme: 'classic', description: 'Survive as long as you can in the deep forest.',
+    id: 0, name: 'ENDLESS MODE', theme: 'classic', backdrop: null, description: 'Survive as long as you can in the deep forest.',
     stages: [{ kind: 'roots', count: null }], fixedLayout: false,
-    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
-    // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
-    magnetFromRoot: 40, windFromRoot: 120, clearings: { fromRoot: 4, chance: 0.14 },
+    // Every gap the same size and still: only the speed rises. Moving and tighter gaps belong to adventure.
+    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 132, max: 132 },
+    magnetFromRoot: 40, clearings: { fromRoot: 4, chance: 0.14 },
     diamonds: { first: 12, every: 20 }, veins: { first: 20, every: 30 }, goldenCoinChance: 0.05, progressive: true,
   }),
   // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.
   level({
-    id: 1, name: 'FIRST LIGHT', theme: 'dawn', description: 'Plain, generous gaps. Find your rhythm.',
+    id: 1, name: 'FIRST LIGHT', theme: 'dawn', backdrop: 'forest', description: 'Plain, generous gaps. Find your rhythm.',
     stages: [{ kind: 'roots', count: 20 }], speed: 120, speedMultiplier: 1, spacing: 300, gap: { min: 150, max: 150 },
   }),
   level({
-    id: 2, name: 'NARROW PASSAGE', theme: 'ice', description: 'Tighter gaps. Every flap counts.',
+    id: 2, name: 'NARROW PASSAGE', theme: 'ice', backdrop: 'peaks', description: 'Tighter gaps. Every flap counts.',
     stages: [{ kind: 'roots', count: 22 }], speed: 124, speedMultiplier: 1, spacing: 290, gap: { min: 128, max: 128 },
   }),
   level({
-    id: 3, name: 'DRIFTING CANOPY', theme: 'amber', description: 'The gaps slowly move. Aim where they will be.',
+    id: 3, name: 'DRIFTING CANOPY', theme: 'amber', backdrop: 'skyline', description: 'The gaps slowly move. Aim where they will be.',
     stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
     drift: { chance: 1, speed: 40 },
   }),
   level({
-    id: 4, name: 'BREATHING HOLLOW', theme: 'purple', description: 'The gaps breathe. Slip through as they open.',
+    id: 4, name: 'BREATHING HOLLOW', theme: 'purple', backdrop: 'towers', description: 'The gaps breathe. Slip through as they open.',
     stages: [{ kind: 'roots', count: 26 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 112, max: 172 },
     gapPulse: true,
   }),
   level({
-    id: 5, name: 'THE STONE THROWER', theme: 'crimson', description: 'No roots. Something in the dark throws rocks. Survive.',
+    id: 5, name: 'THE STONE THROWER', theme: 'crimson', backdrop: 'ruins', description: 'No roots. Something in the dark throws rocks. Survive.',
     stages: [{ kind: 'boss', seconds: 45 }], speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 150, max: 150 },
   }),
   level({
-    id: 6, name: 'CREEPING ROOTS', theme: 'red', description: 'Roots slide sideways. Watch the spacing.',
+    id: 6, name: 'CREEPING ROOTS', theme: 'red', backdrop: 'castle', description: 'Roots slide sideways. Watch the spacing.',
     stages: [{ kind: 'roots', count: 28 }], speed: 128, speedMultiplier: 1.1, spacing: 290, gap: { min: 140, max: 140 },
     slide: true,
   }),
   level({
-    id: 7, name: 'UPSIDE-DOWN GROVE', theme: 'green', description: 'Gravity is reversed: you fall up, a tap pushes you down.',
+    id: 7, name: 'UPSIDE-DOWN GROVE', theme: 'green', backdrop: 'forest', description: 'Gravity is reversed: you fall up, a tap pushes you down.',
     stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1, spacing: 300, gap: { min: 148, max: 148 },
     view: 'upsideDown',
   }),
   level({
-    id: 8, name: 'CANOPY WINDS', theme: 'canopy', description: 'Updrafts lift you, downdrafts pull you down.',
+    id: 8, name: 'CANOPY WINDS', theme: 'canopy', backdrop: 'windmills', description: 'Updrafts lift you, downdrafts pull you down.',
     stages: [{ kind: 'roots', count: 30 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
     windFromRoot: 0,
   }),
   level({
-    id: 9, name: 'THE WAY HOME', theme: 'orange', description: 'Fly back from right to left, through moving gaps.',
+    id: 9, name: 'THE WAY HOME', theme: 'orange', backdrop: 'skyline', description: 'Fly back from right to left, through moving gaps.',
     stages: [{ kind: 'roots', count: 32 }], speed: 126, speedMultiplier: 1.05, spacing: 300, gap: { min: 145, max: 145 },
     drift: { chance: 0.6, speed: 36 }, view: 'backwards',
   }),
   level({
-    id: 10, name: 'HEART OF THE STORM', theme: 'biolume', description: 'A swinging tunnel, then the Stone Thrower returns.',
+    id: 10, name: 'HEART OF THE STORM', theme: 'biolume', backdrop: 'towers', description: 'A swinging tunnel, then the Stone Thrower returns.',
     stages: [{ kind: 'roots', count: 40 }, { kind: 'boss', seconds: 30 }], speed: 130, speedMultiplier: 1.1, spacing: 170,
     gap: { min: 138, max: 138 }, layout: 'tunnel', sway: true,
   }),
