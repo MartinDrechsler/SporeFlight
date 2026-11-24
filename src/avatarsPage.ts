@@ -6,6 +6,9 @@ import { trailById } from './config/trails';
 import { createLoop } from './core/loop';
 import type { SceneLook } from './render/avatarScene';
 import { holdFace } from './render/timeline';
+import { jumpShape } from './render/jump';
+import { drawMushroom } from './render/mushroom';
+import { TUNING } from './config/tuning';
 import { AvatarStage } from './ui/avatarStage';
 
 /**
@@ -41,6 +44,39 @@ for (const id of Object.keys(ANIMATIONS) as AnimationId[]) {
 for (const face of Object.keys(EXPRESSIONS) as ExpressionId[]) {
   card(`face: ${face}`, (stage) => stage.play(holdFace(face), { skin: SKINS[0]! }));
 }
+
+// One flap, frame by frame (every 1/30 s), as the flight draws it: squeeze, stretch forward, lean, dive.
+const strip = document.createElement('section');
+strip.style.cssText = 'grid-column:1/-1;background:#0b2a22;border-radius:12px;padding:8px;text-align:center;font-size:22px;';
+const film = document.createElement('canvas');
+film.style.cssText = 'width:100%;height:110px;display:block;';
+strip.append(film, 'jump: one flap, every 1/30 s');
+root.prepend(strip);
+requestAnimationFrame(() => {
+  const box = film.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  film.width = box.width * ratio;
+  film.height = box.height * ratio;
+  const g = film.getContext('2d')!;
+  g.scale(ratio, ratio);
+  const P = TUNING.player;
+  const apex = -P.flapVelocity / P.gravity;
+  const frames = 16;
+  const step = box.width / frames;
+  for (let i = 0; i < frames; i++) {
+    const t = i / 30;
+    const vy = t < apex ? P.flapVelocity + P.gravity * t : (t - apex) * P.fallGravity;
+    const shape = jumpShape(t, vy);
+    g.save();
+    g.translate(step * (i + 0.5), box.height * 0.5);
+    g.rotate(shape.tilt);
+    g.scale(shape.scaleX, shape.scaleY);
+    drawMushroom(g, Math.min(22, step * 0.32), {
+      skin: SKINS[0]!, face: EXPRESSIONS.neutral, gaze: { x: 0, y: 0, blink: 0 }, faceVisible: true, glow: 0, flash: 0,
+    });
+    g.restore();
+  }
+});
 
 createLoop(
   (dt) => {

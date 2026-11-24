@@ -2,12 +2,8 @@ import type { Skin } from '../config/skins';
 import type { Player } from '../gameplay/player';
 import type { Pose } from './avatar';
 import { EXPRESSIONS, type Expression } from '../config/expressions';
+import { jumpShape } from './jump';
 import { drawMushroom } from './mushroom';
-
-const MAX_TILT_UP = (-25 * Math.PI) / 180;
-const MAX_TILT_DOWN = (75 * Math.PI) / 180;
-/** Nose tips down quickly as the fall speeds up: the fall should look dangerous. */
-const TILT_PER_SPEED = 0.0018;
 
 export interface PlayerLook {
   crashed: boolean;
@@ -28,7 +24,7 @@ function flightFace(look: PlayerLook): Expression {
   return look.bossNear ? EXPRESSIONS.nervous : EXPRESSIONS.neutral;
 }
 
-/** The glowing mushroom in flight. Its tilt, squash and eyes all follow from its motion. */
+/** The glowing mushroom in flight. Its lean, squeeze and stretch, and its eyes all follow from its motion. */
 export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: Skin, look: PlayerLook): void {
   if (look.invulnerable && Math.floor(look.time * 12) % 2 === 0) return;
   const { pose } = look;
@@ -37,15 +33,14 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
 
   if (look.magnet) drawMagnetAura(ctx, x, player.y, r, look.time);
 
-  const tilt = Math.min(MAX_TILT_DOWN, Math.max(MAX_TILT_UP, player.vy * TILT_PER_SPEED));
-  // Stretch tall right after a flap, then settle back.
-  const stretch = 0.25 * Math.exp(-player.sinceFlap * 10);
+  // Squeeze on the tap, stretch forward along the jump, lean right; see render/jump.ts.
+  const jump = jumpShape(player.sinceFlap, player.vy);
 
   ctx.save();
   ctx.translate(x, player.y);
   // A glance turns the head a little too.
-  ctx.rotate(look.crashed ? Math.PI * 0.6 : tilt + pose.gaze * 0.07);
-  ctx.scale(1 - stretch * 0.9, 1 + stretch);
+  ctx.rotate(look.crashed ? Math.PI * 0.6 : jump.tilt + pose.gaze * 0.07);
+  ctx.scale(jump.scaleX, jump.scaleY);
   const act = pose.act;
   if (act) {
     ctx.translate(act.x * r, act.y * r);

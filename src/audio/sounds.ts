@@ -54,7 +54,14 @@ const coinRing = (delay = 0): Voice[] => [
 ];
 
 export const SOUNDS = {
-  flap: [noise('bandpass', 900, 0.12, 0.12, { to: 450, q: 1.2 }), tone('triangle', 300, 0.06, 0.04, { to: 420 })],
+  // A jump: a soft squish as the mushroom squeezes, then a springy rising "boing" and a puff of air as it
+  // stretches forward. Short and soft, since it plays on every tap.
+  flap: [
+    noise('lowpass', 900, 0.05, 0.11, { to: 260 }),
+    tone('sine', 230, 0.13, 0.075, { to: 560, delay: 0.025 }),
+    tone('triangle', 460, 0.09, 0.016, { to: 1120, delay: 0.025 }),
+    noise('bandpass', 1100, 0.12, 0.045, { to: 2600, q: 1.4, delay: 0.03 }),
+  ],
   pass: [tone('sine', C6, 0.05, 0.03)],
   nearMiss: [noise('bandpass', 3200, 0.2, 0.16, { to: 700, q: 2 }), tone('sine', E6, 0.14, 0.04, { to: G6, delay: 0.04 })],
   coin: coinRing(),
@@ -105,3 +112,9 @@ export const SOUNDS = {
 } satisfies Record<string, Voice[]>;
 
 export type SoundName = keyof typeof SOUNDS;
+
+/**
+ * Sounds heard over and over get a small random change of pitch each time
+ * (this share up or down), so a hundred flaps never sound like one recording.
+ */
+export const PITCH_VARIATION: Partial<Record<SoundName, number>> = { flap: 0.06 };

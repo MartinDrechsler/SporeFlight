@@ -1,6 +1,6 @@
 import type { GameEvent } from '../gameplay/world';
 import { Music, type Track } from './music';
-import { SOUNDS, type SoundName, type Voice } from './sounds';
+import { PITCH_VARIATION, SOUNDS, type SoundName, type Voice } from './sounds';
 
 /** Sounds for menus and rewards that are not gameplay events. */
 export type UiSound = 'click' | 'buy' | 'reward' | 'error' | 'quest' | 'achievement' | 'biome' | 'star' | 'newBest';
@@ -112,10 +112,13 @@ export class Audio {
   private play(name: SoundName): void {
     const ctx = this.context;
     if (!this.enabled || !ctx || !this.effects || ctx.state !== 'running') return;
-    for (const voice of SOUNDS[name] as Voice[]) this.voice(ctx, this.effects, voice);
+    const vary = PITCH_VARIATION[name] ?? 0;
+    const pitch = 1 + (Math.random() * 2 - 1) * vary;
+    for (const voice of SOUNDS[name] as Voice[]) this.voice(ctx, this.effects, voice, pitch);
   }
 
-  private voice(ctx: AudioContext, output: AudioNode, voice: Voice): void {
+  /** Plays one voice; `pitch` scales every frequency (1 = as written). */
+  private voice(ctx: AudioContext, output: AudioNode, voice: Voice, pitch: number): void {
     const start = ctx.currentTime + (voice.delay ?? 0);
     const end = start + voice.seconds;
     const attack = Math.min(voice.attack ?? 0.004, voice.seconds / 2);
@@ -129,8 +132,8 @@ export class Audio {
     if (voice.kind === 'tone') {
       const osc = ctx.createOscillator();
       osc.type = voice.wave;
-      osc.frequency.setValueAtTime(voice.from, start);
-      if (voice.to) osc.frequency.exponentialRampToValueAtTime(voice.to, end);
+      osc.frequency.setValueAtTime(voice.from * pitch, start);
+      if (voice.to) osc.frequency.exponentialRampToValueAtTime(voice.to * pitch, end);
       osc.connect(gain);
       source = osc;
     } else {
@@ -140,8 +143,8 @@ export class Audio {
       const filter = ctx.createBiquadFilter();
       filter.type = voice.filter;
       filter.Q.value = voice.q ?? 1;
-      filter.frequency.setValueAtTime(voice.from, start);
-      if (voice.to) filter.frequency.exponentialRampToValueAtTime(voice.to, end);
+      filter.frequency.setValueAtTime(voice.from * pitch, start);
+      if (voice.to) filter.frequency.exponentialRampToValueAtTime(voice.to * pitch, end);
       hiss.connect(filter).connect(gain);
       source = hiss;
     }
