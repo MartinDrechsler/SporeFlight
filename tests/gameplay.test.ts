@@ -107,13 +107,9 @@ describe('spawner', () => {
   it('each adventure mechanic comes from its level data', () => {
     const rng = createRandom(11);
     const make = (id: number, index = 0) => makeRoot(rng, level(id), FIELD, 0, index, null);
-    expect([make(1, 0).columns, make(1, 1).columns]).toEqual(['top', 'bottom']);
-    expect(make(1).glowfly).not.toBeNull();
-    expect(make(1).widthPhase).not.toBeNull();
     expect(make(2).motion.kind).toBe('drift');
     expect(make(4).gapPulse).not.toBeNull();
     expect(make(5).slidePhase).not.toBeNull();
-    expect(make(6, 0).gapCenter).toBeLessThan(make(6, 1).gapCenter);
     expect(make(7).motion.kind).toBe('sway');
     expect(make(3).motion.kind).toBe('still');
   });

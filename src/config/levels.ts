@@ -19,20 +19,14 @@ export interface LevelConfig {
   gap: { min: number; max: number };
   /** Gap breathes between min and max. */
   gapPulse: boolean;
-  /** How gap centres are placed: random walk, waving tunnel, or high/low steps. */
-  layout: 'random' | 'tunnel' | 'staggered';
-  /** 'alternate' gives roots only from the ceiling, then only from the ground. */
-  columns: 'both' | 'alternate';
+  /** How gap centres are placed: random walk or a waving tunnel. */
+  layout: 'random' | 'tunnel';
   /** Gaps that slide up and down at constant speed. */
   drift: { chance: number; speed: number } | null;
   /** Gaps that swing smoothly (overrides drift). */
   sway: boolean;
   /** Roots slide left and right. */
   slide: boolean;
-  /** Root width breathes. */
-  widthPulse: boolean;
-  /** Glowing swarms float in the open side of each root. */
-  glowflies: boolean;
   /** Updraft and downdraft zones appear once this many roots are passed; null = never. */
   windFromRoot: number | null;
   /** Magnets can appear from this root on (earlier rolls give a coin instead). */
@@ -41,15 +35,12 @@ export interface LevelConfig {
   progressive: boolean;
 }
 
-const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'columns' | 'drift' | 'sway' | 'slide' | 'widthPulse' | 'glowflies' | 'windFromRoot' | 'magnetFromRoot' | 'progressive'> & Partial<LevelConfig>): LevelConfig => ({
+const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide' | 'windFromRoot' | 'magnetFromRoot' | 'progressive'> & Partial<LevelConfig>): LevelConfig => ({
   gapPulse: false,
   layout: 'random',
-  columns: 'both',
   drift: null,
   sway: false,
   slide: false,
-  widthPulse: false,
-  glowflies: false,
   windFromRoot: null,
   magnetFromRoot: 0,
   progressive: false,
@@ -68,7 +59,7 @@ export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 1, name: 'GLOWFLY VALE', theme: 'glowfly',
     description: 'Dodge alternating breathing roots while weaving around floating glowfly swarms.',
-    speed: 126, speedMultiplier: 1.1, spacing: 230, gap: { min: 125, max: 125 }, columns: 'alternate', widthPulse: true, glowflies: true,
+    speed: 126, speedMultiplier: 1.1, spacing: 230, gap: { min: 125, max: 125 },
   }),
   level({
     id: 2, name: 'CANOPY WINDS', theme: 'amber', description: 'Gaps drift up and down, and the wind pushes back. Time your flaps carefully.',
@@ -88,7 +79,7 @@ export const LEVELS: readonly LevelConfig[] = [
   }),
   level({
     id: 6, name: 'STAGGERED STEPS', theme: 'orange', description: 'Extreme height changes. Climb and dive rapidly.',
-    speed: 138, speedMultiplier: 1.15, spacing: 290, gap: { min: 135, max: 135 }, layout: 'staggered',
+    speed: 138, speedMultiplier: 1.15, spacing: 290, gap: { min: 135, max: 135 },
   }),
   level({
     id: 7, name: 'WINDING CANOPY TUNNEL', theme: 'green', description: 'Fly through a narrow, waving canopy tunnel.',

@@ -1,17 +1,15 @@
 import type { Theme } from '../config/theme';
 import { TUNING } from '../config/tuning';
 import { pickupPosition, type Pickup } from '../gameplay/pickups';
-import { gapBottom, gapTop, glowflyPosition, rootLeft, type Root } from '../gameplay/roots';
+import { gapBottom, gapTop, rootLeft, type Root } from '../gameplay/roots';
 import type { WindZone } from '../gameplay/wind';
 
 const CAP_HEIGHT = 18;
 
 export function drawRoot(ctx: CanvasRenderingContext2D, root: Root, theme: Theme, groundY: number, time: number): void {
   const x = rootLeft(root);
-  if (root.columns !== 'bottom') drawColumn(ctx, theme, x, 0, root.width, gapTop(root), 'down', time);
-  if (root.columns !== 'top') drawColumn(ctx, theme, x, gapBottom(root), root.width, groundY - gapBottom(root), 'up', time);
-  const swarm = glowflyPosition(root);
-  if (swarm) drawGlowflies(ctx, swarm.x, swarm.y, time);
+  drawColumn(ctx, theme, x, 0, root.width, gapTop(root), 'down', time);
+  drawColumn(ctx, theme, x, gapBottom(root), root.width, groundY - gapBottom(root), 'up', time);
 }
 
 /** One root column. `tipFacing` is the end that points into the gap. */
@@ -56,26 +54,6 @@ function drawColumn(
   ctx.roundRect(x - 2, capY, width + 4, CAP_HEIGHT, 8);
   ctx.fill();
   ctx.stroke();
-}
-
-/** A buzzing cluster of yellow lights; the danger zone is the cluster's radius. */
-function drawGlowflies(ctx: CanvasRenderingContext2D, cx: number, cy: number, time: number): void {
-  const r = TUNING.glowflies.radius;
-  const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 1.8);
-  halo.addColorStop(0, 'rgba(255, 235, 59, 0.45)');
-  halo.addColorStop(1, 'rgba(255, 235, 59, 0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff59d';
-  for (let i = 0; i < 7; i++) {
-    const angle = time * (1.5 + i * 0.3) + i * 2.4;
-    const dist = r * (0.3 + ((i * 37) % 10) / 14);
-    ctx.beginPath();
-    ctx.arc(cx + Math.cos(angle) * dist, cy + Math.sin(angle * 1.3) * dist, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
 }
 
 export function drawPickup(ctx: CanvasRenderingContext2D, pickup: Pickup, time: number): void {

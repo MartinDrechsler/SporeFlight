@@ -1,6 +1,6 @@
 import { TUNING } from '../config/tuning';
 import type { Player } from './player';
-import { gapBottom, gapTop, glowflyPosition, rootLeft, type Root } from './roots';
+import { gapBottom, gapTop, rootLeft, type Root } from './roots';
 
 /** A solid rectangle of a root, in screen coordinates. */
 interface Box {
@@ -25,25 +25,17 @@ export function circlesTouch(ax: number, ay: number, ar: number, bx: number, by:
 
 function columnBoxes(root: Root, groundY: number): Box[] {
   const x = rootLeft(root);
-  const boxes: Box[] = [];
-  if (root.columns !== 'bottom') boxes.push({ x, y: 0, w: root.width, h: gapTop(root) });
-  if (root.columns !== 'top') boxes.push({ x, y: gapBottom(root), w: root.width, h: groundY - gapBottom(root) });
-  return boxes;
+  return [
+    { x, y: 0, w: root.width, h: gapTop(root) },
+    { x, y: gapBottom(root), w: root.width, h: groundY - gapBottom(root) },
+  ];
 }
 
-/**
- * The closest the mushroom is to any solid part of a root (columns and
- * glowfly swarm). Negative means it is touching.
- */
+/** The closest the mushroom is to either column of a root. Negative means it is touching. */
 export function gapToRoot(player: Player, root: Root, groundY: number): number {
   let closest = Infinity;
   for (const box of columnBoxes(root, groundY)) {
     closest = Math.min(closest, circleToBoxGap(player.x, player.y, player.radius, box));
-  }
-  const swarm = glowflyPosition(root);
-  if (swarm) {
-    const gap = Math.hypot(player.x - swarm.x, player.y - swarm.y) - player.radius - TUNING.glowflies.radius;
-    closest = Math.min(closest, gap);
   }
   return closest;
 }

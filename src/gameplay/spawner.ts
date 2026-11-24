@@ -2,12 +2,11 @@ import type { LevelConfig } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import type { Pickup, PickupKind } from './pickups';
-import type { ColumnSet, Root, RootMotion } from './roots';
+import type { Root, RootMotion } from './roots';
 import type { WindZone } from './wind';
 
 const R = TUNING.roots;
 const PK = TUNING.pickups;
-const G = TUNING.glowflies;
 const WD = TUNING.wind;
 const WV = TUNING.waves;
 
@@ -42,7 +41,6 @@ export function makeRoot(
   const centerMin = field.height * R.centerMinFraction;
   const centerMax = field.height * R.centerMaxFraction;
   const gapCenter = chooseCenter(rng, level, field, index, centerMin, centerMax, previousCenter);
-  const columns = chooseColumns(level, index);
 
   return {
     x,
@@ -52,12 +50,9 @@ export function makeRoot(
     gapSize: gapSizeFor(level, index),
     centerMin,
     centerMax,
-    columns,
     motion: chooseMotion(rng, level, index, gapCenter),
     gapPulse: level.gapPulse ? { min: level.gap.min, max: level.gap.max, phase: rng.range(0, Math.PI * 2) } : null,
     slidePhase: level.slide ? rng.range(0, Math.PI * 2) : null,
-    widthPhase: level.widthPulse ? rng.range(0, Math.PI * 2) : null,
-    glowfly: level.glowflies ? makeGlowfly(rng, columns, field) : null,
     passed: false,
     nearMissCounted: false,
   };
@@ -115,11 +110,6 @@ function choosePickupKind(rng: Random, index: number, chance: number, magnetAllo
   return 'coin';
 }
 
-function chooseColumns(level: LevelConfig, index: number): ColumnSet {
-  if (level.columns === 'both') return 'both';
-  return index % 2 === 0 ? 'top' : 'bottom';
-}
-
 function chooseCenter(
   rng: Random,
   level: LevelConfig,
@@ -134,8 +124,6 @@ function chooseCenter(
       const t = R.tunnel;
       return field.height * t.centerFraction + Math.sin(index * t.stepPerRoot) * field.height * t.amplitudeFraction;
     }
-    case 'staggered':
-      return field.height * (index % 2 === 0 ? R.staggered.highFraction : R.staggered.lowFraction);
     case 'random': {
       if (previous === null) return rng.range(min, max);
       const low = Math.max(min, previous - R.maxCenterStep);
@@ -172,12 +160,4 @@ function driftFor(level: LevelConfig, index: number): { chance: number; speed: n
     chance: Math.min(d.maxChance, d.startChance + rootsInto * d.chancePerRoot),
     speed: Math.min(d.maxSpeed, d.baseSpeed + rootsInto * d.extraSpeedPerRoot),
   };
-}
-
-/** Swarms hover on the open side: near the ground under a ceiling root, near the top over a ground root. */
-function makeGlowfly(rng: Random, columns: ColumnSet, field: Field): Root['glowfly'] {
-  if (columns === 'both') return null;
-  const distance = G.minDistance + rng.range(0, G.extraDistance);
-  const baseY = columns === 'top' ? field.groundY - distance : distance;
-  return { baseY, phase: rng.range(0, Math.PI * 2) };
 }

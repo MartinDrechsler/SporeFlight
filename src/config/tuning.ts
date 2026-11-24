@@ -42,25 +42,13 @@ export const TUNING = {
     /** Endless: gap shrinks from gap.max by this per root spawned, down to gap.min. */
     gapShrinkPerRoot: 1.6,
     gapPulseSpeed: 2.4,
-    widthPulseAmplitude: 22,
-    widthPulseSpeed: 2.4,
     slideAmplitude: 45,
     slideSpeed: 2.1,
     tunnel: { centerFraction: 0.43, amplitudeFraction: 0.18, stepPerRoot: 0.55 },
-    staggered: { highFraction: 0.26, lowFraction: 0.61 },
     /** Endless difficulty: moving gaps appear with progress. Counted in roots spawned, not points. */
     endlessDrift: { fromRoot: 10, startChance: 0.25, chancePerRoot: 0.05, maxChance: 0.8, baseSpeed: 30, extraSpeedPerRoot: 2.4, maxSpeed: 120 },
     endlessSwayFromRoot: 15,
     sway: { minAmplitude: 55, maxAmplitude: 80, minFrequency: 1.5, maxFrequency: 2.4 },
-  },
-
-  glowflies: {
-    radius: 13,
-    /** Distance from the open side's edge (ground or ceiling). */
-    minDistance: 130,
-    extraDistance: 40,
-    bobAmplitude: 20,
-    bobSpeed: 3,
   },
 
   pickups: {
