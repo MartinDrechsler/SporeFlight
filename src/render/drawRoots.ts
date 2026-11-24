@@ -1,6 +1,8 @@
 import type { ObstacleStyle } from '../config/biomes';
 import type { Theme } from '../config/theme';
 import { drawColumn } from './obstacles';
+import { COIN, DIAMOND } from '../config/sprites';
+import { drawSprite } from './sprites';
 import { TUNING } from '../config/tuning';
 import { pickupPosition, type Pickup } from '../gameplay/pickups';
 import { gapBottom, gapTop, rootLeft, type Root } from '../gameplay/roots';
@@ -89,46 +91,26 @@ export function drawPickup(ctx: CanvasRenderingContext2D, pickup: Pickup, time: 
 
   switch (pickup.kind) {
     case 'coin':
-      ctx.scale(Math.max(0.25, Math.abs(Math.cos(time * 3))), 1);
-      glow(ctx, '#ffd23f', 12);
-      ctx.fillStyle = '#ffd23f';
-      circle(ctx, 0, 0, r);
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#b8860b';
-      circle(ctx, 0, 0, r * 0.45);
+      // A pixel coin turning on its edge.
+      ctx.scale(Math.max(0.3, Math.abs(Math.cos(time * 2.2))), 1);
+      glow(ctx, '#ffd23f', 10);
+      drawSprite(ctx, COIN, 0, 0, r * 2.4);
       break;
     case 'goldCoin': {
-      // Huge, slowly turning, with a star and sparkles: worth stopping for.
+      // The same coin, huge and turning slowly, with sparkles around it: worth stopping for.
       const g = TUNING.pickups.goldenRadius;
-      ctx.scale(Math.max(0.35, Math.abs(Math.cos(time * 2))), 1);
+      sparkles(ctx, g * 1.5, time, '#fff2a8');
+      ctx.scale(Math.max(0.3, Math.abs(Math.cos(time * 2))), 1);
       glow(ctx, '#ffd23f', 24);
-      ctx.fillStyle = '#ffe680';
-      circle(ctx, 0, 0, g);
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#d9a400';
-      circle(ctx, 0, 0, g * 0.72);
-      ctx.fillStyle = '#fff2a8';
-      ctx.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
-        const rr = i % 2 === 0 ? g * 0.55 : g * 0.22;
-        ctx.lineTo(Math.cos(angle) * rr, Math.sin(angle) * rr);
-      }
-      ctx.closePath();
-      ctx.fill();
+      drawSprite(ctx, COIN, 0, 0, g * 2.4);
       break;
     }
     case 'diamond':
-      ctx.rotate(time * 1.5);
+      // A brilliant: it does not spin (its cut would be lost), it glints instead.
       glow(ctx, '#3fd8ff', 16);
-      ctx.fillStyle = '#3fd8ff';
-      ctx.beginPath();
-      ctx.moveTo(0, -r * 1.3);
-      ctx.lineTo(r, 0);
-      ctx.lineTo(0, r * 1.3);
-      ctx.lineTo(-r, 0);
-      ctx.closePath();
-      ctx.fill();
+      drawSprite(ctx, DIAMOND, 0, 0, r * 2.9);
+      ctx.shadowBlur = 0;
+      sparkles(ctx, r * 1.3, time * 1.4, '#ffffff', 1);
       break;
     case 'shield':
       glow(ctx, '#00baff', 14);
@@ -223,5 +205,18 @@ export function drawGate(ctx: CanvasRenderingContext2D, x: number, groundY: numb
     ctx.beginPath();
     ctx.arc(x + Math.sin(time * 3 + i) * half * 0.6, y, 2, 0, Math.PI * 2);
     ctx.fill();
+  }
+}
+
+/** Small four-point twinkles circling a pickup; `count` of them, fading in and out. */
+function sparkles(ctx: CanvasRenderingContext2D, radius: number, time: number, color: string, count = 3): void {
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const angle = time * 0.8 + (i * Math.PI * 2) / count;
+    const size = 1 + 2.2 * Math.max(0, Math.sin(time * 3 + i * 2));
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    ctx.fillRect(x - size, y - 0.75, size * 2, 1.5);
+    ctx.fillRect(x - 0.75, y - size, 1.5, size * 2);
   }
 }

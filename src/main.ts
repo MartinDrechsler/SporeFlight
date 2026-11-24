@@ -31,6 +31,7 @@ import { startState } from './states/startState';
 import { unlockState } from './states/unlockState';
 import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
+import { installIcons } from './ui/icons';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
 
@@ -118,6 +119,7 @@ const loop = createLoop(
     }),
 );
 
+installIcons();
 setupInput();
 setupAudioUnlock();
 setupLifecycle();

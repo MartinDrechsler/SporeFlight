@@ -3,7 +3,7 @@ import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
 import { claimableCount, dayKey, refreshQuests } from '../meta/quests';
 import { byId, setText } from '../ui/dom';
-import { hearts } from '../ui/hud';
+import { showHearts } from '../ui/icons';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
@@ -70,7 +70,7 @@ function refresh(ctx: GameContext): void {
   setText(byId('start-best'), save.bestScore);
   setText(byId('start-coins'), save.coins);
   setText(byId('start-diamonds'), save.diamonds);
-  setText(byId('start-lives'), hearts(save.lives));
+  showHearts(byId('start-lives'), save.lives);
   byId('start-last').hidden = ctx.lastScore === null;
   setText(byId('start-last-score'), ctx.lastScore ?? 0);
   byId('adventure-lock').hidden = save.adventureUnlocked;

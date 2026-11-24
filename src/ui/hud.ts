@@ -5,6 +5,7 @@ import { courseProgress } from '../gameplay/course';
 import { roundCoins, type World } from '../gameplay/world';
 import type { SaveData } from '../core/save';
 import { byId, setText } from './dom';
+import { showHearts } from './icons';
 
 /**
  * The in-game display. During a round, totals are the saved amount plus what
@@ -23,7 +24,7 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   username.hidden = !endless;
   setText(username, save.username ?? TUNING.session.defaultUsername);
 
-  setText(byId('hud-lives'), hearts(save.lives));
+  showHearts(byId('hud-lives'), save.lives);
 
   const levelBadge = byId('hud-level');
   levelBadge.hidden = endless;
@@ -40,11 +41,6 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   const magnet = byId('hud-magnet');
   magnet.hidden = world.magnetTime <= 0;
   byId('hud-magnet-bar').style.width = `${(world.magnetTime / TUNING.magnet.seconds) * 100}%`;
-}
-
-export function hearts(lives: number): string {
-  const slots = Math.max(TUNING.session.heartSlots, lives);
-  return '♥'.repeat(lives) + '♡'.repeat(slots - lives);
 }
 
 /** Restarts a short "pop" animation whenever a number changes. */
