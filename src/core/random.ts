@@ -32,6 +32,11 @@ export function createRandom(seed: number): Random {
   };
 }
 
+/** A fresh seed drawn from another generator, so a session's rounds each get their own. */
+export function nextSeed(rng: Random): number {
+  return Math.floor(rng.next() * 4294967296);
+}
+
 export function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 32);
 }

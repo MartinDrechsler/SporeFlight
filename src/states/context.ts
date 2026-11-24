@@ -26,7 +26,8 @@ export interface GameContext {
   /** Score of the round that just ended, shown on the start screen. */
   lastScore: number | null;
   /** Builds a fresh round of the given level, sized to the screen. */
-  newWorld(levelId: number): World;
+  /** A fresh round of a level; `startY` carries the hovering mushroom's height over. */
+  newWorld(levelId: number, startY?: number): World;
   /** Switch to another screen. */
   go(name: StateName): void;
   current(): StateName | null;

@@ -7,7 +7,7 @@ import { Audio } from './audio/audio';
 import { levelById, ENDLESS_LEVEL_ID } from './config/levels';
 import { TUNING } from './config/tuning';
 import { createLoop } from './core/loop';
-import { createRandom, randomSeed } from './core/random';
+import { createRandom, nextSeed, randomSeed } from './core/random';
 import { browserStore, loadSave, writeSave } from './core/save';
 import { StateMachine } from './core/stateMachine';
 import { createWorld } from './gameplay/world';
@@ -53,7 +53,7 @@ const ads: RewardedAds = createMockAds(isTest ? 0 : AD_SECONDS, TUNING.session.a
 
 let earlierMarks: readonly number[] = [];
 const ctx: GameContext = {
-  world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), rng),
+  world: createWorld(surface.width, surface.height, levelById(ENDLESS_LEVEL_ID), nextSeed(rng)),
   save,
   audio: new Audio(save.soundOn),
   effects: new Effects(),
@@ -61,10 +61,11 @@ const ctx: GameContext = {
   rng,
   levelId: ENDLESS_LEVEL_ID,
   lastScore: null,
-  newWorld: (levelId) => {
+  newWorld: (levelId, startY) => {
     // Clumps from earlier rounds; this round's clump only grows once the mushroom has landed.
     earlierMarks = save.deathMarks[String(levelId)] ?? [];
-    return createWorld(surface.width, surface.height, levelById(levelId), rng);
+    // Every round gets its own seed, so it can be replayed on its own.
+    return createWorld(surface.width, surface.height, levelById(levelId), nextSeed(rng), startY);
   },
   go: (name) => machine.go(name),
   current: () => machine.current,

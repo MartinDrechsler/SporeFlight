@@ -1,6 +1,5 @@
 import { LEVELS, levelById, type LevelConfig } from '../src/config/levels';
 import { STEP_SECONDS } from '../src/core/loop';
-import { createRandom } from '../src/core/random';
 import { rootLeft } from '../src/gameplay/roots';
 import { createWorld, flapPlayer, stepWorld, type World } from '../src/gameplay/world';
 
@@ -9,7 +8,7 @@ export const HEIGHT = 700;
 export const ENDLESS = LEVELS[0]!;
 
 export function newWorld(seed = 1, level: LevelConfig = ENDLESS): World {
-  return createWorld(WIDTH, HEIGHT, level, createRandom(seed));
+  return createWorld(WIDTH, HEIGHT, level, seed);
 }
 
 export function level(id: number): LevelConfig {
