@@ -13,7 +13,6 @@ import { StateMachine } from './core/stateMachine';
 import { createWorld } from './gameplay/world';
 import { createSurface, resizeSurface } from './render/canvas';
 import { Effects } from './render/effects';
-import { preloadImages } from './render/images';
 import { renderScene } from './render/renderer';
 import { adState } from './states/adState';
 import { adventureOverState } from './states/adventureOverState';
@@ -42,7 +41,6 @@ let rng = createRandom(Number.isFinite(seedParam) && seedParam > 0 ? seedParam :
 
 // Layout in CSS needs the ground height; pass it from the one place it is defined.
 document.documentElement.style.setProperty('--ground-height', `${TUNING.world.groundHeight}px`);
-preloadImages();
 
 const canvas = byId<HTMLCanvasElement>('game-canvas');
 const surface = createSurface(canvas);
