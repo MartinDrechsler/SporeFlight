@@ -180,12 +180,6 @@ export const TUNING = {
     calmPickupFactor: 3,
   },
 
-  /** Endless: the painted forest fades in behind the hills as the score grows. */
-  backdrops: [
-    { fromScore: 20, image: 'forest-1' },
-    { fromScore: 40, image: 'forest-2' },
-  ],
-
   session: {
     startLives: 5,
     /** Lives refilled by resting (game open) or by watching an ad. */

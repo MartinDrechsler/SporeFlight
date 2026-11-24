@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BIOMES, BLEND_ROOTS, biomeAt, biomeBlend } from '../src/config/biomes';
 import { ADVENTURE_UNLOCK_COST } from '../src/config/levels';
 import { QUEST_POOL, QUESTS_PER_DAY } from '../src/config/rewards';
 import { TUNING } from '../src/config/tuning';
@@ -219,5 +220,32 @@ describe('daily quests', () => {
 
   it('formats the local day', () => {
     expect(dayKey(new Date(2026, 0, 5, 23, 59).getTime())).toBe('2026-01-05');
+  });
+});
+
+describe('the endless journey', () => {
+  it('a new biome every 20 points, 8 in all, ending in the Frozen Peaks', () => {
+    expect(BIOMES).toHaveLength(8);
+    expect(BIOMES.map((b) => b.fromScore)).toEqual([0, 20, 40, 60, 80, 100, 120, 140]);
+    expect(biomeAt(19).id).toBe('dark_forest');
+    expect(biomeAt(20).id).toBe('twilight');
+    expect(biomeAt(500).id).toBe('peaks');
+  });
+
+  it('blends into the next biome over the roots before it arrives', () => {
+    expect(biomeBlend(10)).toMatchObject({ t: 1 });
+    expect(biomeBlend(10).to.id).toBe('dark_forest');
+    const halfway = biomeBlend(20 - BLEND_ROOTS / 2);
+    expect([halfway.from.id, halfway.to.id, halfway.t]).toEqual(['dark_forest', 'twilight', 0.5]);
+    expect(biomeBlend(20).to.id).toBe('twilight');
+    expect(biomeBlend(20).t).toBe(1);
+  });
+
+  it('reaching a biome in endless earns its badge, all the earlier ones too', () => {
+    const save = defaultSave();
+    const ids = unlockAchievements(save, { ...noStats, score: 45 }).map((a) => a.id);
+    expect(ids).toEqual(expect.arrayContaining(['biome_twilight', 'biome_woodland']));
+    expect(ids).not.toContain('biome_meadow');
+    expect(unlockAchievements(defaultSave(), { ...noStats, score: 45, endless: false })).toEqual([]);
   });
 });

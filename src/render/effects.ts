@@ -111,6 +111,13 @@ export class Effects {
     }
   }
 
+  /** A new biome arrives: its name, large, in its own colour. */
+  biomeArrives(name: string, color: string, width: number, height: number): void {
+    this.text('YOU ENTER', width / 2, height * 0.44, '#ffffff', 16);
+    this.text(name, width / 2, height * 0.49, color, 26);
+    this.flash(hexToRgb(color));
+  }
+
   /** Leaves the wearer's glow trail behind the flying mushroom. */
   trail(trail: Trail, x: number, y: number, dt: number): void {
     if (trail.colors.length === 0) return;

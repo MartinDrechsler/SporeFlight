@@ -1,6 +1,7 @@
 import type { Theme } from '../config/theme';
 import { TUNING } from '../config/tuning';
-import { readyImage, type ImageName } from './images';
+import type { Biome } from '../config/biomes';
+import { drawLife, drawScenery } from './scenery';
 
 export interface BackgroundView {
   theme: Theme;
@@ -9,9 +10,8 @@ export interface BackgroundView {
   groundY: number;
   distance: number;
   time: number;
-  /** Endless only: score that unlocks the painted forests. Null hides them. */
-  backdropScore: number | null;
-  /** Distances of recent crashes, shown as small markers on the ground. */
+  /** Endless only: the biomes being travelled through; null in a level (theme colours only). */
+  journey: { from: Biome; to: Biome; t: number } | null;
 }
 
 /**
@@ -27,29 +27,22 @@ export function drawBackground(ctx: CanvasRenderingContext2D, view: BackgroundVi
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, width, height);
 
-  if (view.backdropScore !== null) drawBackdrop(ctx, view.backdropScore, width, groundY, distance);
-  drawSpores(ctx, theme.accent, width, groundY, distance * 0.15, time);
+  const journey = view.journey;
+  const scenery = { width, groundY, distance, time, colors: theme };
+  if (journey) {
+    // One biome fades out while the next fades in; outside a change both are the same.
+    if (journey.from !== journey.to) {
+      drawScenery(ctx, journey.from.scenery, 1 - journey.t, scenery);
+      drawLife(ctx, journey.from.life, 1 - journey.t, scenery);
+    }
+    drawScenery(ctx, journey.to.scenery, journey.t, scenery);
+    drawLife(ctx, journey.to.life, journey.t, scenery);
+  } else {
+    drawLife(ctx, 'spores', 1, scenery);
+  }
   drawHills(ctx, theme.hillsFar, width, groundY, distance * 0.2, 110, 0.55);
   drawHills(ctx, theme.hillsNear, width, groundY, distance * 0.45, 70, 0.35);
   drawGround(ctx, theme, width, height, groundY, distance);
-}
-
-/** The latest painted forest unlocked by the score, fading in over a few points. */
-function drawBackdrop(ctx: CanvasRenderingContext2D, score: number, width: number, groundY: number, distance: number): void {
-  const unlocked = TUNING.backdrops.filter((b) => score >= b.fromScore);
-  const latest = unlocked.at(-1);
-  if (!latest) return;
-  const image = readyImage(latest.image as ImageName);
-  if (!image) return;
-
-  const drawHeight = groundY * 0.75;
-  const drawWidth = image.naturalWidth * (drawHeight / image.naturalHeight);
-  const shift = (distance * 0.1) % drawWidth;
-  ctx.globalAlpha = Math.min(1, (score - latest.fromScore + 1) / 4) * 0.55;
-  for (let x = -shift; x < width; x += drawWidth) {
-    ctx.drawImage(image, x, groundY - drawHeight, drawWidth, drawHeight);
-  }
-  ctx.globalAlpha = 1;
 }
 
 function drawHills(
@@ -72,23 +65,6 @@ function drawHills(
   ctx.lineTo(width, groundY);
   ctx.closePath();
   ctx.fill();
-}
-
-/** Glowing spores drifting in the air. Positions come from a fixed pattern, not randomness. */
-function drawSpores(ctx: CanvasRenderingContext2D, color: string, width: number, groundY: number, offset: number, time: number): void {
-  const span = width * 1.5;
-  ctx.fillStyle = color;
-  for (let i = 0; i < 28; i++) {
-    const seedX = (i * 97.3) % 1;
-    const seedY = (i * 61.7) % 1;
-    const x = (((seedX * span - offset) % span) + span) % span - width * 0.25;
-    const y = seedY * groundY * 0.9 + Math.sin(time * 0.8 + i) * 6;
-    ctx.globalAlpha = 0.15 + 0.3 * Math.sin(time * 1.7 + i * 2.1) ** 2;
-    ctx.beginPath();
-    ctx.arc(x, y, 1 + (i % 3), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
 }
 
 function drawGround(ctx: CanvasRenderingContext2D, theme: Theme, width: number, height: number, groundY: number, distance: number): void {

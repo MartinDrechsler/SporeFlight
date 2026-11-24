@@ -1,3 +1,4 @@
+import { BIOMES, biomeAt } from '../config/biomes';
 import { ADVENTURE_LEVELS } from '../config/levels';
 import { ACHIEVEMENTS, type Achievement, type BadgeStat, type RunStats } from '../config/rewards';
 import type { SaveData } from '../core/save';
@@ -29,6 +30,7 @@ function badgeValues(save: SaveData, run: RunResult): Record<BadgeStat, number> 
   const finished = ADVENTURE_LEVELS.filter((level) => levelStars(save, level.id) > 0).map((level) => level.id);
   return {
     endlessScore: run.endless ? run.score : 0,
+    biome: run.endless ? BIOMES.indexOf(biomeAt(run.score)) : 0,
     nearMisses: run.nearMisses,
     runDiamonds: run.diamonds,
     highestLevel: Math.max(0, ...finished),

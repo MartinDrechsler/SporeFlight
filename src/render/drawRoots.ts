@@ -1,16 +1,24 @@
+import type { ObstacleStyle } from '../config/biomes';
 import type { Theme } from '../config/theme';
+import { drawColumn } from './obstacles';
 import { TUNING } from '../config/tuning';
 import { pickupPosition, type Pickup } from '../gameplay/pickups';
 import { gapBottom, gapTop, rootLeft, type Root } from '../gameplay/roots';
 import { isBroken, type Vein } from '../gameplay/veins';
 import type { WindZone } from '../gameplay/wind';
 
-const CAP_HEIGHT = 18;
+/** What an obstacle is made of and its colours. */
+export interface RootLook {
+  colors: Theme;
+  style: ObstacleStyle;
+}
 
-export function drawRoot(ctx: CanvasRenderingContext2D, root: Root, theme: Theme, groundY: number, time: number): void {
+export function drawRoot(ctx: CanvasRenderingContext2D, root: Root, look: RootLook, groundY: number, time: number): void {
   const x = rootLeft(root);
-  drawColumn(ctx, theme, x, 0, root.width, gapTop(root), 'down', time);
-  drawColumn(ctx, theme, x, gapBottom(root), root.width, groundY - gapBottom(root), 'up', time);
+  const top = gapTop(root);
+  const bottom = gapBottom(root);
+  drawColumn(ctx, look.style, look.colors, { x, y: 0, width: root.width, height: top, tip: 'down', seed: root.index * 2 }, time);
+  drawColumn(ctx, look.style, look.colors, { x, y: bottom, width: root.width, height: groundY - bottom, tip: 'up', seed: root.index * 2 + 1 }, time);
   if (root.vein) drawVein(ctx, root, root.vein, time);
 }
 
@@ -70,50 +78,6 @@ function drawVein(ctx: CanvasRenderingContext2D, root: Root, vein: Vein, time: n
     ctx.lineTo(x - 2, base + dir * 11);
     ctx.stroke();
   }
-}
-
-/** One root column. `tipFacing` is the end that points into the gap. */
-function drawColumn(
-  ctx: CanvasRenderingContext2D,
-  theme: Theme,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  tipFacing: 'up' | 'down',
-  time: number,
-): void {
-  if (height <= 0) return;
-  const body = ctx.createLinearGradient(x, 0, x + width, 0);
-  body.addColorStop(0, theme.rootDark);
-  body.addColorStop(0.45, theme.rootLight);
-  body.addColorStop(1, theme.rootDark);
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.roundRect(x + 4, y, width - 8, height, 6);
-  ctx.fill();
-
-  // Glowing vein running along the column.
-  ctx.strokeStyle = theme.rootVein;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  const midX = x + width / 2;
-  for (let step = 0; step <= height; step += 10) {
-    const vx = midX + Math.sin(step * 0.05 + time * 1.5) * Math.min(6, width * 0.1);
-    if (step === 0) ctx.moveTo(vx, y + step);
-    else ctx.lineTo(vx, y + step);
-  }
-  ctx.stroke();
-
-  // Wider cap at the tip, facing the gap.
-  const capY = tipFacing === 'down' ? y + height - CAP_HEIGHT : y;
-  ctx.fillStyle = theme.rootLight;
-  ctx.strokeStyle = theme.accent;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(x - 2, capY, width + 4, CAP_HEIGHT, 8);
-  ctx.fill();
-  ctx.stroke();
 }
 
 export function drawPickup(ctx: CanvasRenderingContext2D, pickup: Pickup, time: number): void {

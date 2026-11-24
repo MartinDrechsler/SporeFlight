@@ -56,6 +56,7 @@ export function makeRoot(
   const motion = chooseMotion(rng, level, index, gapCenter);
 
   return {
+    index,
     x,
     width: R.width,
     xOffset: 0,

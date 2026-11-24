@@ -21,6 +21,8 @@ declare global {
       setSave(patch: Record<string, unknown>): void;
       invulnerable(on: boolean): void;
       skipAd(): void;
+      /** Jumps the current run ahead to a score (clears the roots on screen), to see later biomes. */
+      skipTo(score: number): void;
     };
   }
 }
@@ -63,6 +65,14 @@ export function installTestHooks(
       ctx.world.invulnerableTime = on ? Infinity : 0;
     },
     skipAd: () => document.getElementById('ad-skip')?.click(),
+    skipTo: (score) => {
+      const world = ctx.world;
+      world.stats.score = score;
+      world.rootsPassed = score;
+      world.rootsSpawned = score;
+      world.roots = [];
+      world.pickups = [];
+    },
   };
   loop.advance(0);
 }

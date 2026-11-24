@@ -1,3 +1,5 @@
+import { BIOMES } from './biomes';
+
 /**
  * Badges (one-time honours) and daily quests. Both are pure data: each names
  * a statistic and a target, and the meta-game code checks them.
@@ -17,6 +19,8 @@ export interface RunStats {
 /** What a badge measures: the round just played, or progress kept in the save. */
 export type BadgeStat =
   | 'endlessScore'
+  /** Number of the furthest biome reached in an endless run (0 = the first). */
+  | 'biome'
   | 'nearMisses'
   | 'runDiamonds'
   | 'highestLevel'
@@ -41,6 +45,14 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'sprout', name: 'SPROUT', description: 'Reach 10 in endless', stat: 'endlessScore', target: 10 },
   { id: 'sky_wanderer', name: 'SKY WANDERER', description: 'Reach 20 in endless', stat: 'endlessScore', target: 20 },
   { id: 'forest_legend', name: 'FOREST LEGEND', description: 'Reach 50 in endless', stat: 'endlessScore', target: 50, trail: 'rainbow' },
+  // One badge for arriving in each new biome.
+  ...BIOMES.slice(1).map((biome, i) => ({
+    id: `biome_${biome.id}`,
+    name: biome.name,
+    description: `Reach the ${titleCase(biome.name)} in endless`,
+    stat: 'biome' as const,
+    target: i + 1,
+  })),
   { id: 'near_miss_master', name: 'NEAR-MISS MASTER', description: '5 near misses in one run', stat: 'nearMisses', target: 5, trail: 'gold' },
   { id: 'diamond_hunter', name: 'DIAMOND HUNTER', description: 'Collect 3 diamonds in one run', stat: 'runDiamonds', target: 3 },
   { id: 'stone_breaker', name: 'STONE BREAKER', description: 'Beat the Stone Thrower (level 5)', stat: 'highestLevel', target: 5 },
@@ -48,6 +60,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'perfect_explorer', name: 'PERFECT EXPLORER', description: '3 stars on any adventure level', stat: 'bestLevelStars', target: 3 },
   { id: 'forest_master', name: 'FOREST MASTER', description: '3 stars on every adventure level', stat: 'perfectLevels', target: 10, trail: 'aurora' },
 ];
+
+function titleCase(text: string): string {
+  return text.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 /** What a quest counts. */
 export type QuestKind = 'endlessScore' | 'runCoins' | 'coins' | 'levelsFinished' | 'veins' | 'nearMisses' | 'flaps';

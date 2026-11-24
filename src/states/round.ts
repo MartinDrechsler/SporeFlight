@@ -2,6 +2,7 @@ import { flapPlayer, type GameEvent, type World } from '../gameplay/world';
 import type { QuestKind } from '../config/rewards';
 import { unlockAchievements } from '../meta/achievements';
 import { addQuestProgress } from '../meta/quests';
+import { biomeAt } from '../config/biomes';
 import { skinById } from '../config/skins';
 import { trailById } from '../config/trails';
 import { THEMES } from '../config/theme';
@@ -32,11 +33,20 @@ export function deliverEvents(ctx: GameContext): void {
   const flapColor = skinById(ctx.save.activeSkin).glow;
   const accent = THEMES[world.level.theme].accent;
   for (const event of world.events) {
+    if (event.type === 'pass' && world.level.progressive) announceBiome(ctx, event.score);
     ctx.audio.react(event);
     ctx.effects.react(event, world.player.x, world.player.y, world.width, world.height, flapColor, accent);
     for (const [kind, amount] of questProgressFor(event, world)) addQuest(ctx, kind, amount);
   }
   world.events.length = 0;
+}
+
+/** In endless, the score that brings a new biome announces it by name. */
+function announceBiome(ctx: GameContext, score: number): void {
+  const biome = biomeAt(score);
+  if (score === 0 || biome.fromScore !== score) return;
+  ctx.effects.biomeArrives(biome.name, biome.colors.accent, ctx.world.width, ctx.world.height);
+  ctx.audio.ui('reward');
 }
 
 export function addQuest(ctx: GameContext, kind: QuestKind, amount: number): void {

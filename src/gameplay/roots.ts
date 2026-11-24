@@ -16,6 +16,8 @@ export type RootMotion =
   | { kind: 'sway'; baseCenter: number; amplitude: number; frequency: number; phase: number };
 
 export interface Root {
+  /** Its number in the round, counting from 0. */
+  index: number;
   x: number;
   width: number;
   /** Sideways offset while sliding; the root's real left edge is x + xOffset. */
