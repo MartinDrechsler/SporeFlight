@@ -20,18 +20,19 @@ Fowler's *Refactoring*, Schell's *Art of Game Design*, Koster's *A Theory of Fun
 Dependencies point one way: `states -> meta / gameplay -> core / config`. `render` and `ui` only read state.
 
 - `src/config/`: all data. `tuning.ts` (every number, px and seconds), `levels.ts` (endless + 10 adventure
-  levels as stages, described by flags, never by name), `theme.ts` (11 colour themes), `skins.ts`, `rewards.ts`
-  (achievements, daily quest pool).
+  levels as stages, described by flags, never by name), `biomes.ts` (the 8 endless biomes), `theme.ts`
+  (11 level colour themes), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool).
 - `src/core/`: fixed-step loop, state machine, seeded random, versioned save file. Game-agnostic.
 - `src/gameplay/`: the flight rules as plain data + pure functions. No DOM, no timers, no `Math.random`.
   `world.ts` runs one round and reports what happened as `GameEvent`s. `course.ts` walks a level's stages to the
   finish gate (endless is one stage that never ends). `spawner.ts` turns level data into roots, pickups and wind.
-  `boss.ts` is the Stone Thrower.
+  `boss.ts` is the Stone Thrower, `veins.ts` the crystal veins.
 - `src/meta/`: everything outside flight, as pure functions on `SaveData`: economy (banking, shop, unlock,
   lives), adventure (stars, which levels are open), achievements, daily quests.
 - `src/ads/`: the rewarded-ads interface. A mock today; a real ad network plugs in here only.
 - `src/render/`: canvas drawing. Reads the world, never changes it. `effects.ts` is visual only. `view.ts`
-  mirrors the picture for twist levels (upside down, backwards); the rules never change.
+  mirrors the picture for twist levels (upside down, backwards); the rules never change. `obstacles.ts` and
+  `scenery.ts` draw each biome's obstacles, distant world and life in the air.
 - `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast.
 - `src/states/`: one file per screen with `enter/exit/update/onTap`. They connect gameplay, meta and UI.
 - `src/audio/`: synthesized sounds reacting to `GameEvent`s.

@@ -3,10 +3,28 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: phase 2 "Adventure journey" done (2026-11-24)
-The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 3, biomes and rewards
-(8 endless biomes every 20 points, golden coin, crystal veins to mine diamonds, badges without coins,
-quests paying 5 to 15 coins, skin prices).
+## Status: phase 3 "Biomes and rewards" done (2026-11-24)
+The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 4, the leaderboard (backend,
+replay check of scores, country, privacy).
+
+### Phase 3 changes
+- **Endless biomes** (config/biomes.ts): a new world every 20 points, 8 in all: Dark Enchanted Forest,
+  Twilight Woods, Morning Woodland, Sunlit Meadow, Dry Savanna, Desert Canyon, Highland Pass, Frozen Peaks.
+  Each has colours, scenery, life in the air and its own obstacles. Colours blend over the 5 roots before
+  a biome arrives, obstacles change exactly at its score, and its name is announced. Rules never change.
+  A badge for reaching each biome. The first three use the painted forests (now without a seam); the rest
+  are drawn in code.
+- **Crystal veins**: gem clusters on a root cap facing the gap. Touching one bounces you off and cracks it;
+  the third hit breaks it open for a diamond. Endless: root 20, then every 30. Adventure: one per level in
+  the climax, replacing the diamond pickup (part of the third star).
+- **Golden coin**: rare, huge, worth 10; a surprise in endless only (fixed levels stay the same).
+- **Badges are honour**: no coins. Reach 10/20/50, each biome, near-miss master, diamond hunter, beat the
+  Stone Thrower, finish level 10, 3 stars on one level, 3 stars everywhere. Four unlock a unique trail.
+- **Glow trails**: bought with coins (60, 150) or diamonds (3), or earned with a badge.
+- **Skins**: 50 / 120 / 250 coins; two premium skins for 5 and 10 diamonds.
+- **Daily quests** pay 5 to 15 coins: reach 15 in endless, 5 coins in one run, 20 coins today, finish an
+  Adventure level (only once Adventure is open), crack a crystal vein, 6 near misses, 100 flaps.
+- **Save v5**: trails; quests reset to the new pool; removed badges dropped.
 
 ### Phase 2 changes
 - **Adventure map**: a winding path, level 1 at the bottom. Finished stops show stars, the next one glows
