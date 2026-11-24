@@ -1,7 +1,7 @@
 import { rootCount, type LevelConfig } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
-import type { Pickup, PickupKind } from './pickups';
+import { freePickup, type Pickup, type PickupKind } from './pickups';
 import type { Root, RootMotion } from './roots';
 import type { WindZone } from './wind';
 
@@ -53,16 +53,17 @@ export function makeRoot(
   const centerMin = field.height * R.centerMinFraction;
   const centerMax = field.height * R.centerMaxFraction;
   const gapCenter = chooseCenter(rng, level, field, index, centerMin, centerMax, previousCenter);
+  const motion = chooseMotion(rng, level, index, gapCenter);
 
   return {
     x,
     width: R.width,
     xOffset: 0,
     gapCenter,
-    gapSize: gapSizeFor(level, index),
+    gapSize: gapSizeFor(level, index) + movingGapBonus(level, motion),
     centerMin,
     centerMax,
-    motion: chooseMotion(rng, level, index, gapCenter),
+    motion,
     gapPulse: level.gapPulse
       ? { min: level.gap.min + gapBonus(level, index), max: level.gap.max + gapBonus(level, index), phase: rng.range(0, Math.PI * 2) }
       : null,
@@ -77,6 +78,20 @@ export function gapSizeFor(level: LevelConfig, index: number): number {
     ? Math.max(level.gap.min, level.gap.max - index * R.gapShrinkPerRoot)
     : (level.gap.min + level.gap.max) / 2;
   return base + gapBonus(level, index);
+}
+
+/** Endless: a gap that moves opens wider, so it stays manageable to fly through. */
+function movingGapBonus(level: LevelConfig, motion: RootMotion): number {
+  if (!level.progressive) return 0;
+  const M = R.endlessMovingGap;
+  switch (motion.kind) {
+    case 'drift':
+      return M.drift + motion.speed * M.perDriftSpeed;
+    case 'sway':
+      return M.sway;
+    case 'still':
+      return 0;
+  }
 }
 
 /** Extra gap from the rhythm: positive on calm roots, negative in a surge. */
@@ -108,6 +123,26 @@ export function makePickup(rng: Random, root: Root, index: number, level: LevelC
   // Halfway through the open space between this root and the next.
   const offsetX = root.width + (level.spacing - root.width) / 2;
   return { kind, root, offsetX, offsetY: y - root.gapCenter, vx: 0, vy: 0, collected: false };
+}
+
+/**
+ * Whether the next slot is a clearing: no root, just a cluster of coins.
+ * Never in a surge and never twice in a row.
+ */
+export function isClearing(rng: Random, level: LevelConfig, index: number, afterClearing: boolean): boolean {
+  const c = level.clearings;
+  if (!c || afterClearing || index < c.fromRoot || wavePhase(level, index) === 'surge') return false;
+  return rng.chance(c.chance);
+}
+
+/** The coins of a clearing: a gentle hump near the last gap's height, so it can be reached. */
+export function makeCoinCluster(field: Field, x: number, nearY: number): Pickup[] {
+  const C = PK.cluster;
+  const top = PK.minY + C.height;
+  const centerY = Math.min(field.height - PK.bottomMargin, Math.max(top, nearY));
+  return Array.from({ length: C.coins }, (_, i) =>
+    freePickup('coin', x + i * C.spacing, centerY - Math.sin((i / (C.coins - 1)) * Math.PI) * C.height),
+  );
 }
 
 export function makeWindZone(rng: Random, x: number): WindZone {

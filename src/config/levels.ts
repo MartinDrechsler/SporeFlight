@@ -44,6 +44,8 @@ export interface LevelConfig {
   windFromRoot: number | null;
   /** Magnets can appear from this root on (earlier rolls give a coin instead). */
   magnetFromRoot: number;
+  /** Now and then a root is left out and a cluster of coins floats in the empty space (from this root on). */
+  clearings: { fromRoot: number; chance: number } | null;
   /** Root index of the first diamond, then one every `every` roots (null: just the one). */
   diamonds: { first: number; every: number | null } | null;
   /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
@@ -57,7 +59,7 @@ export interface LevelConfig {
 
 type Defaults =
   | 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide'
-  | 'windFromRoot' | 'magnetFromRoot' | 'diamonds' | 'progressive' | 'view';
+  | 'windFromRoot' | 'magnetFromRoot' | 'clearings' | 'diamonds' | 'progressive' | 'view';
 
 /** An adventure level: fixed layout, one diamond in the climax, everything else off unless set. */
 const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): LevelConfig => {
@@ -71,6 +73,7 @@ const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): Leve
     slide: false,
     windFromRoot: null,
     magnetFromRoot: 0,
+    clearings: null,
     diamonds: roots > 0 ? { first: roots - 3, every: null } : null,
     progressive: false,
     view: 'normal',
@@ -86,7 +89,8 @@ export const LEVELS: readonly LevelConfig[] = [
     stages: [{ kind: 'roots', count: null }], fixedLayout: false,
     speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
     // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
-    magnetFromRoot: 40, windFromRoot: 120, diamonds: { first: 30, every: 30 }, progressive: true,
+    magnetFromRoot: 40, windFromRoot: 120, clearings: { fromRoot: 4, chance: 0.14 },
+    diamonds: { first: 30, every: 30 }, progressive: true,
   }),
   // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.
   level({
@@ -150,4 +154,4 @@ export function rootCount(config: { stages: readonly Stage[] }): number {
 }
 
 /** Price to unlock adventure mode: a few good evenings of endless. */
-export const ADVENTURE_UNLOCK_COST = { coins: 100, diamonds: 3 } as const;
+export const ADVENTURE_UNLOCK_COST = { coins: 50, diamonds: 3 } as const;
