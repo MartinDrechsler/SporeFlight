@@ -23,6 +23,11 @@ const SOUNDS = {
   ],
   pop: [{ from: 600, to: 120, seconds: 0.25, wave: 'square', volume: 0.08 }],
   crash: [{ from: 220, to: 60, seconds: 0.4, wave: 'sawtooth', volume: 0.15 }],
+  clink: [{ from: 2200, to: 1800, seconds: 0.09, wave: 'triangle', volume: 0.09 }],
+  goldCoin: [
+    { from: 880, to: 1320, seconds: 0.1, wave: 'square', volume: 0.05 },
+    { from: 1320, to: 1980, seconds: 0.16, wave: 'square', volume: 0.05, delay: 0.08 },
+  ],
   growl: [{ from: 90, to: 70, seconds: 0.45, wave: 'sawtooth', volume: 0.1 }],
   throw: [{ from: 320, to: 140, seconds: 0.18, wave: 'triangle', volume: 0.1 }],
   click: [{ from: 520, to: 560, seconds: 0.05, wave: 'triangle', volume: 0.08 }],
@@ -96,6 +101,7 @@ function soundFor(event: GameEvent): SoundName | null {
     case 'pass':
       return 'pass';
     case 'pickup':
+      if (event.kind === 'goldCoin') return 'goldCoin';
       return event.kind === 'coin' || event.kind === 'magnet' ? 'coin' : 'chime';
     case 'nearMiss':
       return 'nearMiss';
@@ -114,5 +120,9 @@ function soundFor(event: GameEvent): SoundName | null {
       return 'growl';
     case 'bossThrow':
       return 'throw';
+    case 'veinHit':
+      return 'clink';
+    case 'veinBreak':
+      return 'chime';
   }
 }

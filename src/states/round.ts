@@ -67,6 +67,8 @@ function questProgressFor(event: GameEvent, world: World): [QuestKind, number][]
       return event.coins > 0 ? [['coins', event.coins], ['runCoins', world.stats.coins]] : [];
     case 'nearMiss':
       return [['nearMisses', 1]];
+    case 'veinBreak':
+      return [['veins', 1]];
     default:
       return [];
   }

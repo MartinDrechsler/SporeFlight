@@ -1,4 +1,5 @@
 import type { Trail } from '../config/trails';
+import { TUNING } from '../config/tuning';
 import { toScreen, type View } from './view';
 import type { GameEvent } from '../gameplay/world';
 
@@ -91,6 +92,16 @@ export class Effects {
         this.shake(0.12, 3);
         break;
       case 'bossWarn':
+        break;
+      case 'veinHit':
+        this.burst(event.x, event.y, 10, '#7fe6ff', 160, 0.45);
+        this.text(`CRACK ${event.hits}/${TUNING.veins.hitsToBreak}`, event.x, event.y - 24, '#7fe6ff');
+        this.shake(0.1, 2.5);
+        break;
+      case 'veinBreak':
+        this.burst(event.x, event.y, 34, '#7fe6ff', 260, 0.9);
+        this.text('+1 DIAMOND!', event.x, event.y - 40, '#3fd8ff', 30);
+        this.flash('0, 229, 255');
         break;
       case 'finish':
         // The gate opens in light.
@@ -209,6 +220,12 @@ export class Effects {
       case 'coin':
         this.burst(x, y, 12, '#ffd23f', 150, 0.6);
         this.text('+1', x, y - 18, '#ffd23f');
+        break;
+      case 'goldCoin':
+        this.burst(x, y, 30, '#ffd23f', 240, 0.9);
+        this.text(`+${event.coins} GOLDEN!`, x, y - 22, '#ffd23f', 30);
+        this.flash('255, 210, 63');
+        this.shake(0.15, 3);
         break;
       case 'diamond':
         this.burst(x, y, 18, '#3fd8ff', 200, 0.7);

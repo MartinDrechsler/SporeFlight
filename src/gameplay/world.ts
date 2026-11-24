@@ -7,6 +7,7 @@ import { createPlayer, flap, stepPlayer, type Player } from './player';
 import { detach, isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
 import { rootLeft, stepRoot, type Root } from './roots';
 import { removeRock, rockHittingPlayer, stepBoss, type Boss } from './boss';
+import { bounceOffVeins } from './veins';
 import { createCourse, stepCourse, type Course } from './course';
 import { makeWindZone, nextWindDistance, type Field } from './spawner';
 import { windContains, type WindZone } from './wind';
@@ -30,6 +31,10 @@ export type GameEvent =
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
   | { type: 'crash'; x: number; y: number }
   | { type: 'landed'; x: number; y: number }
+  /** The mushroom bounced off a crystal vein and cracked it (`hits` so far). */
+  | { type: 'veinHit'; x: number; y: number; hits: number }
+  /** The vein broke open: a diamond. */
+  | { type: 'veinBreak'; x: number; y: number }
   /** The Stone Thrower is about to throw (its eyes flare). */
   | { type: 'bossWarn'; x: number; y: number }
   | { type: 'bossThrow'; x: number; y: number }
@@ -71,6 +76,8 @@ export interface World extends Field {
   shield: boolean;
   invulnerableTime: number;
   magnetTime: number;
+  /** Seconds until a crystal vein can crack again (one crack per touch). */
+  veinCooldown: number;
   slowMotionTime: number;
   windWarningCooldown: number;
   crashed: boolean;
@@ -110,6 +117,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
     shield: false,
     invulnerableTime: 0,
     magnetTime: 0,
+    veinCooldown: 0,
     slowMotionTime: 0,
     windWarningCooldown: 0,
     crashed: false,
@@ -214,6 +222,7 @@ export function crashSpot(world: World): number {
 function tickTimers(world: World, dt: number): void {
   world.invulnerableTime = Math.max(0, world.invulnerableTime - dt);
   world.magnetTime = Math.max(0, world.magnetTime - dt);
+  world.veinCooldown = Math.max(0, world.veinCooldown - dt);
   world.windWarningCooldown = Math.max(0, world.windWarningCooldown - dt);
 }
 
@@ -268,6 +277,8 @@ function keepInBounds(world: World): boolean {
 
 /** Roots and rocks are deadly. Returns true when the round ended; a shield absorbs one hit instead. */
 function checkHits(world: World): boolean {
+  // A crystal vein is never deadly: touching it bounces the mushroom away first.
+  bounceOffVeins(world);
   if (isInvulnerable(world)) return false;
   const rock = rockHittingPlayer(world);
   // A rock that is absorbed shatters, so it cannot hit twice.
@@ -313,7 +324,8 @@ function collectPickups(world: World): void {
   for (const pickup of world.pickups) {
     if (pickup.collected) continue;
     const { x, y } = pickupPosition(pickup);
-    if (!circlesTouch(player.x, player.y, player.radius, x, y, PK.radius, PK.collectRadiusFactor)) continue;
+    const radius = pickup.kind === 'goldCoin' ? PK.goldenRadius : PK.radius;
+    if (!circlesTouch(player.x, player.y, player.radius, x, y, radius, PK.collectRadiusFactor)) continue;
     pickup.collected = true;
     world.events.push({ type: 'pickup', kind: pickup.kind, x, y, coins: applyPickup(world, pickup.kind) });
   }
@@ -325,6 +337,9 @@ function applyPickup(world: World, kind: PickupKind): number {
     case 'coin':
       world.stats.coins += 1;
       return 1;
+    case 'goldCoin':
+      world.stats.coins += TUNING.pickups.goldenCoinValue;
+      return TUNING.pickups.goldenCoinValue;
     case 'diamond':
       world.stats.diamonds += 1;
       return 0;

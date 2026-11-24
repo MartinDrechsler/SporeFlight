@@ -41,7 +41,7 @@ export function installTestHooks(
       player: { x: round(world.player.x), y: round(world.player.y), vy: round(world.player.vy), radius: world.player.radius },
       roots: world.roots.map((r) => ({
         left: round(rootLeft(r)), right: round(rootLeft(r) + r.width), gapTop: round(gapTop(r)), gapBottom: round(gapBottom(r)),
-        gapCenter: round(r.gapCenter), motion: r.motion.kind,
+        gapCenter: round(r.gapCenter), motion: r.motion.kind, vein: r.vein,
       })),
       pickups: world.pickups.map((p) => ({ kind: p.kind, ...pickupPosition(p) })),
       winds: world.winds.map((w) => ({ kind: w.kind, x: round(w.x), width: round(w.width) })),

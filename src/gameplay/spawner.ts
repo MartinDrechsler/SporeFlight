@@ -1,4 +1,4 @@
-import { rootCount, type LevelConfig } from '../config/levels';
+import { rootCount, type LevelConfig, type Schedule } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import { freePickup, type Pickup, type PickupKind } from './pickups';
@@ -68,6 +68,7 @@ export function makeRoot(
       ? { min: level.gap.min + gapBonus(level, index), max: level.gap.max + gapBonus(level, index), phase: rng.range(0, Math.PI * 2) }
       : null,
     slidePhase: level.slide ? rng.range(0, Math.PI * 2) : null,
+    vein: onSchedule(level.veins, index) ? { side: rng.chance(0.5) ? 'top' : 'bottom', hits: 0 } : null,
     passed: false,
     nearMissCounted: false,
   };
@@ -158,19 +159,20 @@ export function nextWindDistance(rng: Random): number {
 }
 
 function choosePickupKind(rng: Random, level: LevelConfig, index: number, chance: number): PickupKind | null {
-  if (isDiamondRoot(level, index)) return 'diamond';
+  if (onSchedule(level.diamonds, index)) return 'diamond';
   const magnetAllowed = index >= level.magnetFromRoot;
   if (!rng.chance(chance)) return null;
   const roll = rng.next();
   if (roll < PK.shieldShare) return 'shield';
-  if (roll < PK.shieldShare + PK.magnetShare) return magnetAllowed ? 'magnet' : 'coin';
+  if (roll < PK.shieldShare + PK.magnetShare && magnetAllowed) return 'magnet';
+  // Only levels with golden coins roll for one, so fixed layouts stay the same.
+  if (level.goldenCoinChance > 0 && rng.chance(level.goldenCoinChance)) return 'goldCoin';
   return 'coin';
 }
 
-function isDiamondRoot(level: LevelConfig, index: number): boolean {
-  const d = level.diamonds;
-  if (!d || index < d.first) return false;
-  return d.every === null ? index === d.first : (index - d.first) % d.every === 0;
+function onSchedule(schedule: Schedule | null, index: number): boolean {
+  if (!schedule || index < schedule.first) return false;
+  return schedule.every === null ? index === schedule.first : (index - schedule.first) % schedule.every === 0;
 }
 
 function chooseCenter(

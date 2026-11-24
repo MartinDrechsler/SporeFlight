@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toScreen } from '../src/render/view';
-import { pickupPosition, type Pickup } from '../src/gameplay/pickups';
+import { freePickup, pickupPosition, type Pickup } from '../src/gameplay/pickups';
+import { gapBottom, gapTop } from '../src/gameplay/roots';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
@@ -432,5 +433,92 @@ describe('more coins, fairer moving gaps', () => {
     expect(still.motion.kind).toBe('still');
     expect(moving.motion.kind).not.toBe('still');
     expect(moving.gapSize - gapSizeFor(ENDLESS, 45)).toBeGreaterThanOrEqual(TUNING.roots.endlessMovingGap.drift);
+  });
+});
+
+describe('crystal veins', () => {
+  /** A world with one still root right at the mushroom, its vein on the given side. */
+  const veinWorld = (side: 'top' | 'bottom') => {
+    const world = emptyWorld();
+    world.invulnerableTime = 0;
+    const root = makeRoot(createRandom(1), ENDLESS, FIELD, world.player.x - 30, 5, null);
+    root.motion = { kind: 'still' };
+    root.gapCenter = 400;
+    root.gapSize = 150;
+    root.vein = { side, hits: 0 };
+    world.roots = [root];
+    world.player.vy = 0;
+    world.player.y = side === 'bottom' ? gapBottom(root) - world.player.radius + 4 : gapTop(root) + world.player.radius - 4;
+    return { world, root };
+  };
+
+  it('bounces the mushroom off instead of killing it, one crack per touch', () => {
+    const { world, root } = veinWorld('bottom');
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(false);
+    expect(world.player.vy).toBeLessThan(0);
+    expect(root.vein!.hits).toBe(1);
+    expect(world.events.some((e) => e.type === 'veinHit')).toBe(true);
+    stepWorld(world, 1 / 60);
+    expect(root.vein!.hits).toBe(1);
+  });
+
+  it('a vein above pushes the mushroom down', () => {
+    const { world, root } = veinWorld('top');
+    stepWorld(world, 1 / 60);
+    expect([world.crashed, root.vein!.hits]).toEqual([false, 1]);
+    expect(world.player.vy).toBeGreaterThan(0);
+  });
+
+  it('breaks open on the third hit and gives a diamond; then the cap is deadly again', () => {
+    const { world, root } = veinWorld('bottom');
+    root.vein!.hits = 2;
+    stepWorld(world, 1 / 60);
+    expect([world.stats.diamonds, world.stats.veins]).toEqual([1, 1]);
+    expect(world.events.some((e) => e.type === 'veinBreak')).toBe(true);
+    world.veinCooldown = 0;
+    world.player.y = gapBottom(root) - world.player.radius + 4;
+    world.player.vy = 0;
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(true);
+  });
+
+  it('flying into the side of the cap still crashes', () => {
+    const { world, root } = veinWorld('bottom');
+    world.player.y = gapBottom(root) + 12;
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(true);
+  });
+
+  it('endless has veins at root 20, then every 30; a level has one in its climax and no diamond pickups', () => {
+    const rng = createRandom(3);
+    const veins = Array.from({ length: 90 }, (_, i) => makeRoot(rng, ENDLESS, FIELD, 0, i, null).vein !== null);
+    expect(veins.flatMap((v, i) => (v ? [i] : []))).toEqual([20, 50, 80]);
+    const two = level(2);
+    const rng2 = createRandom(3);
+    const levelVeins = Array.from({ length: rootCount(two) }, (_, i) => makeRoot(rng2, two, FIELD, 0, i, null).vein !== null);
+    expect(levelVeins.filter(Boolean)).toHaveLength(1);
+    expect(two.diamonds).toBeNull();
+  });
+});
+
+describe('golden coins', () => {
+  it('appear now and then in endless, never in a fixed level, and are worth 10', () => {
+    const kinds = (config: typeof ENDLESS) => {
+      const rng = createRandom(12);
+      const found: string[] = [];
+      for (let i = 0; i < 2000; i++) {
+        const pickup = makePickup(rng, makeRoot(rng, config, FIELD, 0, 5, null), 5, config, FIELD);
+        if (pickup) found.push(pickup.kind);
+      }
+      return found;
+    };
+    expect(kinds(ENDLESS)).toContain('goldCoin');
+    expect(kinds(level(3))).not.toContain('goldCoin');
+
+    const world = emptyWorld();
+    world.pickups = [freePickup('goldCoin', world.player.x, world.player.y)];
+    stepWorld(world, 1 / 60);
+    expect(world.stats.coins).toBe(10);
   });
 });

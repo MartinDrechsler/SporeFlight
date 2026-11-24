@@ -1,4 +1,5 @@
 import { TUNING } from '../config/tuning';
+import type { Vein } from './veins';
 
 const R = TUNING.roots;
 
@@ -28,6 +29,8 @@ export interface Root {
   /** Gap breathing between min and max. */
   gapPulse: { min: number; max: number; phase: number } | null;
   slidePhase: number | null;
+  /** A crystal vein on one of the caps, if this root has one. */
+  vein: Vein | null;
   passed: boolean;
   nearMissCounted: boolean;
 }
