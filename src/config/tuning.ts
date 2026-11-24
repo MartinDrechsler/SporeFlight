@@ -157,7 +157,11 @@ export const TUNING = {
   },
 
   roundOver: {
-    /** How long the falling animation plays before the next screen. */
-    seconds: 1.0,
+    /** Longest wait after a crash before the next screen (the mushroom normally lands sooner). */
+    seconds: 3.0,
+    /** Time after landing for the mushroom clump to grow, s. */
+    afterLandingSeconds: 0.9,
+    /** How long a new clump takes to grow, s. */
+    clumpGrowSeconds: 0.7,
   },
 } as const;

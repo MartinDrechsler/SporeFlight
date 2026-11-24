@@ -33,13 +33,15 @@ export interface LevelConfig {
   widthPulse: boolean;
   /** Glowing swarms float in the open side of each root. */
   glowflies: boolean;
-  /** Updraft and downdraft zones appear. */
-  wind: boolean;
+  /** Updraft and downdraft zones appear once this many roots are passed; null = never. */
+  windFromRoot: number | null;
+  /** Magnets can appear from this root on (earlier rolls give a coin instead). */
+  magnetFromRoot: number;
   /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
   progressive: boolean;
 }
 
-const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'columns' | 'drift' | 'sway' | 'slide' | 'widthPulse' | 'glowflies' | 'wind' | 'progressive'> & Partial<LevelConfig>): LevelConfig => ({
+const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'columns' | 'drift' | 'sway' | 'slide' | 'widthPulse' | 'glowflies' | 'windFromRoot' | 'magnetFromRoot' | 'progressive'> & Partial<LevelConfig>): LevelConfig => ({
   gapPulse: false,
   layout: 'random',
   columns: 'both',
@@ -48,7 +50,8 @@ const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'columns' | 'dr
   slide: false,
   widthPulse: false,
   glowflies: false,
-  wind: false,
+  windFromRoot: null,
+  magnetFromRoot: 0,
   progressive: false,
   ...config,
 });
@@ -58,7 +61,9 @@ export const ENDLESS_LEVEL_ID = 0;
 export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 0, name: 'ENDLESS MODE', theme: 'classic', description: 'Survive as long as you can in the deep forest.',
-    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 }, wind: true, progressive: true,
+    speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
+    // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
+    magnetFromRoot: 40, windFromRoot: 120, progressive: true,
   }),
   level({
     id: 1, name: 'GLOWFLY VALE', theme: 'glowfly',
@@ -67,7 +72,7 @@ export const LEVELS: readonly LevelConfig[] = [
   }),
   level({
     id: 2, name: 'CANOPY WINDS', theme: 'amber', description: 'Gaps drift up and down, and the wind pushes back. Time your flaps carefully.',
-    speed: 126, speedMultiplier: 1.1, spacing: 290, gap: { min: 145, max: 145 }, drift: { chance: 1, speed: 48 }, wind: true,
+    speed: 126, speedMultiplier: 1.1, spacing: 290, gap: { min: 145, max: 145 }, drift: { chance: 1, speed: 48 }, windFromRoot: 0,
   }),
   level({
     id: 3, name: 'CONSTRICTED PASSAGE', theme: 'ice', description: 'Extremely tight spaces. High precision required.',
@@ -95,7 +100,7 @@ export const LEVELS: readonly LevelConfig[] = [
   }),
   level({
     id: 9, name: 'BIOLUME STORM', theme: 'biolume', description: 'The final trial: swinging, breathing and sliding roots in a storm of wind.',
-    speed: 138, speedMultiplier: 1.15, spacing: 190, gap: { min: 130, max: 170 }, gapPulse: true, sway: true, slide: true, wind: true,
+    speed: 138, speedMultiplier: 1.15, spacing: 190, gap: { min: 130, max: 170 }, gapPulse: true, sway: true, slide: true, windFromRoot: 0,
   }),
 ];
 

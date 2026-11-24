@@ -83,7 +83,7 @@ export function gapSizeFor(level: LevelConfig, index: number): number {
 /** The pickup floating in the open space after a root, if any. */
 export function makePickup(rng: Random, root: Root, index: number, level: LevelConfig, field: Field): Pickup | null {
   const chance = wavePhase(level, index) === 'calm' ? PK.chance * WV.calmPickupFactor : PK.chance;
-  const kind = choosePickupKind(rng, index, chance);
+  const kind = choosePickupKind(rng, index, chance, index >= level.magnetFromRoot);
   if (kind === null) return null;
 
   const wantedY = root.gapCenter + rng.sign() * rng.range(PK.minVerticalOffset, PK.maxVerticalOffset);
@@ -105,13 +105,13 @@ export function nextWindDistance(rng: Random): number {
   return rng.range(WD.minInterval, WD.maxInterval);
 }
 
-function choosePickupKind(rng: Random, index: number, chance: number): PickupKind | null {
+function choosePickupKind(rng: Random, index: number, chance: number, magnetAllowed: boolean): PickupKind | null {
   const isDiamondSlot = index >= PK.diamondFirstRoot && (index - PK.diamondFirstRoot) % PK.diamondEveryRoots === 0;
   if (isDiamondSlot) return 'diamond';
   if (!rng.chance(chance)) return null;
   const roll = rng.next();
   if (roll < PK.shieldShare) return 'shield';
-  if (roll < PK.shieldShare + PK.magnetShare) return 'magnet';
+  if (roll < PK.shieldShare + PK.magnetShare) return magnetAllowed ? 'magnet' : 'coin';
   return 'coin';
 }
 

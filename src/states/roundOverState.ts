@@ -1,7 +1,7 @@
 import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
-import { roundCoins, stepWorld } from '../gameplay/world';
+import { crashSpot, roundCoins, stepWorld } from '../gameplay/world';
 import { bankRound } from '../meta/economy';
 import { updateHud } from '../ui/hud';
 import type { GameContext } from './context';
@@ -23,7 +23,7 @@ export function roundOverState(ctx: GameContext): State {
         score: world.stats.score,
         coins: roundCoins(world),
         diamonds: world.stats.diamonds,
-        distance: world.distance + world.player.x,
+        distance: crashSpot(world),
       });
       if (newBest && world.stats.score > 0) {
         ctx.effects.newBest(world.width, world.height);
@@ -39,9 +39,11 @@ export function roundOverState(ctx: GameContext): State {
 
     update(dt) {
       stepWorld(ctx.world, dt);
-      ctx.world.events.length = 0;
+      deliverEvents(ctx);
+      // Wait for the mushroom to land and its clump to grow (with a safety limit).
       timeLeft -= dt;
-      if (timeLeft > 0) return;
+      const landed = ctx.world.landedTime ?? 0;
+      if (landed < TUNING.roundOver.afterLandingSeconds && timeLeft > 0) return;
       if (ctx.save.lives <= 0) ctx.go('gameOver');
       else ctx.go(ctx.world.level.id === ENDLESS_LEVEL_ID ? 'start' : 'adventureOver');
     },

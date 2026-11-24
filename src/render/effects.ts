@@ -78,14 +78,18 @@ export class Effects {
         this.shake(0.4, 12);
         this.flash('224, 36, 118');
         break;
+      case 'landed':
+        // A puff of spores where the mushroom lands; its clump grows from here.
+        this.burst(event.x, event.y + 14, 14, '#f2ead8', 90, 0.6);
+        break;
     }
   }
 
   /** Celebrates a new best score at the end of a round. */
   newBest(width: number, height: number): void {
-    this.text('NEW BEST!', width / 2, height * 0.3, '#ffd23f', 40);
+    this.text('NEW BEST!', width / 2, height * 0.42, '#ffd23f', 40);
     for (let i = 0; i < 50; i++) {
-      this.spawn(width / 2, height * 0.3, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : '#ff5e9c');
+      this.spawn(width / 2, height * 0.42, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : '#ff5e9c');
     }
   }
 
