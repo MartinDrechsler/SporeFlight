@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { toScreen } from '../src/render/view';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { circleToBoxGap } from '../src/gameplay/collision';
 import { gapSizeFor, makePickup, makeRoot, wavePhase } from '../src/gameplay/spawner';
+import { ADVENTURE_LEVELS, rootCount } from '../src/config/levels';
 import { crashSpot, flapPlayer, roundCoins, stepWorld } from '../src/gameplay/world';
 import { autopilot, emptyWorld, ENDLESS, HEIGHT, level, newWorld, run } from './helpers';
 
@@ -106,16 +108,23 @@ describe('spawner', () => {
 
   it('each adventure mechanic comes from its level data', () => {
     const rng = createRandom(11);
-    const make = (id: number, index = 0) => makeRoot(rng, level(id), FIELD, 0, index, null);
-    expect([make(1, 0).columns, make(1, 1).columns]).toEqual(['top', 'bottom']);
-    expect(make(1).glowfly).not.toBeNull();
-    expect(make(1).widthPhase).not.toBeNull();
-    expect(make(2).motion.kind).toBe('drift');
+    // Index 5 is past the calm opening, where roots are always still.
+    const make = (id: number, index = 5) => makeRoot(rng, level(id), FIELD, 0, index, null);
+    expect(make(1).motion.kind).toBe('still');
+    expect(make(3).motion.kind).toBe('drift');
     expect(make(4).gapPulse).not.toBeNull();
-    expect(make(5).slidePhase).not.toBeNull();
-    expect(make(6, 0).gapCenter).toBeLessThan(make(6, 1).gapCenter);
-    expect(make(7).motion.kind).toBe('sway');
-    expect(make(3).motion.kind).toBe('still');
+    expect(make(6).slidePhase).not.toBeNull();
+    expect(make(10).motion.kind).toBe('sway');
+  });
+
+  it('a level follows an interest curve: easy opening, breather halfway, tight climax', () => {
+    const first = level(1); // 20 roots
+    expect([0, 1, 2].map((i) => wavePhase(first, i))).toEqual(['calm', 'calm', 'calm']);
+    expect([10, 11].map((i) => wavePhase(first, i))).toEqual(['calm', 'calm']);
+    expect([15, 19].map((i) => wavePhase(first, i))).toEqual(['surge', 'surge']);
+    expect(wavePhase(first, 6)).toBe('normal');
+    expect(gapSizeFor(first, 0)).toBeGreaterThan(gapSizeFor(first, 6));
+    expect(gapSizeFor(first, 18)).toBeLessThan(gapSizeFor(first, 6));
   });
 });
 
@@ -136,22 +145,49 @@ describe('a full round', () => {
     expect(world.stats.score).toBe(world.rootsPassed);
   });
 
-  // Difficulty itself is judged by playing; this only proves every level runs and builds roots.
-  it('every adventure level runs and keeps its roots inside the playfield', () => {
-    for (let id = 1; id <= 9; id++) {
-      const world = newWorld(21, level(id));
+  // Difficulty itself is judged by playing; this only proves every level can be flown to its gate.
+  it('every adventure level runs to its finish gate and keeps its roots inside the playfield', () => {
+    for (const config of ADVENTURE_LEVELS) {
+      const world = newWorld(21, config);
       world.invulnerableTime = Infinity;
-      run(world, 20, (w) => {
-        autopilot(w);
-        for (const root of w.roots) {
+      for (let i = 0; i < 60 * 200 && !world.course.finished; i++) {
+        autopilot(world);
+        stepWorld(world, 1 / 60);
+        for (const root of world.roots) {
           expect(root.gapCenter).toBeGreaterThanOrEqual(root.centerMin);
           expect(root.gapCenter).toBeLessThanOrEqual(root.centerMax);
-          expect(root.gapSize).toBeGreaterThanOrEqual(level(id).gap.min - 1e-9);
+          expect(root.gapSize).toBeGreaterThanOrEqual(config.gap.min - TUNING.levelCurve.climaxGapShrink - 1e-9);
         }
-      });
-      expect(world.crashed, `level ${id}`).toBe(false);
-      expect(world.rootsSpawned, `level ${id}`).toBeGreaterThan(8);
+      }
+      expect(world.course.finished, `level ${config.id}`).toBe(true);
+      expect(world.rootsPassed, `level ${config.id}`).toBe(rootCount(config));
+      expect(world.events.some((e) => e.type === 'finish')).toBe(true);
     }
+  });
+
+  it('a fixed layout is the same on every attempt, whatever the run seed', () => {
+    const layout = (seed: number) => {
+      const world = newWorld(seed, level(3));
+      world.invulnerableTime = Infinity;
+      run(world, 12);
+      return [...world.roots.map((root) => `${Math.round(root.gapCenter)} ${root.motion.kind}`), ...world.pickups.map((p) => p.kind)];
+    };
+    expect(layout(1)).toEqual(layout(2));
+    const endless = (seed: number) => {
+      const world = newWorld(seed);
+      world.invulnerableTime = Infinity;
+      run(world, 6);
+      return world.roots.map((root) => Math.round(root.gapCenter));
+    };
+    expect(endless(1)).not.toEqual(endless(2));
+  });
+
+  it('counts the coins and the diamond a level offers, for its stars', () => {
+    const world = newWorld(3, level(2));
+    world.invulnerableTime = Infinity;
+    for (let i = 0; i < 60 * 120 && !world.course.finished; i++) stepWorld(world, 1 / 60);
+    expect(world.offered.diamonds).toBe(1);
+    expect(world.offered.coins).toBeGreaterThan(0);
   });
 });
 
@@ -267,3 +303,75 @@ describe('crash and mushroom clump', () => {
   });
 });
 
+
+describe('the Stone Thrower', () => {
+  const fight = (seed = 4) => {
+    const world = newWorld(seed, level(5));
+    world.invulnerableTime = Infinity;
+    return world;
+  };
+
+  it('announces every throw before it comes', () => {
+    const world = fight();
+    const times: { type: string; t: number }[] = [];
+    for (let i = 0; i < 60 * 30; i++) {
+      stepWorld(world, 1 / 60);
+      for (const e of world.events) if (e.type === 'bossWarn' || e.type === 'bossThrow') times.push({ type: e.type, t: i / 60 });
+      world.events.length = 0;
+    }
+    const throws = times.filter((e) => e.type === 'bossThrow');
+    expect(throws.length).toBeGreaterThan(8);
+    for (const thrown of throws) {
+      const warned = times.filter((e) => e.type === 'bossWarn' && e.t <= thrown.t).at(-1);
+      expect(warned).toBeDefined();
+      expect(thrown.t - warned!.t).toBeGreaterThanOrEqual(TUNING.boss.warnSeconds - 0.02);
+    }
+  });
+
+  it('dodged rocks score, and the fight ends with the finish gate', () => {
+    const world = fight();
+    for (let i = 0; i < 60 * 70 && !world.course.finished; i++) {
+      // Hover in place: invulnerable, so rocks fly past and count as dodged.
+      world.player.y = world.height * 0.42;
+      world.player.vy = 0;
+      stepWorld(world, 1 / 60);
+    }
+    expect(world.course.finished).toBe(true);
+    expect(world.stats.score).toBeGreaterThan(10);
+    expect(world.offered.diamonds).toBe(1);
+    expect(world.offered.coins).toBeGreaterThan(8);
+  });
+
+  it('a rock hit ends the round, unless a shield takes it', () => {
+    const world = newWorld(4, level(5));
+    run(world, 0.5);
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    world.shield = true;
+    stepWorld(world, 1 / 60);
+    expect([world.crashed, world.shield, world.boss!.rocks.length]).toEqual([false, false, 0]);
+    world.invulnerableTime = 0;
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(true);
+  });
+});
+
+describe('twist levels', () => {
+  it('mirror the picture, never the rules', () => {
+    for (const id of [7, 9]) {
+      const twisted = newWorld(8, level(id));
+      const plain = newWorld(8, { ...level(id), view: 'normal' });
+      run(twisted, 10, autopilot);
+      run(plain, 10, autopilot);
+      expect([twisted.stats.score, twisted.player.y, twisted.crashed]).toEqual([plain.stats.score, plain.player.y, plain.crashed]);
+    }
+    expect(level(7).view).toBe('upsideDown');
+    expect(level(9).view).toBe('backwards');
+  });
+
+  it('upside down puts the ground on top; backwards puts the mushroom on the right', () => {
+    expect(toScreen('upsideDown', 400, 800, 100, 700)).toEqual({ x: 100, y: 100 });
+    expect(toScreen('backwards', 400, 800, 100, 700)).toEqual({ x: 300, y: 700 });
+    expect(toScreen('normal', 400, 800, 100, 700)).toEqual({ x: 100, y: 700 });
+  });
+});

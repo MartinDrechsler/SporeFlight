@@ -20,6 +20,7 @@ export function playingState(ctx: GameContext): State {
       checkAchievements(ctx);
       updateHud(ctx.world, ctx.save);
       if (ctx.world.crashed) ctx.go('roundOver');
+      else if (ctx.world.course.finished) ctx.go('levelComplete');
     },
 
     onTap() {

@@ -1,6 +1,7 @@
 import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { THEMES } from '../config/theme';
 import { TUNING } from '../config/tuning';
+import { courseProgress } from '../gameplay/course';
 import { roundCoins, type World } from '../gameplay/world';
 import type { SaveData } from '../core/save';
 import { byId, setText } from './dom';
@@ -15,8 +16,12 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   setText(byId('hud-score'), world.stats.score);
   setText(byId('hud-coins'), save.coins + pending * roundCoins(world));
   setText(byId('hud-diamonds'), save.diamonds + pending * world.stats.diamonds);
-  setText(byId('hud-best'), endless ? save.bestScore : (save.levelBest[world.level.id] ?? 0));
-  setText(byId('hud-username'), save.username ?? TUNING.session.defaultUsername);
+  setText(byId('hud-best'), save.bestScore);
+  byId('hud-best-stat').hidden = !endless;
+  // In a level the level badge takes the name's place; small phones have no room for both.
+  const username = byId('hud-username');
+  username.hidden = !endless;
+  setText(username, save.username ?? TUNING.session.defaultUsername);
 
   setText(byId('hud-lives'), hearts(save.lives));
 
@@ -24,6 +29,10 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
   levelBadge.hidden = endless;
   setText(levelBadge, `LEVEL ${world.level.id}`);
   levelBadge.style.setProperty('--level-color', THEMES[world.level.theme].accent);
+  const progress = byId('hud-progress');
+  progress.hidden = endless;
+  progress.style.setProperty('--level-color', THEMES[world.level.theme].accent);
+  byId('hud-progress-bar').style.width = `${courseProgress(world) * 100}%`;
 
   popOnChange(byId('hud-score'), world.stats.score);
 

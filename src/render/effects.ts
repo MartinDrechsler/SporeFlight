@@ -1,3 +1,4 @@
+import { toScreen, type View } from './view';
 import type { GameEvent } from '../gameplay/world';
 
 /**
@@ -19,8 +20,11 @@ interface Particle {
 
 interface FloatingText {
   text: string;
+  /** Where it appeared, in world coordinates. */
   x: number;
   y: number;
+  /** How far it has floated up the screen, px. */
+  rise: number;
   life: number;
   color: string;
   size: number;
@@ -82,14 +86,34 @@ export class Effects {
         // A puff of spores where the mushroom lands; its clump grows from here.
         this.burst(event.x, event.y + 14, 14, '#f2ead8', 90, 0.6);
         break;
+      case 'bossThrow':
+        this.burst(event.x, event.y, 10, '#8a7a6a', 120, 0.5);
+        this.shake(0.12, 3);
+        break;
+      case 'bossWarn':
+        break;
+      case 'finish':
+        // The gate opens in light.
+        for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);
+        this.flash(hexToRgb(accent));
+        break;
     }
   }
 
   /** Celebrates a new best score at the end of a round. */
   newBest(width: number, height: number): void {
     this.text('NEW BEST!', width / 2, height * 0.42, '#ffd23f', 40);
+    this.confetti(width / 2, height * 0.42, '#ff5e9c');
+  }
+
+  /** Confetti of spores for a finished level. */
+  celebrate(width: number, height: number, accent: string): void {
+    this.confetti(width / 2, height * 0.2, accent);
+  }
+
+  private confetti(x: number, y: number, color: string): void {
     for (let i = 0; i < 50; i++) {
-      this.spawn(width / 2, height * 0.42, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : '#ff5e9c');
+      this.spawn(x, y, (Math.random() - 0.5) * 420, -Math.random() * 320, 1.3, 2.5, i % 2 ? '#ffd23f' : color);
     }
   }
 
@@ -112,7 +136,7 @@ export class Effects {
     }
     for (const t of this.texts) {
       t.life -= dt;
-      t.y -= 45 * dt;
+      t.rise += 45 * dt;
     }
     this.texts = this.texts.filter((t) => t.life > 0);
     this.shakeTime = Math.max(0, this.shakeTime - dt);
@@ -126,13 +150,15 @@ export class Effects {
     return { x: (Math.random() - 0.5) * 2 * strength, y: (Math.random() - 0.5) * 2 * strength };
   }
 
-  draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  /** Draws on top of the world. Positions are world coordinates, shown through the level's view. */
+  draw(ctx: CanvasRenderingContext2D, width: number, height: number, view: View): void {
     for (const p of this.particles) {
       if (!p.active) continue;
+      const at = toScreen(view, width, height, p.x, p.y);
       ctx.globalAlpha = p.life / p.maxLife;
       ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(at.x, at.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.textAlign = 'center';
@@ -142,7 +168,9 @@ export class Effects {
       ctx.fillStyle = t.color;
       ctx.shadowColor = t.color;
       ctx.shadowBlur = 8;
-      ctx.fillText(t.text, t.x, t.y);
+      // Text always reads normally and floats up the screen, whatever the view.
+      const at = toScreen(view, width, height, t.x, t.y);
+      ctx.fillText(t.text, at.x, at.y - t.rise);
     }
     ctx.shadowBlur = 0;
     if (this.flashTime > 0) {
@@ -212,7 +240,7 @@ export class Effects {
   }
 
   private text(text: string, x: number, y: number, color: string, size = 20): void {
-    this.texts.push({ text, x, y, life: TEXT_SECONDS, color, size });
+    this.texts.push({ text, x, y, rise: 0, life: TEXT_SECONDS, color, size });
   }
 }
 

@@ -23,11 +23,15 @@
           <div id="hud-level" class="badge" hidden></div>
           <div id="hud-username" class="badge"></div>
         </div>
+        <div id="hud-progress" class="hud-progress" hidden>
+          <span id="hud-progress-bar" class="hud-progress-bar"></span>
+          <span class="hud-progress-gate"></span>
+        </div>
         <div id="hud-score" class="hud-score">0</div>
         <div class="hud-bottom">
           <span class="hud-stat coins"><span class="icon-coin"></span><span id="hud-coins">0</span></span>
           <span class="hud-stat diamonds"><span class="icon-diamond"></span><span id="hud-diamonds">0</span></span>
-          <span class="hud-stat">BEST <span id="hud-best">0</span></span>
+          <span id="hud-best-stat" class="hud-stat">BEST <span id="hud-best">0</span></span>
         </div>
         <div class="powerups">
           <div id="hud-shield" class="powerup shield" hidden>SHIELD</div>
@@ -95,11 +99,31 @@
         <img class="tired-mushroom" src="./src/assets/tired-mushroom.webp" alt="" width="150" height="157" />
         <h2 class="panel-title">COLLISION!</h2>
         <p id="adventure-over-level" class="level-name"></p>
-        <p class="panel-text">SCORE REACHED <strong id="adventure-over-score">0</strong></p>
+        <p class="panel-text">YOU MADE IT <strong id="adventure-over-progress">0%</strong> OF THE WAY</p>
+        <div class="progress-track"><span id="adventure-over-bar" class="progress-fill"></span></div>
         <p id="adventure-over-stars" class="stars"></p>
         <div class="button-row">
-          <button id="adventure-back" class="menu-button" type="button">LEVELS</button>
-          <button id="adventure-retry" class="primary-button compact" type="button">FLAP AGAIN</button>
+          <button id="adventure-back" class="menu-button" type="button">MAP</button>
+          <button id="adventure-retry" class="primary-button compact" type="button">FLY AGAIN</button>
+        </div>
+      </section>
+
+      <!-- Through the finish gate -->
+      <section id="screen-levelComplete" class="overlay center dim" hidden>
+        <h2 class="panel-title victory">LEVEL COMPLETE!</h2>
+        <p id="complete-level" class="level-name"></p>
+        <div class="star-row">
+          <span class="big-star">★</span><span class="big-star">★</span><span class="big-star">★</span>
+        </div>
+        <dl class="stats">
+          <div><dt>COINS</dt><dd id="complete-coins">0/0</dd></div>
+          <div><dt>DIAMOND</dt><dd id="complete-diamond">-</dd></div>
+        </dl>
+        <p id="complete-hint" class="panel-text"></p>
+        <p id="complete-opened" class="panel-text opened" hidden></p>
+        <div class="button-row">
+          <button id="complete-map" class="menu-button" type="button">MAP</button>
+          <button id="complete-next" class="primary-button compact" type="button">NEXT LEVEL</button>
         </div>
       </section>
 
@@ -124,20 +148,27 @@
         <button class="menu-button back-button" type="button">BACK</button>
       </section>
 
-      <section id="screen-levels" class="overlay panel" hidden>
-        <h2 class="panel-title">LEVELS</h2>
-        <button id="level-endless" class="menu-button wide" type="button">ENDLESS MODE</button>
-        <div id="levels-grid" class="levels-grid"></div>
-        <div class="level-info">
-          <p id="level-info-name" class="level-name">SELECT A LEVEL</p>
-          <p id="level-info-text" class="panel-text">Tap a level to see its trial, tap again to fly. Every level starts at score 0.</p>
+      <!-- Adventure map: a path through the forest with the levels as stops -->
+      <section id="screen-levels" class="overlay map-screen" hidden>
+        <header class="map-header">
+          <button class="menu-button back-button map-back" type="button">BACK</button>
+          <h2 class="map-title">ADVENTURE</h2>
+          <span id="map-stars" class="map-stars"></span>
+        </header>
+        <div id="map-scroll" class="map-scroll">
+          <div id="map-path" class="map-path"></div>
         </div>
-        <button class="menu-button back-button" type="button">BACK</button>
+        <div id="map-card" class="map-card">
+          <p id="map-card-name" class="level-name"></p>
+          <p id="map-card-stars" class="stars"></p>
+          <p id="map-card-text" class="panel-text"></p>
+          <button id="map-play" class="primary-button compact" type="button">FLY</button>
+        </div>
       </section>
 
       <section id="screen-unlock" class="overlay center dim" hidden>
         <h2 class="panel-title">ADVENTURE MODE</h2>
-        <p class="panel-text">Nine trials, each with its own twist.</p>
+        <p class="panel-text">A journey of ten levels. Each one you finish opens the next.</p>
         <p class="panel-text">COST <strong id="unlock-cost"></strong></p>
         <p class="panel-text">YOU HAVE <strong id="unlock-have"></strong></p>
         <div class="button-row">

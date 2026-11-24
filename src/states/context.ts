@@ -6,7 +6,7 @@ import type { World } from '../gameplay/world';
 import type { Effects } from '../render/effects';
 
 export type StateName =
-  | 'username' | 'start' | 'playing' | 'roundOver' | 'gameOver' | 'ad' | 'adventureOver'
+  | 'username' | 'start' | 'playing' | 'roundOver' | 'gameOver' | 'ad' | 'adventureOver' | 'levelComplete'
   | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock';
 
 /**

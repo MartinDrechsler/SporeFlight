@@ -17,9 +17,9 @@ export interface RoundResult {
 }
 
 /**
- * Adds a round's rewards, records the best score and the crash spot, and
- * takes a life: every crash costs one, in endless and in Adventure.
- * Returns true when this round set a new best.
+ * After a crash: adds the round's rewards, records the crash spot and takes a
+ * life (every crash costs one, in endless and in Adventure). Returns true when
+ * the round set a new endless best.
  */
 export function bankRound(save: SaveData, result: RoundResult): boolean {
   save.coins += result.coins;
@@ -29,10 +29,8 @@ export function bankRound(save: SaveData, result: RoundResult): boolean {
   save.deathMarks[key] = [...(save.deathMarks[key] ?? []), result.distance].slice(-TUNING.session.deathMarks);
   if (save.lives === 0) save.restSecondsLeft = TUNING.session.restSeconds;
 
-  const previous = result.levelId === ENDLESS_LEVEL_ID ? save.bestScore : (save.levelBest[result.levelId] ?? 0);
-  if (result.score <= previous) return false;
-  if (result.levelId === ENDLESS_LEVEL_ID) save.bestScore = result.score;
-  else save.levelBest[result.levelId] = result.score;
+  if (result.levelId !== ENDLESS_LEVEL_ID || result.score <= save.bestScore) return false;
+  save.bestScore = result.score;
   return true;
 }
 

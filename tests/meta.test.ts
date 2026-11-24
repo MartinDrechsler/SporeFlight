@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ADVENTURE_UNLOCK_COST, starsFor } from '../src/config/levels';
+import { ADVENTURE_UNLOCK_COST } from '../src/config/levels';
 import { QUESTS_PER_DAY } from '../src/config/rewards';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '../src/core/save';
+import { finishLevel, isLevelOpen, starsFor, currentLevelId } from '../src/meta/adventure';
 import { unlockAchievements } from '../src/meta/achievements';
 import { bankRound, buySkin, refillLives, rest, selectSkin, unlockAdventure } from '../src/meta/economy';
 import { addQuestProgress, claimableCount, claimQuest, dayKey, refreshQuests } from '../src/meta/quests';
@@ -33,9 +34,13 @@ describe('save', () => {
   it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
     const fromV1 = migrate(v1);
-    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([3, 40, 7, 3, false]);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([4, 40, 7, 3, false]);
     const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
     expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
+    // Version 4 replaced the levels: old per-level scores do not become stars.
+    const fromV3 = migrate({ version: 3, levelBest: [0, 25, 12], levelStars: { '2': 9, '3': 'x' } });
+    expect(fromV3.levelStars).toEqual({ '2': 3 });
+    expect('levelBest' in fromV3).toBe(false);
   });
 
   it('round-trips through storage', () => {
@@ -51,10 +56,8 @@ describe('economy', () => {
     const save = defaultSave();
     expect(bankRound(save, { levelId: 0, score: 30, coins: 4, diamonds: 1, distance: 900 })).toBe(true);
     expect([save.lives, save.bestScore, save.coins, save.diamonds]).toEqual([TUNING.session.startLives - 1, 30, 4, 1]);
-    expect(bankRound(save, { levelId: 4, score: 13, coins: 0, diamonds: 0, distance: 500 })).toBe(true);
+    expect(bankRound(save, { levelId: 4, score: 13, coins: 0, diamonds: 0, distance: 500 })).toBe(false);
     expect(save.lives).toBe(TUNING.session.startLives - 2);
-    expect(save.levelBest[4]).toBe(13);
-    expect(starsFor(13)).toBe(2);
     expect(save.deathMarks).toEqual({ '0': [900], '4': [500] });
     expect(bankRound(save, { levelId: 0, score: 10, coins: 0, diamonds: 0, distance: 0 })).toBe(false);
   });
@@ -100,10 +103,40 @@ describe('achievements', () => {
     expect(unlockAchievements(save, { ...noStats, score: 50 })).toEqual([]);
   });
 
-  it('adventure stars count from saved level bests', () => {
+  it('three stars on any level earns the explorer badge', () => {
     const save = defaultSave();
-    save.levelBest[3] = 25;
+    save.levelStars['3'] = 3;
     expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['perfect_explorer']);
+  });
+});
+
+describe('adventure progress', () => {
+  const run = { levelId: 1, coins: 10, coinsOffered: 10, diamonds: 1, diamondsOffered: 1 };
+
+  it('stars: finishing, most coins, then every coin and the diamond', () => {
+    expect(starsFor({ ...run, coins: 2 })).toBe(1);
+    expect(starsFor({ ...run, coins: 8, diamonds: 0 })).toBe(2);
+    expect(starsFor({ ...run, diamonds: 0 })).toBe(2);
+    expect(starsFor(run)).toBe(3);
+  });
+
+  it('finishing a level banks its coins, keeps lives, keeps the best stars and opens the next', () => {
+    const save = defaultSave();
+    expect([isLevelOpen(save, 1), isLevelOpen(save, 2)]).toEqual([true, false]);
+    expect(currentLevelId(save)).toBe(1);
+    const first = finishLevel(save, { ...run, coins: 2 });
+    expect(first).toEqual({ stars: 1, improved: true, opened: 2 });
+    expect([save.coins, save.diamonds, save.lives]).toEqual([2, 1, TUNING.session.startLives]);
+    expect(isLevelOpen(save, 2)).toBe(true);
+    expect(currentLevelId(save)).toBe(2);
+    expect(finishLevel(save, run)).toEqual({ stars: 3, improved: true, opened: null });
+    expect(finishLevel(save, { ...run, coins: 0 }).improved).toBe(false);
+    expect(save.levelStars['1']).toBe(3);
+  });
+
+  it('the last level opens nothing', () => {
+    const save = defaultSave();
+    expect(finishLevel(save, { ...run, levelId: 10 }).opened).toBeNull();
   });
 });
 

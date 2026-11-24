@@ -150,19 +150,29 @@ s = await state();
 check('claiming a quest pays coins once', s.save.coins > coinsBefore && s.save.quests.list[0].claimed);
 await tapButton('#screen-quests .back-button');
 
-// 7. Adventure: unlock, pick level 1, fly, crash.
+// 7. Adventure: unlock with coins and diamonds, open the map, fly level 1, crash.
 await tapButton('#menu-adventure');
 check('adventure asks to unlock first', (await state()).state === 'unlock');
+await tapButton('#unlock-confirm');
+check('cannot unlock without enough coins and diamonds', (await state()).state === 'unlock');
+await test(() => window.__test.setSave({ coins: 130, diamonds: 3 }));
+await test(() => window.__test.go('unlock'));
+await advance(50);
 await shot('09-unlock');
 await tapButton('#unlock-confirm');
 s = await state();
-check('adventure unlocked', s.state === 'levels' && s.save.adventureUnlocked);
-await page.tap('#levels-grid button:nth-child(1)');
-await shot('10-levels');
-await tapButton('#levels-grid button:nth-child(1)');
+check('adventure unlocked for 100 coins and 3 diamonds', s.state === 'levels' && s.save.adventureUnlocked && s.save.coins === 30 && s.save.diamonds === 0);
+await shot('10-map');
+await page.tap('.map-node >> nth=1');
+await advance(50);
+check('a locked level cannot be started', (await state()).state === 'levels' && !(await page.isVisible('#map-play')));
+await page.tap('.map-node >> nth=0');
+await advance(50);
+await tapButton('#map-play');
 s = await state();
-check('level 1 starts on second tap', s.state === 'playing' && s.level.id === 1);
+check('level 1 starts from the map', s.state === 'playing' && s.level.id === 1);
 await fly(400, 60, '11-level-1');
+for (let i = 0; i < 100 && (await state()).state === 'playing'; i++) await advance(1000 / 30);
 await advance(3000);
 s = await state();
 check('adventure crash costs a life and marks the level', s.state === 'adventureOver' && s.save.lives === 4 && s.save.deathMarks['1']?.length === 1, `lives ${s.save.lives}`);
@@ -170,18 +180,32 @@ await shot('12-adventure-over');
 await tapButton('#adventure-retry');
 check('retry restarts the same level', (await state()).level.id === 1);
 
-// 8. Every adventure level looks right mid-flight (invulnerable to reach later roots).
-for (const id of [2, 4, 5, 6, 7, 8, 9]) {
+// 8. Fly level 1 to its finish gate (invulnerable): stars fly in and level 2 opens.
+await test(() => window.__test.invulnerable(true));
+for (let i = 0; i < 120 && (await state()).state === 'playing'; i++) await fly(30);
+await advance(1600);
+s = await state();
+check('the finish gate completes the level', s.state === 'levelComplete' && (s.save.levelStars['1'] ?? 0) >= 1, `${s.state}`);
+await shot('12b-level-complete');
+await tapButton('#complete-map');
+s = await state();
+check('the map shows level 2 open next', s.state === 'levels' && (await page.isVisible('.map-node.current')));
+await shot('12c-map-progress');
+
+// 9. Every adventure level looks right mid-flight (all open, invulnerable to reach later parts).
+await test(() => window.__test.setSave({ levelStars: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1 } }));
+for (const id of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
   await test(() => window.__test.go('levels'));
   await advance(50);
-  await page.tap(`#levels-grid button:nth-child(${id})`);
-  await tapButton(`#levels-grid button:nth-child(${id})`);
+  await page.tap(`.map-node >> nth=${id - 1}`);
+  await advance(50);
+  await tapButton('#map-play');
   await test(() => window.__test.invulnerable(true));
   await fly(150);
   await shot(`13-level-${id}`);
 }
 
-// 9. Progress survives a reload.
+// 10. Progress survives a reload.
 await test(() => window.__test.go('start'));
 await page.reload();
 await advance(200);

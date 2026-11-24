@@ -42,25 +42,13 @@ export const TUNING = {
     /** Endless: gap shrinks from gap.max by this per root spawned, down to gap.min. */
     gapShrinkPerRoot: 1.6,
     gapPulseSpeed: 2.4,
-    widthPulseAmplitude: 22,
-    widthPulseSpeed: 2.4,
     slideAmplitude: 45,
     slideSpeed: 2.1,
     tunnel: { centerFraction: 0.43, amplitudeFraction: 0.18, stepPerRoot: 0.55 },
-    staggered: { highFraction: 0.26, lowFraction: 0.61 },
     /** Endless difficulty: moving gaps appear with progress. Counted in roots spawned, not points. */
     endlessDrift: { fromRoot: 10, startChance: 0.25, chancePerRoot: 0.05, maxChance: 0.8, baseSpeed: 30, extraSpeedPerRoot: 2.4, maxSpeed: 120 },
     endlessSwayFromRoot: 15,
     sway: { minAmplitude: 55, maxAmplitude: 80, minFrequency: 1.5, maxFrequency: 2.4 },
-  },
-
-  glowflies: {
-    radius: 13,
-    /** Distance from the open side's edge (ground or ceiling). */
-    minDistance: 130,
-    extraDistance: 40,
-    bobAmplitude: 20,
-    bobSpeed: 3,
   },
 
   pickups: {
@@ -70,8 +58,6 @@ export const TUNING = {
     /** Of those: share of shields and magnets; the rest are coins. */
     shieldShare: 0.2,
     magnetShare: 0.24,
-    diamondFirstRoot: 30,
-    diamondEveryRoots: 30,
     /** Collection is a little stricter than touching, so it feels earned. */
     collectRadiusFactor: 0.7,
     minVerticalOffset: 45,
@@ -95,6 +81,33 @@ export const TUNING = {
   shield: {
     /** Invulnerable time after the shield pops. */
     graceSeconds: 1.5,
+  },
+
+  /** The Stone Thrower: a monster on the right that throws rocks. Every throw is announced first. */
+  boss: {
+    /** Distance of its centre from the right edge, px. */
+    insetFromRight: 58,
+    bodyRadius: 62,
+    enterSeconds: 1.2,
+    firstThrowAfter: 2,
+    /** Eyes flare and the body shakes this long before each throw, s. */
+    warnSeconds: 0.55,
+    /** Time between throws at the start and at the end of the fight, s. */
+    startInterval: 1.8,
+    endInterval: 1.0,
+    /** A pause halfway through the fight, s. */
+    breatherSeconds: 2.6,
+    rockRadius: 15,
+    startRockSpeed: 240,
+    endRockSpeed: 300,
+    /** Angle between rocks in a fan of three, radians. */
+    fanSpread: 0.3,
+    /** Open space in a wall of rocks, px. */
+    wallGap: 160,
+    wallSpacing: 44,
+    coinEverySeconds: 3.5,
+    bobAmplitude: 70,
+    bobSpeed: 1.1,
   },
 
   magnet: {
@@ -122,6 +135,20 @@ export const TUNING = {
    * `surgeRoots` are a surge (tighter, more often moving), then the first
    * `calmRoots` of the next wave are a breather with a better pickup chance.
    */
+  gate: {
+    /** Width of the finish gate's glow, px. */
+    width: 60,
+  },
+
+  /** Inside an adventure level: easy opening, a breather halfway, a climax before the gate. */
+  levelCurve: {
+    openingRoots: 3,
+    breatherRoots: 2,
+    climaxRoots: 5,
+    calmGapBonus: 16,
+    climaxGapShrink: 8,
+  },
+
   waves: {
     length: 10,
     surgeRoots: 4,

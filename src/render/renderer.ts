@@ -5,7 +5,9 @@ import { crashSpot, isInvulnerable, type World } from '../gameplay/world';
 import { drawBackground, drawDeathMarks } from './background';
 import type { Surface } from './canvas';
 import { drawPlayer } from './drawPlayer';
-import { drawPickup, drawRoot, drawWind } from './drawRoots';
+import { drawBoss } from './drawBoss';
+import { applyView } from './view';
+import { drawGate, drawPickup, drawRoot, drawWind } from './drawRoots';
 import type { Effects } from './effects';
 
 export interface Scene {
@@ -27,6 +29,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
 
   ctx.save();
   ctx.translate(shake.x, shake.y);
+  applyView(ctx, world.level.view, width, height);
   drawBackground(ctx, {
     theme,
     width,
@@ -39,6 +42,9 @@ export function renderScene(surface: Surface, scene: Scene): void {
   for (const zone of world.winds) drawWind(ctx, zone, world.groundY, time);
   for (const pickup of world.pickups) drawPickup(ctx, pickup, time);
   for (const root of world.roots) drawRoot(ctx, root, theme, world.groundY, time);
+  const gateX = world.course.gateX;
+  if (gateX !== null) drawGate(ctx, gateX, world.groundY, theme, time, world.course.finished);
+  if (world.boss) drawBoss(ctx, world.boss, theme, time);
   drawPlayer(ctx, world.player, skinById(scene.skinId), {
     crashed: world.crashed,
     shield: world.shield,
@@ -51,5 +57,5 @@ export function renderScene(surface: Surface, scene: Scene): void {
     world.landedTime === null ? null : { at: crashSpot(world), grow: Math.min(1, world.landedTime / TUNING.roundOver.clumpGrowSeconds) };
   drawDeathMarks(ctx, scene.deathMarks, newMark, width, world.groundY, world.distance, time);
   ctx.restore();
-  scene.effects.draw(ctx, width, height);
+  scene.effects.draw(ctx, width, height, world.level.view);
 }

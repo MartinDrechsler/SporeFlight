@@ -1,6 +1,16 @@
 import type { ThemeId } from './theme';
 
 /**
+ * One part of a level, played in order. A level ends with a finish gate once
+ * its last stage is done; endless is a single roots stage with no end.
+ */
+export type Stage =
+  /** Roots to fly through; `count: null` never ends. */
+  | { kind: 'roots'; count: number | null }
+  /** No roots: the Stone Thrower attacks until the time is survived. */
+  | { kind: 'boss'; seconds: number };
+
+/**
  * Every mode is described by data. Gameplay code reads these fields and never
  * checks a level's name or number, so a new level is a new entry here.
  */
@@ -9,6 +19,9 @@ export interface LevelConfig {
   name: string;
   description: string;
   theme: ThemeId;
+  stages: readonly Stage[];
+  /** Same roots, gaps and pickups on every attempt, so the level can be learned. */
+  fixedLayout: boolean;
   /** Starting scroll speed, px/s. */
   speed: number;
   /** Starting speed multiplier; grows with roots passed. */
@@ -19,88 +32,109 @@ export interface LevelConfig {
   gap: { min: number; max: number };
   /** Gap breathes between min and max. */
   gapPulse: boolean;
-  /** How gap centres are placed: random walk, waving tunnel, or high/low steps. */
-  layout: 'random' | 'tunnel' | 'staggered';
-  /** 'alternate' gives roots only from the ceiling, then only from the ground. */
-  columns: 'both' | 'alternate';
+  /** How gap centres are placed: random walk or a waving tunnel. */
+  layout: 'random' | 'tunnel';
   /** Gaps that slide up and down at constant speed. */
   drift: { chance: number; speed: number } | null;
   /** Gaps that swing smoothly (overrides drift). */
   sway: boolean;
   /** Roots slide left and right. */
   slide: boolean;
-  /** Root width breathes. */
-  widthPulse: boolean;
-  /** Glowing swarms float in the open side of each root. */
-  glowflies: boolean;
   /** Updraft and downdraft zones appear once this many roots are passed; null = never. */
   windFromRoot: number | null;
   /** Magnets can appear from this root on (earlier rolls give a coin instead). */
   magnetFromRoot: number;
+  /** Root index of the first diamond, then one every `every` roots (null: just the one). */
+  diamonds: { first: number; every: number | null } | null;
   /** Endless only: gap shrinks, drift and sway appear, backdrop changes with progress. */
   progressive: boolean;
+  /**
+   * Twist levels mirror the picture, never the rules: 'upsideDown' (fall up,
+   * a tap pushes you down) or 'backwards' (fly from right to left).
+   */
+  view: 'normal' | 'upsideDown' | 'backwards';
 }
 
-const level = (config: Omit<LevelConfig, 'gapPulse' | 'layout' | 'columns' | 'drift' | 'sway' | 'slide' | 'widthPulse' | 'glowflies' | 'windFromRoot' | 'magnetFromRoot' | 'progressive'> & Partial<LevelConfig>): LevelConfig => ({
-  gapPulse: false,
-  layout: 'random',
-  columns: 'both',
-  drift: null,
-  sway: false,
-  slide: false,
-  widthPulse: false,
-  glowflies: false,
-  windFromRoot: null,
-  magnetFromRoot: 0,
-  progressive: false,
-  ...config,
-});
+type Defaults =
+  | 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide'
+  | 'windFromRoot' | 'magnetFromRoot' | 'diamonds' | 'progressive' | 'view';
+
+/** An adventure level: fixed layout, one diamond in the climax, everything else off unless set. */
+const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): LevelConfig => {
+  const roots = rootCount(config);
+  return {
+    fixedLayout: true,
+    gapPulse: false,
+    layout: 'random',
+    drift: null,
+    sway: false,
+    slide: false,
+    windFromRoot: null,
+    magnetFromRoot: 0,
+    diamonds: roots > 0 ? { first: roots - 3, every: null } : null,
+    progressive: false,
+    view: 'normal',
+    ...config,
+  };
+};
 
 export const ENDLESS_LEVEL_ID = 0;
 
 export const LEVELS: readonly LevelConfig[] = [
   level({
     id: 0, name: 'ENDLESS MODE', theme: 'classic', description: 'Survive as long as you can in the deep forest.',
+    stages: [{ kind: 'roots', count: null }], fixedLayout: false,
     speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 115, max: 140 },
     // New things arrive along the journey: magnets in the morning woods, wind up on the highland pass.
-    magnetFromRoot: 40, windFromRoot: 120, progressive: true,
+    magnetFromRoot: 40, windFromRoot: 120, diamonds: { first: 30, every: 30 }, progressive: true,
+  }),
+  // Regular levels add one new thing each; twist levels change a rule you know by heart and keep the gaps simple.
+  level({
+    id: 1, name: 'FIRST LIGHT', theme: 'dawn', description: 'Plain, generous gaps. Find your rhythm.',
+    stages: [{ kind: 'roots', count: 20 }], speed: 120, speedMultiplier: 1, spacing: 300, gap: { min: 150, max: 150 },
   }),
   level({
-    id: 1, name: 'GLOWFLY VALE', theme: 'glowfly',
-    description: 'Dodge alternating breathing roots while weaving around floating glowfly swarms.',
-    speed: 126, speedMultiplier: 1.1, spacing: 230, gap: { min: 125, max: 125 }, columns: 'alternate', widthPulse: true, glowflies: true,
+    id: 2, name: 'NARROW PASSAGE', theme: 'ice', description: 'Tighter gaps. Every flap counts.',
+    stages: [{ kind: 'roots', count: 22 }], speed: 124, speedMultiplier: 1, spacing: 290, gap: { min: 128, max: 128 },
   }),
   level({
-    id: 2, name: 'CANOPY WINDS', theme: 'amber', description: 'Gaps drift up and down, and the wind pushes back. Time your flaps carefully.',
-    speed: 126, speedMultiplier: 1.1, spacing: 290, gap: { min: 145, max: 145 }, drift: { chance: 1, speed: 48 }, windFromRoot: 0,
+    id: 3, name: 'DRIFTING CANOPY', theme: 'amber', description: 'The gaps slowly move. Aim where they will be.',
+    stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
+    drift: { chance: 1, speed: 40 },
   }),
   level({
-    id: 3, name: 'CONSTRICTED PASSAGE', theme: 'ice', description: 'Extremely tight spaces. High precision required.',
-    speed: 126, speedMultiplier: 1.05, spacing: 290, gap: { min: 120, max: 120 },
+    id: 4, name: 'BREATHING HOLLOW', theme: 'purple', description: 'The gaps breathe. Slip through as they open.',
+    stages: [{ kind: 'roots', count: 26 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 112, max: 172 },
+    gapPulse: true,
   }),
   level({
-    id: 4, name: 'PULSATING SPORES', theme: 'purple', description: 'Gaps breathe! Shrinking and expanding corridors.',
-    speed: 132, speedMultiplier: 1.1, spacing: 290, gap: { min: 110, max: 170 }, gapPulse: true,
+    id: 5, name: 'THE STONE THROWER', theme: 'crimson', description: 'No roots. Something in the dark throws rocks. Survive.',
+    stages: [{ kind: 'boss', seconds: 45 }], speed: 120, speedMultiplier: 1, spacing: 290, gap: { min: 150, max: 150 },
   }),
   level({
-    id: 5, name: 'CREEPING ROOTS', theme: 'red', description: 'Roots slide sideways, shifting the spacing.',
-    speed: 132, speedMultiplier: 1.1, spacing: 290, gap: { min: 140, max: 140 }, slide: true,
+    id: 6, name: 'CREEPING ROOTS', theme: 'red', description: 'Roots slide sideways. Watch the spacing.',
+    stages: [{ kind: 'roots', count: 28 }], speed: 128, speedMultiplier: 1.1, spacing: 290, gap: { min: 140, max: 140 },
+    slide: true,
   }),
   level({
-    id: 6, name: 'STAGGERED STEPS', theme: 'orange', description: 'Extreme height changes. Climb and dive rapidly.',
-    speed: 138, speedMultiplier: 1.15, spacing: 290, gap: { min: 135, max: 135 }, layout: 'staggered',
+    id: 7, name: 'UPSIDE-DOWN GROVE', theme: 'green', description: 'Gravity is reversed: you fall up, a tap pushes you down.',
+    stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1, spacing: 300, gap: { min: 148, max: 148 },
+    view: 'upsideDown',
   }),
   level({
-    id: 7, name: 'WINDING CANOPY TUNNEL', theme: 'green', description: 'Fly through a narrow, waving canopy tunnel.',
-    speed: 132, speedMultiplier: 1.1, spacing: 170, gap: { min: 135, max: 135 }, layout: 'tunnel', sway: true,
+    id: 8, name: 'CANOPY WINDS', theme: 'canopy', description: 'Updrafts lift you, downdrafts pull you down.',
+    stages: [{ kind: 'roots', count: 30 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
+    windFromRoot: 0,
   }),
   level({
-    id: 8, name: 'MAZE OF VINES', theme: 'crimson', description: 'Swinging gaps and sliding roots. The vines close in.',
-    speed: 138, speedMultiplier: 1.2, spacing: 290, gap: { min: 130, max: 130 }, sway: true, slide: true,
+    id: 9, name: 'THE WAY HOME', theme: 'orange', description: 'Fly back from right to left, through moving gaps.',
+    stages: [{ kind: 'roots', count: 32 }], speed: 126, speedMultiplier: 1.05, spacing: 300, gap: { min: 145, max: 145 },
+    drift: { chance: 0.6, speed: 36 }, view: 'backwards',
   }),
   level({
-    id: 9, name: 'BIOLUME STORM', theme: 'biolume', description: 'The final trial: swinging, breathing and sliding roots in a storm of wind.',
-    speed: 138, speedMultiplier: 1.15, spacing: 190, gap: { min: 130, max: 170 }, gapPulse: true, sway: true, slide: true, windFromRoot: 0,
+    id: 10, name: 'HEART OF THE STORM', theme: 'biolume', description: 'A swinging tunnel, then the Stone Thrower returns.',
+    stages: [{ kind: 'roots', count: 40 }, { kind: 'boss', seconds: 30 }], speed: 130, speedMultiplier: 1.1, spacing: 170,
+    gap: { min: 138, max: 138 }, layout: 'tunnel', sway: true,
   }),
 ];
 
@@ -110,12 +144,10 @@ export function levelById(id: number): LevelConfig {
 
 export const ADVENTURE_LEVELS = LEVELS.filter((config) => config.id !== ENDLESS_LEVEL_ID);
 
-/** Best score needed for 1, 2 and 3 stars on an adventure level. */
-export const STAR_THRESHOLDS = [5, 12, 25] as const;
-
-export function starsFor(bestScore: number): number {
-  return STAR_THRESHOLDS.filter((needed) => bestScore >= needed).length;
+/** Roots in all of a level's stages (endless: 0, it never ends). */
+export function rootCount(config: { stages: readonly Stage[] }): number {
+  return config.stages.reduce((sum, stage) => sum + (stage.kind === 'roots' ? (stage.count ?? 0) : 0), 0);
 }
 
-/** Price to unlock adventure mode. The old game had 0/0 as a placeholder: a decision for Martin. */
-export const ADVENTURE_UNLOCK_COST = { coins: 0, diamonds: 0 } as const;
+/** Price to unlock adventure mode: a few good evenings of endless. */
+export const ADVENTURE_UNLOCK_COST = { coins: 100, diamonds: 3 } as const;
