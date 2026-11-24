@@ -137,6 +137,6 @@ replay check of scores, country, privacy).
 - **Balance** after playing: gap sizes per level, boss speed, Heart of the Storm's difficulty.
 
 ## Roadmap
-Phases from the plan: 1 challenge and feel (done), 2 Adventure journey (done), 3 biomes and rewards,
+Phases from the plan: 1 challenge and feel (done), 2 Adventure journey (done), 3 biomes and rewards (done),
 4 leaderboard (backend, replay check, country, privacy), 5 launch prep (real ads, PWA, app stores,
 playtesting).
