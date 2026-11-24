@@ -38,10 +38,12 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
   it to a Vercel Node function. Imports game rules from `src/`, never DOM code.
 - `src/render/`: canvas drawing. Reads the world, never changes it. `effects.ts` is visual only. `view.ts`
   mirrors the picture for twist levels (upside down, backwards); the rules never change. `obstacles.ts` and
-  `scenery.ts` draw each biome's obstacles, distant world and life in the air.
+  `scenery.ts` draw each biome's obstacles, distant world and life in the air; `backdrops.ts` the adventure
+  levels' distant worlds.
 - `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast.
 - `src/states/`: one file per screen with `enter/exit/update/onTap`. They connect gameplay, meta and UI.
-- `src/audio/`: synthesized sounds reacting to `GameEvent`s.
+- `src/audio/`: `sounds.ts` (every effect as data, synthesized), `audio.ts` (plays them for `GameEvent`s and menus),
+  `music.ts` (the menu and flight loops in `audio/music/`, crossfaded; main.ts picks the loop per screen).
 - `src/testHooks.ts`: `render_game_to_text`, `advanceTime`, `__test`, only with `?test=1`.
 
 ## Rules that matter most
