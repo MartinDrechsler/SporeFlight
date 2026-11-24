@@ -1,3 +1,4 @@
+import { sin } from '../core/fmath';
 import { TUNING } from '../config/tuning';
 import type { Vein } from './veins';
 
@@ -56,11 +57,11 @@ export function stepRoot(root: Root, dt: number, scrollSpeed: number): void {
     const pulse = root.gapPulse;
     pulse.phase += R.gapPulseSpeed * dt;
     const middle = (pulse.min + pulse.max) / 2;
-    root.gapSize = middle + Math.sin(pulse.phase) * ((pulse.max - pulse.min) / 2);
+    root.gapSize = middle + sin(pulse.phase) * ((pulse.max - pulse.min) / 2);
   }
   if (root.slidePhase !== null) {
     root.slidePhase += R.slideSpeed * dt;
-    root.xOffset = Math.sin(root.slidePhase) * R.slideAmplitude;
+    root.xOffset = sin(root.slidePhase) * R.slideAmplitude;
   }
 
   moveGap(root, dt);
@@ -78,7 +79,7 @@ function moveGap(root: Root, dt: number): void {
       break;
     case 'sway':
       motion.phase += motion.frequency * dt;
-      root.gapCenter = motion.baseCenter + Math.sin(motion.phase) * motion.amplitude;
+      root.gapCenter = motion.baseCenter + sin(motion.phase) * motion.amplitude;
       break;
   }
   root.gapCenter = Math.min(root.centerMax, Math.max(root.centerMin, root.gapCenter));

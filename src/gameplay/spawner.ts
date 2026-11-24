@@ -1,3 +1,4 @@
+import { sin } from '../core/fmath';
 import { rootCount, type LevelConfig, type Schedule } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
@@ -143,7 +144,7 @@ export function makeCoinCluster(field: Field, x: number, nearY: number): Pickup[
   const top = PK.minY + C.height;
   const centerY = Math.min(field.height - PK.bottomMargin, Math.max(top, nearY));
   return Array.from({ length: C.coins }, (_, i) =>
-    freePickup('coin', x + i * C.spacing, centerY - Math.sin((i / (C.coins - 1)) * Math.PI) * C.height),
+    freePickup('coin', x + i * C.spacing, centerY - sin((i / (C.coins - 1)) * Math.PI) * C.height),
   );
 }
 
@@ -188,7 +189,7 @@ function chooseCenter(
   switch (level.layout) {
     case 'tunnel': {
       const t = R.tunnel;
-      return field.height * t.centerFraction + Math.sin(index * t.stepPerRoot) * field.height * t.amplitudeFraction;
+      return field.height * t.centerFraction + sin(index * t.stepPerRoot) * field.height * t.amplitudeFraction;
     }
     case 'random': {
       if (previous === null) return rng.range(min, max);

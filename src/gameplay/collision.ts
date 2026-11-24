@@ -1,3 +1,4 @@
+import { hypot } from '../core/fmath';
 import { TUNING } from '../config/tuning';
 import type { Player } from './player';
 import { gapBottom, gapTop, rootLeft, type Root } from './roots';
@@ -14,13 +15,15 @@ interface Box {
 export function circleToBoxGap(cx: number, cy: number, radius: number, box: Box): number {
   const closestX = Math.max(box.x, Math.min(cx, box.x + box.w));
   const closestY = Math.max(box.y, Math.min(cy, box.y + box.h));
-  return Math.hypot(cx - closestX, cy - closestY) - radius;
+  return hypot(cx - closestX, cy - closestY) - radius;
 }
 
 /** Circle-to-circle touch, scaled by `factor` (below 1 means stricter). */
 export function circlesTouch(ax: number, ay: number, ar: number, bx: number, by: number, br: number, factor = 1): boolean {
   const reach = (ar + br) * factor;
-  return (ax - bx) ** 2 + (ay - by) ** 2 < reach * reach;
+  const dx = ax - bx;
+  const dy = ay - by;
+  return dx * dx + dy * dy < reach * reach;
 }
 
 function columnBoxes(root: Root, groundY: number): Box[] {
