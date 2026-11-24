@@ -4,8 +4,9 @@ import { TUNING } from '../config/tuning';
 import { createRandom, type Random } from '../core/random';
 import { circlesTouch, isNearMiss, playerHitsGround, playerHitsRoot } from './collision';
 import { createPlayer, flap, stepPlayer, type Player } from './player';
-import { isMagnetic, pickupPosition, pullToward, type Pickup, type PickupKind } from './pickups';
+import { isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
 import { rootLeft, stepRoot, type Root } from './roots';
+import { removeRock, rockHittingPlayer, stepBoss, type Boss } from './boss';
 import { createCourse, stepCourse, type Course } from './course';
 import { makeWindZone, nextWindDistance, type Field } from './spawner';
 import { windContains, type WindZone } from './wind';
@@ -29,6 +30,9 @@ export type GameEvent =
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
   | { type: 'crash'; x: number; y: number }
   | { type: 'landed'; x: number; y: number }
+  /** The Stone Thrower is about to throw (its eyes flare). */
+  | { type: 'bossWarn'; x: number; y: number }
+  | { type: 'bossThrow'; x: number; y: number }
   /** The mushroom flew through the finish gate. */
   | { type: 'finish'; x: number; y: number };
 
@@ -44,6 +48,8 @@ export interface World extends Field {
   readonly layoutRng: Random;
   readonly level: LevelConfig;
   course: Course;
+  /** The Stone Thrower, during a boss stage and while it leaves. */
+  boss: Boss | null;
   player: Player;
   roots: Root[];
   pickups: Pickup[];
@@ -85,6 +91,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, r
     layoutRng,
     level,
     course: createCourse(),
+    boss: null,
     player: createPlayer(width, height),
     roots: [],
     pickups: [],
@@ -157,7 +164,9 @@ export function stepWorld(world: World, realDt: number): void {
 
   stepCourse(world, speed * dt, dt);
   for (const root of world.roots) stepRoot(root, dt, speed);
-  if (checkRootCollisions(world)) return;
+  for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+  stepBoss(world, dt);
+  if (checkHits(world)) return;
 
   attractPickups(world, dt);
   scorePasses(world);
@@ -172,6 +181,8 @@ function stepFinished(world: World, dt: number): void {
   const speed = scrollSpeed(world);
   world.distance += speed * dt;
   for (const root of world.roots) stepRoot(root, dt, speed);
+  for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+  stepBoss(world, dt);
   if (world.course.gateX !== null) world.course.gateX -= speed * dt;
   const player = world.player;
   player.vy = 0;
@@ -255,10 +266,13 @@ function keepInBounds(world: World): boolean {
   return true;
 }
 
-/** Returns true when the round ended. A shield absorbs one hit instead. */
-function checkRootCollisions(world: World): boolean {
+/** Roots and rocks are deadly. Returns true when the round ended; a shield absorbs one hit instead. */
+function checkHits(world: World): boolean {
   if (isInvulnerable(world)) return false;
-  const hit = world.roots.some((root) => playerHitsRoot(world.player, root, world.groundY));
+  const rock = rockHittingPlayer(world);
+  // A rock that is absorbed shatters, so it cannot hit twice.
+  if (rock) removeRock(world, rock);
+  const hit = rock !== null || world.roots.some((root) => playerHitsRoot(world.player, root, world.groundY));
   if (!hit) return false;
 
   if (world.shield) {

@@ -1,5 +1,6 @@
 import { rootCount, type Stage } from '../config/levels';
 import { TUNING } from '../config/tuning';
+import { createBoss, sendAway } from './boss';
 import type { World } from './world';
 import { makePickup, makeRoot } from './spawner';
 
@@ -48,7 +49,9 @@ export function stepCourse(world: World, travelled: number, dt: number): void {
     return;
   }
   if (stage?.kind === 'boss') {
+    world.boss ??= createBoss(world, stage.seconds);
     if (course.stageTime < stage.seconds) return;
+    sendAway(world.boss);
     nextStage(world);
     if (currentStage(world) === null) placeGate(world);
     return;

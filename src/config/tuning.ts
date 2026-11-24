@@ -83,6 +83,33 @@ export const TUNING = {
     graceSeconds: 1.5,
   },
 
+  /** The Stone Thrower: a monster on the right that throws rocks. Every throw is announced first. */
+  boss: {
+    /** Distance of its centre from the right edge, px. */
+    insetFromRight: 58,
+    bodyRadius: 62,
+    enterSeconds: 1.2,
+    firstThrowAfter: 2,
+    /** Eyes flare and the body shakes this long before each throw, s. */
+    warnSeconds: 0.55,
+    /** Time between throws at the start and at the end of the fight, s. */
+    startInterval: 1.8,
+    endInterval: 1.0,
+    /** A pause halfway through the fight, s. */
+    breatherSeconds: 2.6,
+    rockRadius: 15,
+    startRockSpeed: 240,
+    endRockSpeed: 300,
+    /** Angle between rocks in a fan of three, radians. */
+    fanSpread: 0.3,
+    /** Open space in a wall of rocks, px. */
+    wallGap: 160,
+    wallSpacing: 44,
+    coinEverySeconds: 3.5,
+    bobAmplitude: 70,
+    bobSpeed: 1.1,
+  },
+
   magnet: {
     seconds: 10,
     range: 100,

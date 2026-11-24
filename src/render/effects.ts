@@ -82,6 +82,12 @@ export class Effects {
         // A puff of spores where the mushroom lands; its clump grows from here.
         this.burst(event.x, event.y + 14, 14, '#f2ead8', 90, 0.6);
         break;
+      case 'bossThrow':
+        this.burst(event.x, event.y, 10, '#8a7a6a', 120, 0.5);
+        this.shake(0.12, 3);
+        break;
+      case 'bossWarn':
+        break;
       case 'finish':
         // The gate opens in light.
         for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);

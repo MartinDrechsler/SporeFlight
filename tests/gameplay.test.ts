@@ -302,3 +302,55 @@ describe('crash and mushroom clump', () => {
   });
 });
 
+
+describe('the Stone Thrower', () => {
+  const fight = (seed = 4) => {
+    const world = newWorld(seed, level(5));
+    world.invulnerableTime = Infinity;
+    return world;
+  };
+
+  it('announces every throw before it comes', () => {
+    const world = fight();
+    const times: { type: string; t: number }[] = [];
+    for (let i = 0; i < 60 * 30; i++) {
+      stepWorld(world, 1 / 60);
+      for (const e of world.events) if (e.type === 'bossWarn' || e.type === 'bossThrow') times.push({ type: e.type, t: i / 60 });
+      world.events.length = 0;
+    }
+    const throws = times.filter((e) => e.type === 'bossThrow');
+    expect(throws.length).toBeGreaterThan(8);
+    for (const thrown of throws) {
+      const warned = times.filter((e) => e.type === 'bossWarn' && e.t <= thrown.t).at(-1);
+      expect(warned).toBeDefined();
+      expect(thrown.t - warned!.t).toBeGreaterThanOrEqual(TUNING.boss.warnSeconds - 0.02);
+    }
+  });
+
+  it('dodged rocks score, and the fight ends with the finish gate', () => {
+    const world = fight();
+    for (let i = 0; i < 60 * 70 && !world.course.finished; i++) {
+      // Hover in place: invulnerable, so rocks fly past and count as dodged.
+      world.player.y = world.height * 0.42;
+      world.player.vy = 0;
+      stepWorld(world, 1 / 60);
+    }
+    expect(world.course.finished).toBe(true);
+    expect(world.stats.score).toBeGreaterThan(10);
+    expect(world.offered.diamonds).toBe(1);
+    expect(world.offered.coins).toBeGreaterThan(8);
+  });
+
+  it('a rock hit ends the round, unless a shield takes it', () => {
+    const world = newWorld(4, level(5));
+    run(world, 0.5);
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    world.shield = true;
+    stepWorld(world, 1 / 60);
+    expect([world.crashed, world.shield, world.boss!.rocks.length]).toEqual([false, false, 0]);
+    world.invulnerableTime = 0;
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    stepWorld(world, 1 / 60);
+    expect(world.crashed).toBe(true);
+  });
+});

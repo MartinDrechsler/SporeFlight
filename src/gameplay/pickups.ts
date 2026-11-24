@@ -6,12 +6,13 @@ const M = TUNING.magnet;
 export type PickupKind = 'coin' | 'diamond' | 'shield' | 'magnet';
 
 /**
- * Something to collect, floating in the space after a root. It rides along
- * with its root (so it follows a moving gap) at an offset that a magnet can pull.
+ * Something to collect. Most float in the space after a root and ride along
+ * with it (so they follow a moving gap) at an offset that a magnet can pull.
+ * Without a root (in a boss fight) the offset is simply the screen position.
  */
 export interface Pickup {
   kind: PickupKind;
-  root: Root;
+  root: Root | null;
   offsetX: number;
   offsetY: number;
   vx: number;
@@ -20,7 +21,19 @@ export interface Pickup {
 }
 
 export function pickupPosition(pickup: Pickup): { x: number; y: number } {
-  return { x: rootLeft(pickup.root) + pickup.offsetX, y: pickup.root.gapCenter + pickup.offsetY };
+  const root = pickup.root;
+  if (!root) return { x: pickup.offsetX, y: pickup.offsetY };
+  return { x: rootLeft(root) + pickup.offsetX, y: root.gapCenter + pickup.offsetY };
+}
+
+/** A pickup without a root drifts with the forest; one on a root already moves with it. */
+export function scrollPickup(pickup: Pickup, travelled: number): void {
+  if (!pickup.root) pickup.offsetX -= travelled;
+}
+
+/** A pickup floating freely at a screen position. */
+export function freePickup(kind: PickupKind, x: number, y: number): Pickup {
+  return { kind, root: null, offsetX: x, offsetY: y, vx: 0, vy: 0, collected: false };
 }
 
 /** Only valuables are attracted; a magnet never pulls in power-ups. */

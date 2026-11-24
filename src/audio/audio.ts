@@ -23,6 +23,8 @@ const SOUNDS = {
   ],
   pop: [{ from: 600, to: 120, seconds: 0.25, wave: 'square', volume: 0.08 }],
   crash: [{ from: 220, to: 60, seconds: 0.4, wave: 'sawtooth', volume: 0.15 }],
+  growl: [{ from: 90, to: 70, seconds: 0.45, wave: 'sawtooth', volume: 0.1 }],
+  throw: [{ from: 320, to: 140, seconds: 0.18, wave: 'triangle', volume: 0.1 }],
   click: [{ from: 520, to: 560, seconds: 0.05, wave: 'triangle', volume: 0.08 }],
   error: [{ from: 200, to: 140, seconds: 0.18, wave: 'square', volume: 0.07 }],
   reward: [
@@ -108,5 +110,9 @@ function soundFor(event: GameEvent): SoundName | null {
       return null;
     case 'finish':
       return 'reward';
+    case 'bossWarn':
+      return 'growl';
+    case 'bossThrow':
+      return 'throw';
   }
 }
