@@ -7,6 +7,7 @@ import { showHearts } from '../ui/icons';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
+import { avatarScale, idleLook } from '../render/avatar';
 import { startRound } from './round';
 import { syncLeaderboard } from './syncLeaderboard';
 
@@ -58,6 +59,10 @@ export function startState(ctx: GameContext): State {
     update(dt) {
       time += dt;
       hover(ctx, 'start-slot', time, dt);
+      // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
+      const room = byId('start-slot').getBoundingClientRect().height;
+      const scale = avatarScale(room, ctx.world.player.radius);
+      ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time) };
     },
 
     onTap: begin,

@@ -5,6 +5,7 @@ import { crashSpot, isInvulnerable, type World } from '../gameplay/world';
 import { drawBackground, drawDeathMarks } from './background';
 import type { Surface } from './canvas';
 import { drawPlayer } from './drawPlayer';
+import type { Pose } from './avatar';
 import { biomeAt, biomeBlend } from '../config/biomes';
 import type { Root } from '../gameplay/roots';
 import { rootLeft } from '../gameplay/roots';
@@ -22,6 +23,8 @@ export interface Scene {
   deathMarks: readonly number[];
   /** Seconds since the game launched; drives idle animations. */
   time: number;
+  /** How the mushroom is shown (the home screen avatar); never changes the flight. */
+  pose: Pose;
 }
 
 /** Draws one complete frame. Reads game state, never changes it. */
@@ -61,6 +64,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
     magnet: world.magnetTime > 0,
     invulnerable: isInvulnerable(world),
     time,
+    pose: scene.pose,
   });
   // Clumps sit in front, so the one growing beside a fallen mushroom is not hidden behind it.
   const newMark =

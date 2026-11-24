@@ -32,6 +32,7 @@ import { unlockState } from './states/unlockState';
 import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
 import { installIcons } from './ui/icons';
+import { NEUTRAL_POSE, relaxPose } from './render/avatar';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
 
@@ -63,6 +64,7 @@ const ctx: GameContext = {
   rng,
   levelId: ENDLESS_LEVEL_ID,
   lastScore: null,
+  pose: NEUTRAL_POSE,
   newWorld: (levelId, startY) => {
     // Clumps from earlier rounds; this round's clump only grows once the mushroom has landed.
     earlierMarks = save.deathMarks[String(levelId)] ?? [];
@@ -105,6 +107,8 @@ let time = 0;
 const loop = createLoop(
   (dt) => {
     time += dt;
+    // Screens other than home let the avatar pose settle back; home sets it again in its update.
+    ctx.pose = relaxPose(ctx.pose, dt);
     machine.update(dt);
     ctx.effects.update(dt);
     ctx.audio.setMusic(machine.current === null ? null : MUSIC[machine.current]);
@@ -116,6 +120,7 @@ const loop = createLoop(
       effects: ctx.effects,
       deathMarks: earlierMarks,
       time,
+      pose: ctx.pose,
     }),
 );
 

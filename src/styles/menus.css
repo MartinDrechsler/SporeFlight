@@ -533,3 +533,15 @@
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+.setting-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-line);
+  /* Solid, so the forest and the mushroom never show through the text. */
+  background: #05140f;
+}

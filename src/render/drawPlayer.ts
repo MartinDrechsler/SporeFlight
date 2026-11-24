@@ -1,5 +1,6 @@
 import type { Skin } from '../config/skins';
 import type { Player } from '../gameplay/player';
+import type { Pose } from './avatar';
 
 const MAX_TILT_UP = (-25 * Math.PI) / 180;
 const MAX_TILT_DOWN = (75 * Math.PI) / 180;
@@ -13,22 +14,27 @@ export interface PlayerLook {
   /** Blinks while invulnerable after a shield pop. */
   invulnerable: boolean;
   time: number;
+  /** Shift, size, gaze and blink (the home screen avatar); see render/avatar.ts. */
+  pose: Pose;
 }
 
 /** The glowing mushroom. Its tilt, squash and eyes all follow from its motion. */
 export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: Skin, look: PlayerLook): void {
   if (look.invulnerable && Math.floor(look.time * 12) % 2 === 0) return;
-  const r = player.radius;
+  const { pose } = look;
+  const r = player.radius * pose.scale;
+  const x = player.x + pose.shiftX;
 
-  if (look.magnet) drawMagnetAura(ctx, player.x, player.y, r, look.time);
+  if (look.magnet) drawMagnetAura(ctx, x, player.y, r, look.time);
 
   const tilt = Math.min(MAX_TILT_DOWN, Math.max(MAX_TILT_UP, player.vy * TILT_PER_SPEED));
   // Stretch tall right after a flap, then settle back.
   const stretch = 0.25 * Math.exp(-player.sinceFlap * 10);
 
   ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(look.crashed ? Math.PI * 0.6 : tilt);
+  ctx.translate(x, player.y);
+  // A glance turns the head a little too.
+  ctx.rotate(look.crashed ? Math.PI * 0.6 : tilt + pose.gaze * 0.07);
   ctx.scale(1 - stretch * 0.9, 1 + stretch);
 
   ctx.shadowColor = skin.glow;
@@ -60,13 +66,13 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
     ctx.fill();
   }
 
-  drawEyes(ctx, r, player.vy, look.crashed);
+  drawEyes(ctx, r, player.vy, look.crashed, pose);
   ctx.restore();
 
-  if (look.shield) drawShieldBubble(ctx, player.x, player.y, r, look.time);
+  if (look.shield) drawShieldBubble(ctx, x, player.y, r, look.time);
 }
 
-function drawEyes(ctx: CanvasRenderingContext2D, r: number, vy: number, crashed: boolean): void {
+function drawEyes(ctx: CanvasRenderingContext2D, r: number, vy: number, crashed: boolean, pose: Pose): void {
   const eyeY = r * 0.35;
   ctx.strokeStyle = '#1a1a1a';
   ctx.fillStyle = '#1a1a1a';
@@ -82,11 +88,27 @@ function drawEyes(ctx: CanvasRenderingContext2D, r: number, vy: number, crashed:
       ctx.lineTo(ex - s, eyeY + s);
       ctx.stroke();
     } else {
-      // Pupils look up when rising and down when falling.
+      // Pupils look up when rising and down when falling, and sideways when glancing.
       const lookY = Math.max(-1, Math.min(1, vy / 300)) * r * 0.07;
+      const lookX = pose.gaze * r * 0.08;
+      const open = 1 - pose.blink;
+      if (open < 0.2) {
+        // Closed: a short lid line.
+        ctx.beginPath();
+        ctx.moveTo(ex + lookX - r * 0.09, eyeY + lookY);
+        ctx.lineTo(ex + lookX + r * 0.09, eyeY + lookY);
+        ctx.stroke();
+        continue;
+      }
       ctx.beginPath();
-      ctx.ellipse(ex, eyeY + lookY, r * 0.08, r * 0.14, 0, 0, Math.PI * 2);
+      ctx.ellipse(ex + lookX, eyeY + lookY, r * 0.08, r * 0.14 * open, 0, 0, Math.PI * 2);
       ctx.fill();
+      // A small shine makes the eyes look alive.
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ex + lookX - r * 0.025, eyeY + lookY - r * 0.06 * open, r * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a1a1a';
     }
   }
 }

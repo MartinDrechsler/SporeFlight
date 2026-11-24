@@ -169,12 +169,14 @@
 
       <section id="screen-settings" class="overlay panel" hidden>
         <h2 class="panel-title">SETTINGS</h2>
-        <label class="setting" for="music-volume">
-          <span class="setting-name">MUSIC</span>
-          <span id="music-volume-value" class="setting-value">70%</span>
-        </label>
-        <input id="music-volume" class="slider" type="range" min="0" max="100" step="5" value="70" />
-        <p class="panel-text small">Sound effects keep their level. The speaker button at the top turns all sound on or off.</p>
+        <div class="setting-card">
+          <label class="setting" for="music-volume">
+            <span class="setting-name">MUSIC</span>
+            <span id="music-volume-value" class="setting-value">70%</span>
+          </label>
+          <input id="music-volume" class="slider" type="range" min="0" max="100" step="5" value="70" />
+          <p class="panel-text small">Sound effects keep their level. The speaker button at the top turns all sound on or off.</p>
+        </div>
         <button class="menu-button back-button" type="button">BACK</button>
       </section>
 
