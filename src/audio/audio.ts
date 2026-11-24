@@ -22,10 +22,13 @@ export class Audio {
   /** The track wanted before audio was unlocked, started on unlock. */
   private track: Track | null = null;
   private hidden = false;
+  private musicGain: GainNode | null = null;
+  private musicVolume: number;
   enabled: boolean;
 
-  constructor(enabled: boolean) {
+  constructor(enabled: boolean, musicVolume: number) {
     this.enabled = enabled;
+    this.musicVolume = musicVolume;
   }
 
   unlock(): void {
@@ -56,7 +59,15 @@ export class Audio {
   /** Which loop should play now; called every frame, it only acts on a change. */
   setMusic(track: Track | null): void {
     this.track = track;
-    this.music?.want(track);
+    // Music turned all the way down is not just silent but stopped, so nothing loads or plays.
+    this.music?.want(this.musicVolume > 0 ? track : null);
+  }
+
+  /** Music loudness from 0 to 1 (settings); applies at once, effects are not touched. */
+  setMusicVolume(volume: number): void {
+    this.musicVolume = volume;
+    if (this.musicGain && this.context) this.musicGain.gain.setTargetAtTime(volume, this.context.currentTime, 0.05);
+    this.setMusic(this.track);
   }
 
   react(event: GameEvent): void {
@@ -75,8 +86,11 @@ export class Audio {
       this.effects.gain.value = EFFECTS_VOLUME;
       this.effects.connect(ctx.destination);
       this.noise = whiteNoise(ctx);
-      this.music = new Music(ctx, ctx.destination);
-      this.music.want(this.track);
+      this.musicGain = ctx.createGain();
+      this.musicGain.gain.value = this.musicVolume;
+      this.musicGain.connect(ctx.destination);
+      this.music = new Music(ctx, this.musicGain);
+      this.setMusic(this.track);
       this.context = ctx;
     } catch {
       this.context = null;

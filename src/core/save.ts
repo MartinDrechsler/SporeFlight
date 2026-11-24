@@ -36,7 +36,7 @@ export interface LeaderboardState {
 }
 
 export interface SaveData {
-  version: 6;
+  version: 7;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
@@ -47,6 +47,8 @@ export interface SaveData {
   diamonds: number;
   lives: number;
   soundOn: boolean;
+  /** Music loudness from 0 (off) to 1; sound effects keep their own level. */
+  musicVolume: number;
   ownedSkins: string[];
   activeSkin: string;
   ownedTrails: string[];
@@ -67,7 +69,7 @@ const QUEST_KINDS: readonly QuestKind[] = QUEST_POOL.map((template) => template.
 
 export function defaultSave(): SaveData {
   return {
-    version: 6,
+    version: 7,
     username: null,
     bestScore: 0,
     levelStars: {},
@@ -75,6 +77,7 @@ export function defaultSave(): SaveData {
     diamonds: 0,
     lives: TUNING.session.startLives,
     soundOn: true,
+    musicVolume: TUNING.audio.defaultMusicVolume,
     ownedSkins: [DEFAULT_SKIN_ID],
     activeSkin: DEFAULT_SKIN_ID,
     ownedTrails: [DEFAULT_TRAIL_ID],
@@ -108,7 +111,7 @@ export function migrate(raw: unknown): SaveData {
   const version = typeof data.version === 'number' ? data.version : 0;
 
   return {
-    version: 6,
+    version: 7,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
     // Version 4 brought a new set of levels, so older per-level results do not carry over.
@@ -117,6 +120,7 @@ export function migrate(raw: unknown): SaveData {
     diamonds: count(data.diamonds, 0),
     lives: count(data.lives, base.lives),
     soundOn: typeof data.soundOn === 'boolean' ? data.soundOn : true,
+    musicVolume: volume(data.musicVolume, base.musicVolume),
     ownedSkins,
     activeSkin,
     ownedTrails,
@@ -128,6 +132,11 @@ export function migrate(raw: unknown): SaveData {
     restSecondsLeft: Math.min(TUNING.session.restSeconds, count(data.restSecondsLeft, 0)),
     leaderboard: cleanLeaderboard(data.leaderboard),
   };
+}
+
+/** A loudness from 0 to 1; anything else becomes the fallback. */
+function volume(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
 }
 
 function cleanLeaderboard(value: unknown): LeaderboardState {

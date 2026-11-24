@@ -1,3 +1,4 @@
+import type { Pose } from '../render/avatar';
 import type { RewardedAds } from '../ads/ads';
 import type { Audio } from '../audio/audio';
 import type { Random } from '../core/random';
@@ -7,7 +8,7 @@ import type { Effects } from '../render/effects';
 
 export type StateName =
   | 'username' | 'start' | 'playing' | 'roundOver' | 'gameOver' | 'ad' | 'adventureOver' | 'levelComplete'
-  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks';
+  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks' | 'settings';
 
 /**
  * What the states share. A state reads and changes this, then switches to
@@ -25,7 +26,8 @@ export interface GameContext {
   levelId: number;
   /** Score of the round that just ended, shown on the start screen. */
   lastScore: number | null;
-  /** Builds a fresh round of the given level, sized to the screen. */
+  /** How the mushroom is shown: the home screen sets the avatar pose, other screens let it relax. */
+  pose: Pose;
   /** A fresh round of a level; `startY` carries the hovering mushroom's height over. */
   newWorld(levelId: number, startY?: number): World;
   /** Switch to another screen. */

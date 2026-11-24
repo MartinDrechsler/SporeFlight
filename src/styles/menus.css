@@ -510,3 +510,38 @@
   padding: 0 14px;
   font-size: 1.1rem;
 }
+
+/* Settings: the gear sits beside the speaker button, on the home screen only. */
+.icon-button.settings-button {
+  right: 62px;
+}
+
+.setting {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 1.4rem;
+}
+
+.setting-value {
+  color: var(--accent);
+}
+
+.slider {
+  width: 100%;
+  height: 32px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.setting-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-line);
+  /* Solid, so the forest and the mushroom never show through the text. */
+  background: #05140f;
+}

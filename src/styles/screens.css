@@ -229,9 +229,8 @@
 }
 
 .hud-lives {
-  color: var(--pink);
-  font-size: 1.5rem;
-  letter-spacing: 0.05em;
+  display: flex;
+  gap: 3px;
 }
 
 .hud-score {
@@ -269,21 +268,37 @@
   gap: 6px;
 }
 
+/* Pixel icons: the same sprites the game draws (src/config/sprites.ts), set as CSS variables at start. */
 .icon-coin,
-.icon-diamond {
+.icon-diamond,
+.icon-heart {
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 6px var(--gold);
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  background: var(--icon-coin) center / contain no-repeat;
+  image-rendering: pixelated;
+  vertical-align: -2px;
 }
 
 .icon-diamond {
-  border-radius: 2px;
-  transform: rotate(45deg);
-  background: var(--diamond);
-  box-shadow: 0 0 6px var(--diamond);
+  width: 16px;
+  background-image: var(--icon-diamond);
+  filter: drop-shadow(0 0 3px var(--diamond));
+}
+
+.icon-coin {
+  filter: drop-shadow(0 0 3px var(--gold));
+}
+
+.icon-heart {
+  width: 18px;
+  height: 17px;
+  background-image: var(--icon-heart);
+}
+
+.icon-heart.empty {
+  background-image: var(--icon-heart-empty);
 }
 
 .powerups {
@@ -447,4 +462,19 @@
 
 .panel-text.opened {
   color: var(--accent);
+}
+
+.stats dd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stats .icon-heart {
+  width: 14px;
+  height: 13px;
+}
+
+.stats .lives {
+  gap: 2px;
 }

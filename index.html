@@ -53,6 +53,7 @@
 
       <!-- Title / menu -->
       <section id="screen-start" class="overlay start" data-tap hidden>
+        <button id="settings-button" class="icon-button settings-button" type="button" aria-label="Settings">⚙️</button>
         <h1 class="title"><span>SPORE</span><span class="accent">FLIGHT</span></h1>
         <p id="start-username" class="badge"></p>
         <div id="start-slot" class="mushroom-slot grow"></div>
@@ -68,8 +69,8 @@
         <dl class="stats">
           <div><dt>BEST</dt><dd id="start-best">0</dd></div>
           <div><dt>LIVES</dt><dd id="start-lives" class="lives">0</dd></div>
-          <div><dt>COINS</dt><dd id="start-coins" class="coins">0</dd></div>
-          <div><dt>DIAMONDS</dt><dd id="start-diamonds" class="diamonds">0</dd></div>
+          <div><dt>COINS</dt><dd class="coins"><span class="icon-coin"></span><span id="start-coins">0</span></dd></div>
+          <div><dt>DIAMONDS</dt><dd class="diamonds"><span class="icon-diamond"></span><span id="start-diamonds">0</span></dd></div>
         </dl>
       </section>
 
@@ -162,6 +163,19 @@
             <button id="ranks-rename" class="menu-button small" type="button">CHANGE NAME</button>
             <button id="ranks-leave" class="menu-button small" type="button">LEAVE</button>
           </div>
+        </div>
+        <button class="menu-button back-button" type="button">BACK</button>
+      </section>
+
+      <section id="screen-settings" class="overlay panel" hidden>
+        <h2 class="panel-title">SETTINGS</h2>
+        <div class="setting-card">
+          <label class="setting" for="music-volume">
+            <span class="setting-name">MUSIC</span>
+            <span id="music-volume-value" class="setting-value">70%</span>
+          </label>
+          <input id="music-volume" class="slider" type="range" min="0" max="100" step="5" value="70" />
+          <p class="panel-text small">Sound effects keep their level. The speaker button at the top turns all sound on or off.</p>
         </div>
         <button class="menu-button back-button" type="button">BACK</button>
       </section>

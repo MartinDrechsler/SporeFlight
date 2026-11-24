@@ -3,10 +3,11 @@ import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
 import { claimableCount, dayKey, refreshQuests } from '../meta/quests';
 import { byId, setText } from '../ui/dom';
-import { hearts } from '../ui/hud';
+import { showHearts } from '../ui/icons';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
 import { hover } from './hover';
+import { avatarScale, idleLook } from '../render/avatar';
 import { startRound } from './round';
 import { syncLeaderboard } from './syncLeaderboard';
 
@@ -24,6 +25,7 @@ export function startState(ctx: GameContext): State {
   menu('menu-badges', 'badges');
   menu('menu-quests', 'quests');
   menu('menu-ranks', 'ranks');
+  menu('settings-button', 'settings');
   byId('menu-adventure').addEventListener('click', () => {
     ctx.audio.unlock();
     ctx.audio.ui('click');
@@ -57,6 +59,10 @@ export function startState(ctx: GameContext): State {
     update(dt) {
       time += dt;
       hover(ctx, 'start-slot', time, dt);
+      // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
+      const room = byId('start-slot').getBoundingClientRect().height;
+      const scale = avatarScale(room, ctx.world.player.radius);
+      ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time) };
     },
 
     onTap: begin,
@@ -69,7 +75,7 @@ function refresh(ctx: GameContext): void {
   setText(byId('start-best'), save.bestScore);
   setText(byId('start-coins'), save.coins);
   setText(byId('start-diamonds'), save.diamonds);
-  setText(byId('start-lives'), hearts(save.lives));
+  showHearts(byId('start-lives'), save.lives);
   byId('start-last').hidden = ctx.lastScore === null;
   setText(byId('start-last-score'), ctx.lastScore ?? 0);
   byId('adventure-lock').hidden = save.adventureUnlocked;
