@@ -97,7 +97,7 @@ export function drawLife(ctx: CanvasRenderingContext2D, life: Life, alpha: numbe
   ctx.restore();
 }
 
-interface TreeLayer {
+export interface TreeLayer {
   /** Parallax: how fast the layer moves compared to the action. */
   speed: number;
   spacing: number;
@@ -111,7 +111,7 @@ interface TreeLayer {
  * A row of tree silhouettes, the same flat style as the mountains and mesas
  * of later biomes, so every biome belongs to one world.
  */
-function trees(ctx: CanvasRenderingContext2D, view: SceneryView, layer: TreeLayer): void {
+export function trees(ctx: CanvasRenderingContext2D, view: SceneryView, layer: TreeLayer): void {
   const { groundY } = view;
   ctx.fillStyle = layer.color;
   ctx.strokeStyle = layer.color;
@@ -238,7 +238,7 @@ function lightShafts(ctx: CanvasRenderingContext2D, view: SceneryView, rgb: stri
 }
 
 /** Repeats a shape across the screen at a parallax `speed`; `draw` gets the x and the item number. */
-function scroll(view: SceneryView, speed: number, spacing: number, draw: (x: number, n: number) => void): void {
+export function scroll(view: SceneryView, speed: number, spacing: number, draw: (x: number, n: number) => void): void {
   const offset = view.distance * speed;
   const first = Math.floor(offset / spacing) - 1;
   for (let n = first; n * spacing - offset < view.width + spacing; n++) draw(n * spacing - offset, n);
@@ -307,7 +307,7 @@ function mesas(ctx: CanvasRenderingContext2D, view: SceneryView, speed: number, 
 }
 
 /** A mountain range; `snow` is the share of each peak that is white. */
-function mountains(ctx: CanvasRenderingContext2D, view: SceneryView, speed: number, heightShare: number, color: string, snow: number): void {
+export function mountains(ctx: CanvasRenderingContext2D, view: SceneryView, speed: number, heightShare: number, color: string, snow: number): void {
   scroll(view, speed, 150, (x, n) => {
     const h = view.groundY * heightShare * (0.7 + hash(n * 7 + speed) * 0.5);
     const w = 120 + hash(n + 1) * 90;
@@ -334,7 +334,7 @@ function mountains(ctx: CanvasRenderingContext2D, view: SceneryView, speed: numb
   });
 }
 
-function stars(ctx: CanvasRenderingContext2D, view: SceneryView, count: number, heightShare: number): void {
+export function stars(ctx: CanvasRenderingContext2D, view: SceneryView, count: number, heightShare: number): void {
   for (let i = 0; i < count; i++) {
     const x = (hash(i) * view.width * 1.2 - view.distance * 0.01) % (view.width * 1.2);
     const sx = x < 0 ? x + view.width * 1.2 : x;
