@@ -16,7 +16,7 @@ export function questsState(ctx: GameContext): State {
       const reward = claimQuest(ctx.save, index);
       if (reward === 0) return;
       ctx.persist();
-      ctx.audio.ui('reward');
+      ctx.audio.ui('buy');
       toast(`+${reward} COINS CLAIMED!`);
       render();
     });

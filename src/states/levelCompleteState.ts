@@ -71,7 +71,7 @@ export function levelCompleteState(ctx: GameContext): State {
       const star = byId('screen-levelComplete').querySelectorAll('.big-star')[starsShown];
       star?.classList.add('earned');
       starsShown += 1;
-      ctx.audio.ui('reward');
+      ctx.audio.ui('star');
     },
   };
 }

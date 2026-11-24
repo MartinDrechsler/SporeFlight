@@ -4,6 +4,7 @@ import './styles/screens.css';
 import './styles/menus.css';
 import { createMockAds, type RewardedAds } from './ads/ads';
 import { Audio } from './audio/audio';
+import type { Track } from './audio/music';
 import { levelById, ENDLESS_LEVEL_ID } from './config/levels';
 import { TUNING } from './config/tuning';
 import { createLoop } from './core/loop';
@@ -89,12 +90,21 @@ const machine = new StateMachine<StateName>({
   unlock: unlockState(ctx),
 });
 
+/** The music behind each screen: the calm loop in menus, the faster one in flight, none during an ad. */
+const MUSIC: Record<StateName, Track | null> = {
+  username: 'menu', start: 'menu', shop: 'menu', ranks: 'menu', badges: 'menu', quests: 'menu', levels: 'menu', unlock: 'menu',
+  gameOver: 'menu', adventureOver: 'menu', levelComplete: 'menu',
+  playing: 'flight', roundOver: 'flight',
+  ad: null,
+};
+
 let time = 0;
 const loop = createLoop(
   (dt) => {
     time += dt;
     machine.update(dt);
     ctx.effects.update(dt);
+    ctx.audio.setMusic(machine.current === null ? null : MUSIC[machine.current]);
   },
   () =>
     renderScene(surface, {
@@ -156,6 +166,7 @@ function setupInput(): void {
 /** Pause everything when the app goes to the background, and resize with the screen. */
 function setupLifecycle(): void {
   document.addEventListener('visibilitychange', () => {
+    ctx.audio.setHidden(document.hidden);
     if (document.hidden) {
       loop.stop();
       writeSave(store, save);
@@ -179,8 +190,8 @@ function setupSoundToggle(): void {
   paint();
   soundButton.addEventListener('click', () => {
     save.soundOn = !save.soundOn;
-    ctx.audio.enabled = save.soundOn;
     ctx.audio.unlock();
+    ctx.audio.setEnabled(save.soundOn);
     writeSave(store, save);
     paint();
   });

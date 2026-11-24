@@ -32,7 +32,7 @@ export function roundOverState(ctx: GameContext): State {
       if (world.level.progressive && rememberRun(save, world.stats.score, runRecord(world))) void syncLeaderboard(ctx);
       if (newBest && world.stats.score > 0) {
         ctx.effects.newBest(world.width, world.height);
-        ctx.audio.ui('reward');
+        ctx.audio.ui('newBest');
       }
       checkAchievements(ctx);
       ctx.persist();

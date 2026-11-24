@@ -202,7 +202,7 @@ function windmills(ctx: CanvasRenderingContext2D, view: SceneryView, color: stri
   scroll(view, 0.12, 150, (x, n) => {
     ctx.fillStyle = color;
     if (hash(n + 6) < 0.25) return;
-    const h = groundY * (0.22 + hash(n + 7) * 0.08);
+    const h = groundY * (0.18 + hash(n + 7) * 0.06);
     const base = groundY - 25;
     const hub = { x: x + 70, y: base - h };
     ctx.beginPath();
@@ -217,7 +217,7 @@ function windmills(ctx: CanvasRenderingContext2D, view: SceneryView, color: stri
     // Four sails: a thin arm with a wide cloth on its outer part.
     ctx.fillStyle = color;
     const turn = time * (0.8 + hash(n + 8) * 0.6) + n;
-    const reach = h * 0.6;
+    const reach = h * 0.5;
     for (let i = 0; i < 4; i++) {
       const a = turn + (i * Math.PI) / 2;
       const ax = Math.cos(a);
