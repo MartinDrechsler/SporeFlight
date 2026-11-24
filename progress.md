@@ -3,9 +3,36 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: phase 1 "Challenge and feel" done (2026-11-24)
-The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Phase 1 makes the game a real Flappy-style
-challenge. Next: phase 2, the Adventure journey (map path, 10 levels with finish gates).
+## Status: phase 2 "Adventure journey" done (2026-11-24)
+The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 3, biomes and rewards
+(8 endless biomes every 20 points, golden coin, crystal veins to mine diamonds, badges without coins,
+quests paying 5 to 15 coins, skin prices).
+
+### Phase 2 changes
+- **Adventure map**: a winding path, level 1 at the bottom. Finished stops show stars, the next one glows
+  with the player's mushroom on it, locked ones wait further up. Tap a stop to read it, then FLY.
+- **10 levels** as in the plan: First Light, Narrow Passage, Drifting Canopy, Breathing Hollow,
+  The Stone Thrower (boss), Creeping Roots, Upside-Down Grove (twist), Canopy Winds, The Way Home (twist),
+  Heart of the Storm (swinging tunnel, then the boss returns). 20 to 40 roots each.
+- **Stages and the finish gate**: a level is a list of stages (roots or boss); after the last one a gate of
+  light appears. Flying through it completes the level, costs no life and opens the next level.
+- **Fixed layouts**: roots, gaps, pickups and wind are seeded by the level, so every attempt is the same and
+  the mushroom clumps mark the hard spots. The boss's attacks vary per attempt.
+- **Interest curve per level**: calm, still, wider roots at the start and halfway; a tighter climax in the
+  last 5 roots.
+- **Stars**: 1 for finishing, 2 for 80% of the coins, 3 for every coin plus the level's diamond (one per
+  level, in the climax; becomes a crystal vein in phase 3). Stars fly in one by one on the complete screen.
+- **The Stone Thrower**: rocks aimed, in fans of three, or in walls with one opening; faster as the fight
+  goes on, with a breather halfway. Every throw is announced (eyes flare, mouth opens, growl).
+- **Twist levels** mirror the picture, never the rules (`view` in level data).
+- **HUD** shows a progress bar to the gate in levels; the crash screen shows how far you got.
+- **Unlock price**: 100 coins and 3 diamonds. **Save v4**: stars per level (old level scores dropped,
+  since the levels are new).
+- **Removed** (Martin's call): glowfly swarms, one-sided roots, breathing root width, big height steps.
+
+### To check by playing
+- Heart of the Storm: 40 roots at spacing 170 with speed rising every 10 roots may be too hard.
+- Boss rock speed and throw timing (tuning.ts `boss`), level gap sizes (levels.ts).
 
 ### Phase 1 changes
 - **Flight**: rises softly, falls faster (separate rise and fall gravity), nose dips further when diving.
@@ -56,6 +83,14 @@ challenge. Next: phase 2, the Adventure journey (map path, 10 levels with finish
 - **Levels are data with flags** (old code checked level names in several places).
 - **Fixed time step**: same air time on every phone (Koster: consistent jumps feel like good controls).
 - **Thin end-to-end slice first, then breadth** (Pragmatic Programmer, tracer bullets).
+- **Endless is a level with one never-ending stage** (Ousterhout, define special cases out of existence):
+  the course code has no "if endless" branch for spawning or finishing.
+- **Twist levels mirror the picture, not the physics** (Ousterhout, pull complexity down): one `view`
+  transform in rendering instead of reversed-gravity and reversed-direction cases in the rules.
+- **Stars as layers of challenge** (Schell): finishing moves you on; stars give skilled players a reason
+  to replay.
+- **Boss throws are announced** (Schell, Lens of Fairness): a hit should always feel like your own mistake.
+- **Fixed layouts per level, random boss attacks**: levels are learned by replaying; the boss stays tense.
 
 ## Changed from the old game on purpose
 - Lives are saved. Before, a reload gave 5 free lives; with ads as the only refill, that would be a free bypass.
@@ -64,19 +99,16 @@ challenge. Next: phase 2, the Adventure journey (map path, 10 levels with finish
   Now the level's multiplier is the base and steps up every 10 roots, as in endless.
 - Pickups float halfway between roots. The old fixed offset put them inside the next root on the
   closely spaced levels (tunnel, storm).
-- Level select: tap once to read a level, tap again to fly. The old hover text could not be read on phones.
+- Level select: tap a stop on the map to read it, then FLY. The old hover text could not be read on phones.
 - Coins and diamonds are banked at the end of a round (same totals; closing the app mid-round loses that round's).
 - Removed: unused obstacle types, the dev tunnel/QR code, the "skip rest (testing)" button.
 - The resting-mushroom picture is used on the game over and adventure crash screens.
 
 ## Open questions for Martin
-- **Adventure unlock price**: the old game had 0 coins / 0 diamonds (a placeholder). Set in `config/levels.ts`.
-- **Levels 7 and 8 may be too hard**: every gap swings by up to 80 px, level 7 roots are only 170 px apart.
-  These are the old game's values. Play them and decide; a balance pass is a one-line change per level.
 - **Ad network**: AdMob (needs the app-store wrapper) or a web ad network for the browser version.
+- **Balance** after playing: gap sizes per level, boss speed, Heart of the Storm's difficulty.
 
 ## Roadmap
-1. Balance pass after Martin plays every level on his phone.
-2. Deploy to a new Vercel project for real-phone testing.
-3. Real rewarded ads behind `src/ads/ads.ts`.
-4. Launch prep: PWA install (offline, icon), performance pass on a low-end Android, app-store wrapping (Capacitor).
+Phases from the plan: 1 challenge and feel (done), 2 Adventure journey (done), 3 biomes and rewards,
+4 leaderboard (backend, replay check, country, privacy), 5 launch prep (real ads, PWA, app stores,
+playtesting).
