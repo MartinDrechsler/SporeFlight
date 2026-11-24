@@ -1,4 +1,5 @@
 import { hash } from './color';
+import type { AvatarFrame } from './timeline';
 
 /**
  * How the mushroom is shown, apart from where the flight rules put it: shifted
@@ -13,9 +14,11 @@ export interface Pose {
   gaze: number;
   /** 0 eyes open, 1 closed. */
   blink: number;
+  /** A moment of an avatar animation (config/animations.ts) acted out on top, or null. */
+  act: AvatarFrame | null;
 }
 
-export const NEUTRAL_POSE: Pose = { shiftX: 0, scale: 1, gaze: 0, blink: 0 };
+export const NEUTRAL_POSE: Pose = { shiftX: 0, scale: 1, gaze: 0, blink: 0, act: null };
 
 /** On the home screen the mushroom is the player's avatar: centred and up to this much bigger. */
 const AVATAR_MAX_SCALE = 1.7;
@@ -72,5 +75,6 @@ export function relaxPose(pose: Pose, dt: number): Pose {
     scale: 1 + (pose.scale - 1) * keep,
     gaze: pose.gaze * keep,
     blink: 0,
+    act: null,
   };
 }

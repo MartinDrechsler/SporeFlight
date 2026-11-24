@@ -4,6 +4,7 @@ import { TRAILS, trailById, type Trail } from '../config/trails';
 import { canAfford, ownsLook, type LookKind } from '../meta/economy';
 import type { SaveData } from '../core/save';
 import { templateFor } from '../meta/quests';
+import { mushroomSvg } from '../render/mushroom';
 import { button, byId, el, setText } from './dom';
 
 /**
@@ -112,12 +113,8 @@ export function renderQuests(save: SaveData, onClaim: (index: number) => void): 
 export function skinPreview(skin: Skin): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '-22 -26 44 48');
+  svg.setAttribute('viewBox', '-23 -21 46 44');
   svg.setAttribute('class', 'skin-preview');
-  svg.innerHTML =
-    `<rect x="-7" y="-4" width="14" height="22" rx="5" fill="#f2ead8"/>` +
-    `<path d="M-20 -2 A20 18 0 0 1 20 -2 Z" fill="${skin.capMain}"/>` +
-    `<circle cx="-8" cy="-10" r="3.5" fill="${skin.spots}"/><circle cx="6" cy="-14" r="2.5" fill="${skin.spots}"/>` +
-    `<circle cx="-3" cy="6" r="1.5" fill="#1a1a1a"/><circle cx="3" cy="6" r="1.5" fill="#1a1a1a"/>`;
+  svg.innerHTML = mushroomSvg(skin);
   return svg;
 }

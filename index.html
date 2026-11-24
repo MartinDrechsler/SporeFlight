@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Spore Flight</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 17a13 11 0 0 1 26 0z' fill='%23e02476'/%3E%3Crect x='12' y='16' width='8' height='12' rx='3' fill='%23f2ead8'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 17a13 11 0 0 1 26 0z' fill='%23e5483f'/%3E%3Crect x='12' y='16' width='8' height='12' rx='3' fill='%23f2ead8'/%3E%3C/svg%3E" />
   </head>
   <body>
     <main id="game">
@@ -76,7 +76,7 @@
 
       <!-- Out of lives -->
       <section id="screen-gameOver" class="overlay center dim" hidden>
-        <img class="tired-mushroom" src="./src/assets/tired-mushroom.webp" alt="" width="150" height="157" />
+        <canvas id="gameover-stage" class="avatar-stage" aria-hidden="true"></canvas>
         <h2 class="panel-title danger">OUT OF BREATH!</h2>
         <dl class="stats">
           <div><dt>SCORE</dt><dd id="gameover-score">0</dd></div>
@@ -99,7 +99,7 @@
 
       <!-- Adventure crash -->
       <section id="screen-adventureOver" class="overlay center dim" hidden>
-        <img class="tired-mushroom" src="./src/assets/tired-mushroom.webp" alt="" width="150" height="157" />
+        <canvas id="adventure-over-stage" class="avatar-stage" aria-hidden="true"></canvas>
         <h2 class="panel-title">COLLISION!</h2>
         <p id="adventure-over-level" class="level-name"></p>
         <p class="panel-text">YOU MADE IT <strong id="adventure-over-progress">0%</strong> OF THE WAY</p>
@@ -113,6 +113,7 @@
 
       <!-- Through the finish gate -->
       <section id="screen-levelComplete" class="overlay center dim" hidden>
+        <canvas id="complete-stage" class="avatar-stage short" aria-hidden="true"></canvas>
         <h2 class="panel-title victory">LEVEL COMPLETE!</h2>
         <p id="complete-level" class="level-name"></p>
         <div class="star-row">
@@ -136,6 +137,13 @@
         <p class="panel-text">COINS <strong id="shop-coins" class="coins">0</strong> · DIAMONDS <strong id="shop-diamonds" class="diamonds">0</strong></p>
         <ul id="shop-list" class="item-list"></ul>
         <button class="menu-button back-button" type="button">BACK</button>
+        <!-- A new look is shown off: spin, burst of spores, reveal, happy hop -->
+        <div id="shop-reveal" class="reveal" hidden>
+          <canvas id="reveal-stage" class="avatar-stage tall" aria-hidden="true"></canvas>
+          <h2 id="reveal-title" class="panel-title victory">NEW LOOK!</h2>
+          <p id="reveal-name" class="level-name"></p>
+          <button id="reveal-done" class="primary-button compact" type="button">NICE!</button>
+        </div>
       </section>
 
       <!-- World and country leaderboard -->

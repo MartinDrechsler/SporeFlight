@@ -20,7 +20,7 @@ export interface Skin {
 }
 
 export const SKINS: readonly Skin[] = [
-  { id: 'classic', name: 'CLASSIC PINK', price: FREE, capLight: '#ff5e9c', capMain: '#e02476', capDark: '#7a053c', spots: '#00f2c3', glow: '#e02476' },
+  { id: 'classic', name: 'CLASSIC RED', price: FREE, capLight: '#ff7a6b', capMain: '#e5483f', capDark: '#b02c25', spots: '#fff7ee', glow: '#ff6a55' },
   { id: 'emerald', name: 'EMERALD GREEN', price: { coins: 50 }, capLight: '#33ff99', capMain: '#00b359', capDark: '#004d26', spots: '#ffd700', glow: '#00ff80' },
   { id: 'cosmic', name: 'COSMIC BLUE', price: { coins: 120 }, capLight: '#33ccff', capMain: '#0055ff', capDark: '#002266', spots: '#ff3c69', glow: '#00baff' },
   { id: 'golden', name: 'GOLDEN SPORE', price: { coins: 250 }, capLight: '#fff2a3', capMain: '#ffd700', capDark: '#b59300', spots: '#ffffff', glow: '#ffd700' },

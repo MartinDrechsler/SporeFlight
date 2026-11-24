@@ -1,6 +1,8 @@
 import type { Skin } from '../config/skins';
 import type { Player } from '../gameplay/player';
 import type { Pose } from './avatar';
+import { EXPRESSIONS, type Expression } from '../config/expressions';
+import { drawMushroom } from './mushroom';
 
 const MAX_TILT_UP = (-25 * Math.PI) / 180;
 const MAX_TILT_DOWN = (75 * Math.PI) / 180;
@@ -16,9 +18,17 @@ export interface PlayerLook {
   time: number;
   /** Shift, size, gaze and blink (the home screen avatar); see render/avatar.ts. */
   pose: Pose;
+  /** The Stone Thrower is in the fight (not leaving): the mushroom looks nervous. */
+  bossNear: boolean;
 }
 
-/** The glowing mushroom. Its tilt, squash and eyes all follow from its motion. */
+/** The face in flight: dizzy after a crash, nervous while the boss is near, calm otherwise. */
+function flightFace(look: PlayerLook): Expression {
+  if (look.crashed) return EXPRESSIONS.dizzy;
+  return look.bossNear ? EXPRESSIONS.nervous : EXPRESSIONS.neutral;
+}
+
+/** The glowing mushroom in flight. Its tilt, squash and eyes all follow from its motion. */
 export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: Skin, look: PlayerLook): void {
   if (look.invulnerable && Math.floor(look.time * 12) % 2 === 0) return;
   const { pose } = look;
@@ -36,81 +46,25 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
   // A glance turns the head a little too.
   ctx.rotate(look.crashed ? Math.PI * 0.6 : tilt + pose.gaze * 0.07);
   ctx.scale(1 - stretch * 0.9, 1 + stretch);
-
-  ctx.shadowColor = skin.glow;
-  ctx.shadowBlur = 14 + Math.sin(look.time * 3) * 4;
-
-  // Stem
-  ctx.fillStyle = '#f2ead8';
-  ctx.beginPath();
-  ctx.roundRect(-r * 0.42, -r * 0.1, r * 0.84, r * 1.1, r * 0.35);
-  ctx.fill();
-
-  // Cap
-  const cap = ctx.createLinearGradient(0, -r, 0, r * 0.2);
-  cap.addColorStop(0, skin.capLight);
-  cap.addColorStop(0.6, skin.capMain);
-  cap.addColorStop(1, skin.capDark);
-  ctx.fillStyle = cap;
-  ctx.beginPath();
-  ctx.ellipse(0, -r * 0.1, r * 1.05, r * 0.85, 0, Math.PI, 0);
-  ctx.closePath();
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Spots
-  ctx.fillStyle = skin.spots;
-  for (const [sx, sy, sr] of [[-0.45, -0.5, 0.2], [0.3, -0.62, 0.15], [0.62, -0.28, 0.12]] as const) {
-    ctx.beginPath();
-    ctx.arc(sx * r, sy * r, sr * r, 0, Math.PI * 2);
-    ctx.fill();
+  const act = pose.act;
+  if (act) {
+    ctx.translate(act.x * r, act.y * r);
+    ctx.rotate(act.rotation);
+    ctx.scale(act.scaleX, act.scaleY);
   }
 
-  drawEyes(ctx, r, player.vy, look.crashed, pose);
+  drawMushroom(ctx, r, {
+    skin,
+    face: act ? act.face : flightFace(look),
+    // Eyes look up when rising and down when falling, and sideways when glancing.
+    gaze: { x: pose.gaze, y: Math.max(-1, Math.min(1, player.vy / 300)) * 2, blink: pose.blink },
+    faceVisible: act ? act.faceVisible : true,
+    glow: 14 + Math.sin(look.time * 3) * 4,
+    flash: act ? act.flash : 0,
+  });
   ctx.restore();
 
   if (look.shield) drawShieldBubble(ctx, x, player.y, r, look.time);
-}
-
-function drawEyes(ctx: CanvasRenderingContext2D, r: number, vy: number, crashed: boolean, pose: Pose): void {
-  const eyeY = r * 0.35;
-  ctx.strokeStyle = '#1a1a1a';
-  ctx.fillStyle = '#1a1a1a';
-  ctx.lineWidth = 2;
-  for (const side of [-1, 1]) {
-    const ex = side * r * 0.2;
-    if (crashed) {
-      const s = r * 0.1;
-      ctx.beginPath();
-      ctx.moveTo(ex - s, eyeY - s);
-      ctx.lineTo(ex + s, eyeY + s);
-      ctx.moveTo(ex + s, eyeY - s);
-      ctx.lineTo(ex - s, eyeY + s);
-      ctx.stroke();
-    } else {
-      // Pupils look up when rising and down when falling, and sideways when glancing.
-      const lookY = Math.max(-1, Math.min(1, vy / 300)) * r * 0.07;
-      const lookX = pose.gaze * r * 0.08;
-      const open = 1 - pose.blink;
-      if (open < 0.2) {
-        // Closed: a short lid line.
-        ctx.beginPath();
-        ctx.moveTo(ex + lookX - r * 0.09, eyeY + lookY);
-        ctx.lineTo(ex + lookX + r * 0.09, eyeY + lookY);
-        ctx.stroke();
-        continue;
-      }
-      ctx.beginPath();
-      ctx.ellipse(ex + lookX, eyeY + lookY, r * 0.08, r * 0.14 * open, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // A small shine makes the eyes look alive.
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(ex + lookX - r * 0.025, eyeY + lookY - r * 0.06 * open, r * 0.03, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#1a1a1a';
-    }
-  }
 }
 
 function drawShieldBubble(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, time: number): void {

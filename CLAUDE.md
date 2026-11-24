@@ -23,7 +23,8 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 - `src/config/`: all data. `tuning.ts` (every number, px and seconds), `levels.ts` (endless + 10 adventure
   levels as stages, described by flags, never by name), `biomes.ts` (the 8 endless biomes), `theme.ts`
   (11 level colour themes), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool), `sprites.ts`
-  (pixel icons: hearts, coin, diamond).
+  (pixel icons: hearts, coin, diamond), `expressions.ts` (the mushroom's faces as numbers: eyes, lids, brows,
+  mouth, cheeks) and `animations.ts` (avatar performances: moves like hop, spin, flash, plus face cues).
 - `src/core/`: fixed-step loop, state machine, seeded random, versioned save file, run record, and `fmath.ts`
   (sin, cos, atan2, hypot from basic arithmetic, identical on every device). Game-agnostic.
 - `src/gameplay/`: the flight rules as plain data + pure functions. No DOM, no timers, no `Math.random`.
@@ -41,8 +42,11 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
   mirrors the picture for twist levels (upside down, backwards); the rules never change. `obstacles.ts` and
   `scenery.ts` draw each biome's obstacles, distant world and life in the air; `backdrops.ts` the adventure
   levels' distant worlds. `sprites.ts` draws the pixel icons; `avatar.ts` is the home screen pose (shift, size,
-  glances, blinks), drawing only.
-- `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast, and
+  glances, blinks), drawing only. `mushroom.ts` draws the Button mushroom (used in flight, on stages and as
+  SVG in the shop), `face.ts` its face, `timeline.ts` turns an animation into a frame for any moment, and
+  `avatarScene.ts` draws a frame with its effects (burst, glow, z z, trail). `avatars.html` plays them all.
+- `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast, `avatarStage.ts`
+  (a small canvas where the avatar acts out a scene), and
   `icons.ts` (hands the pixel sprites to CSS as `--icon-*`).
 - `src/states/`: one file per screen with `enter/exit/update/onTap`. They connect gameplay, meta and UI.
 - `src/audio/`: `sounds.ts` (every effect as data, synthesized), `audio.ts` (plays them for `GameEvent`s and menus),
