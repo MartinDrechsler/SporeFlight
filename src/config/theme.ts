@@ -14,7 +14,9 @@ export interface Theme {
 
 export type ThemeId =
   | 'classic' | 'dawn' | 'canopy' | 'amber' | 'ice' | 'purple'
-  | 'red' | 'orange' | 'green' | 'crimson' | 'biolume';
+  | 'red' | 'orange' | 'green' | 'crimson' | 'biolume'
+  /** Glowcap Caverns: deep blue-black rock lit by cyan and violet fungi. */
+  | 'cave' | 'glowcap';
 
 const theme = (
   sky: [string, string, string],
@@ -38,5 +40,7 @@ export const THEMES: Record<ThemeId, Theme> = {
   orange: theme(['#080401', '#1c0d03', '#2a1406'], '#140902', '#241103', '#1c0c02', '#ff6e00', '#3d1c0a', '#5c2d13', 'rgba(255, 110, 0, 0.55)'),
   green: theme(['#020601', '#0a1c03', '#122a06'], '#071402', '#0c2404', '#0a1c02', '#32ff00', '#153d0a', '#225c13', 'rgba(50, 255, 0, 0.55)'),
   crimson: theme(['#050002', '#140007', '#21020d'], '#0f0005', '#1b000a', '#140007', '#e02476', '#330515', '#4d0a22', 'rgba(224, 36, 118, 0.55)'),
+  cave: theme(['#010306', '#030a12', '#06121c'], '#040b12', '#07141f', '#03080d', '#7fe6ff', '#0b1a26', '#16324a', 'rgba(127, 230, 255, 0.55)'),
+  glowcap: theme(['#030108', '#0a0618', '#130b26'], '#0a0614', '#120a22', '#07040e', '#c58cff', '#1c1030', '#2e1c4c', 'rgba(197, 140, 255, 0.55)'),
   biolume: theme(['#010605', '#031c17', '#062a22'], '#021410', '#03241b', '#021410', '#00f2c3', '#062d25', '#0a4237', 'rgba(0, 255, 200, 0.55)'),
 };

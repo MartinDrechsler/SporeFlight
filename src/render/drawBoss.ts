@@ -1,14 +1,103 @@
 import type { Theme } from '../config/theme';
 import { TUNING } from '../config/tuning';
 import { isWarning, type Boss } from '../gameplay/boss';
+import { drawBat } from './hazards';
 
 const B = TUNING.boss;
+
+/** Draws the boss of the stage and what it throws. */
+export function drawBoss(ctx: CanvasRenderingContext2D, boss: Boss, theme: Theme, time: number): void {
+  if (boss.id === 'batQueen') drawBatQueen(ctx, boss, time);
+  else drawStoneThrower(ctx, boss, theme, time);
+  for (const rock of boss.rocks) {
+    if (rock.kind === 'bat') drawBat(ctx, rock.x, rock.y, B.rockRadius, time + rock.age * 3, '#ff4d6d');
+    else drawRock(ctx, rock.x, rock.y, rock.vx, rock.vy, rock.spin);
+  }
+}
+
+/**
+ * The Bat Queen: a great bat hanging in the dark at the right edge, wings
+ * wide, a little crown of glowcap light. Before every attack her eyes flare
+ * and her wings spread; before a screech her mouth opens wide.
+ */
+function drawBatQueen(ctx: CanvasRenderingContext2D, boss: Boss, time: number): void {
+  const warning = isWarning(boss);
+  const r = B.bodyRadius * 0.8;
+  const x = boss.x + (warning ? Math.sin(time * 70) * 2 : 0);
+  const y = boss.y;
+  const beat = Math.sin(time * (warning ? 9 : 4));
+  ctx.save();
+  ctx.fillStyle = '#140a1f';
+  ctx.strokeStyle = '#4a2d6e';
+  ctx.lineWidth = 2;
+  for (const side of [-1, 1]) {
+    // Great wings, spread wider while an attack is announced.
+    const span = warning ? 2.4 : 1.9;
+    const tipY = y - r * (0.7 + beat * 0.5);
+    ctx.beginPath();
+    ctx.moveTo(x + side * r * 0.4, y - r * 0.3);
+    ctx.lineTo(x + side * r * span, tipY - r * 0.4);
+    for (let i = 3; i >= 1; i--) {
+      const fx = x + side * r * (0.5 + (span - 0.5) * (i / 3));
+      ctx.quadraticCurveTo(fx + side * r * 0.1, tipY + r * (1.1 - i * 0.15), x + side * r * (0.5 + (span - 0.5) * ((i - 1) / 3)), y + r * 0.5);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * 0.62, r * 0.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x + side * r * 0.2, y - r * 0.65);
+    ctx.lineTo(x + side * r * 0.45, y - r * 1.25);
+    ctx.lineTo(x + side * r * 0.55, y - r * 0.5);
+    ctx.fill();
+  }
+  // A crown of three glowing glowcaps.
+  ctx.fillStyle = '#c58cff';
+  ctx.shadowColor = '#c58cff';
+  ctx.shadowBlur = 14;
+  for (const dx of [-0.22, 0, 0.22]) {
+    ctx.beginPath();
+    ctx.arc(x + dx * r, y - r * 0.82 - (dx === 0 ? 6 : 0), r * 0.09, Math.PI, 0);
+    ctx.fill();
+  }
+  // Eyes that flare before every attack.
+  const eyes = warning ? '#fff2a8' : '#ff4d6d';
+  ctx.fillStyle = eyes;
+  ctx.shadowColor = eyes;
+  ctx.shadowBlur = warning ? 26 : 10;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(x + side * r * 0.22, y - r * 0.3, warning ? 7 : 5, warning ? 5 : 3.5, side * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Fangs, and a mouth that opens to screech.
+  ctx.shadowBlur = 0;
+  const open = warning && boss.pattern === 'screech' ? r * 0.35 : r * 0.08;
+  ctx.fillStyle = '#050208';
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.05, r * 0.25, open, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#f2ead8';
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x + side * r * 0.16, y);
+    ctx.lineTo(x + side * r * 0.1, y + r * 0.2);
+    ctx.lineTo(x + side * r * 0.04, y);
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 /**
  * The Stone Thrower: a hulking shape of dark stone at the right edge with two
  * glowing eyes. While a throw is announced the eyes flare and it trembles.
  */
-export function drawBoss(ctx: CanvasRenderingContext2D, boss: Boss, theme: Theme, time: number): void {
+function drawStoneThrower(ctx: CanvasRenderingContext2D, boss: Boss, theme: Theme, time: number): void {
   const warning = isWarning(boss);
   const tremble = warning ? Math.sin(time * 70) * 3 : 0;
   const x = boss.x + tremble;
@@ -78,8 +167,6 @@ export function drawBoss(ctx: CanvasRenderingContext2D, boss: Boss, theme: Theme
     ctx.fill();
   }
   ctx.restore();
-
-  for (const rock of boss.rocks) drawRock(ctx, rock.x, rock.y, rock.vx, rock.vy, rock.spin);
 }
 
 function drawRock(ctx: CanvasRenderingContext2D, x: number, y: number, vx: number, vy: number, spin: number): void {

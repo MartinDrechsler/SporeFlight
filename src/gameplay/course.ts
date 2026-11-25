@@ -1,6 +1,7 @@
 import { rootCount, type Stage } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import { createBoss, sendAway } from './boss';
+import { spawnHazard } from './hazards';
 import type { World } from './world';
 import { forkGap, isClearing, makeCoinCluster, makePickup, makeRoot, makeSporeling, sporelingSide } from './spawner';
 
@@ -53,7 +54,7 @@ export function stepCourse(world: World, travelled: number, dt: number): void {
     return;
   }
   if (stage?.kind === 'boss') {
-    world.boss ??= createBoss(world, stage.seconds);
+    world.boss ??= createBoss(world, stage.seconds, stage.boss);
     if (course.stageTime < stage.seconds) return;
     sendAway(world.boss);
     nextStage(world);
@@ -122,6 +123,10 @@ function spawnRoot(world: World): void {
     world.pickups.push(pickup);
     if (pickup.kind === 'coin') world.offered.coins += 1;
     if (pickup.kind === 'diamond') world.offered.diamonds += 1;
+  }
+  for (const hazard of world.level.hazards) if (hazard.root === index) spawnHazard(world, root, hazard.kind);
+  for (const portal of world.level.portals) {
+    if (portal.root === index) world.portals.push({ x: root.x + root.width + (world.level.spacing - root.width) / 2, mode: portal.mode, passed: false });
   }
   const side = sporelingSide(world.level, index);
   if (side !== null) {

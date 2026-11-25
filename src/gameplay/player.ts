@@ -1,5 +1,6 @@
 import { TUNING } from '../config/tuning';
-import { MODES, type FlightMode } from './modes';
+import type { FlightMode } from '../config/levels';
+import { MODES } from './modes';
 
 const P = TUNING.player;
 
@@ -13,6 +14,8 @@ export interface Player {
   sinceFlap: number;
   /** What a tap does and how it moves between taps (gameplay/modes.ts). */
   mode: FlightMode;
+  /** Glide mode: climbing (true) or diving. */
+  climbing: boolean;
 }
 
 export function createPlayer(fieldWidth: number, fieldHeight: number): Player {
@@ -23,6 +26,7 @@ export function createPlayer(fieldWidth: number, fieldHeight: number): Player {
     radius: P.radius,
     sinceFlap: Infinity,
     mode: 'flap',
+    climbing: false,
   };
 }
 

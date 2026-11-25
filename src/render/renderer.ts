@@ -12,9 +12,11 @@ import { rootLeft } from '../gameplay/roots';
 import { mixTheme } from './color';
 import { drawBoss } from './drawBoss';
 import { applyView } from './view';
-import { drawGate, drawPickup, drawRoot, drawWind, type RootLook } from './drawRoots';
+import { drawGate, drawPickup, drawPortal, drawRoot, drawWind, type RootLook } from './drawRoots';
 import type { Effects } from './effects';
 import { drawRescued } from './sporeling';
+import { drawDarkness } from './darkness';
+import { drawHazard } from './hazards';
 import { drawTreasure, type TreasurePiles, type TreasurePlace } from './treasure';
 
 export interface Scene {
@@ -59,9 +61,11 @@ export function renderScene(surface: Surface, scene: Scene): void {
   for (const zone of world.winds) drawWind(ctx, zone, world.groundY, time);
   for (const pickup of world.pickups) drawPickup(ctx, pickup, time);
   for (const root of world.roots) drawRoot(ctx, root, obstacleLook(world, root), world.groundY, time);
+  for (const hazard of world.hazards) drawHazard(ctx, hazard, time);
   const gateX = world.course.gateX;
   if (gateX !== null) drawGate(ctx, gateX, world.groundY, theme, time, world.course.finished);
   if (world.boss) drawBoss(ctx, world.boss, theme, time);
+  for (const portal of world.portals) drawPortal(ctx, portal, world.groundY, time);
   if (scene.treasure) drawTreasure(ctx, scene.treasure.piles, scene.treasure.place);
   drawPlayer(ctx, world.player, skinById(scene.skinId), {
     crashed: world.crashed,
@@ -76,6 +80,8 @@ export function renderScene(surface: Surface, scene: Scene): void {
   if (world.stats.sporelings > 0 && !world.crashed) {
     drawRescued(ctx, world.player.x + scene.pose.shiftX, world.player.y, world.player.vy, world.stats.sporelings, time);
   }
+  // A dark cave: darkness over everything, holes where light falls.
+  if (world.level.dark) drawDarkness(ctx, world, width, height, time);
   // Clumps sit in front, so the one growing beside a fallen mushroom is not hidden behind it.
   const newMark =
     world.landedTime === null ? null : { at: crashSpot(world), grow: Math.min(1, world.landedTime / TUNING.roundOver.clumpGrowSeconds) };

@@ -104,6 +104,10 @@ export class Effects {
         break;
       case 'bossWarn':
         break;
+      case 'bossScreech':
+        this.text('SCREEEECH!', width / 2, height * 0.25, '#c58cff', 34);
+        this.shake(0.5, 4);
+        break;
       case 'veinHit':
         this.burst(event.x, event.y, 10, '#7fe6ff', 160, 0.45);
         this.text(`+1 DIAMOND ${event.hits}/${TUNING.veins.hitsToBreak}`, event.x, event.y - 24, '#3fd8ff');
@@ -117,6 +121,9 @@ export class Effects {
       case 'checkpoint':
         for (let i = 0; i < 24; i++) this.spawn(event.x, (height * i) / 24, -30 - Math.random() * 40, 0, 0.8, 2.5, '#ffd23f');
         this.text('CHECKPOINT!', width / 2, height * 0.3, '#ffd23f', 30);
+        break;
+      case 'portal':
+        this.text(event.mode === 'glide' ? 'GLIDE! TAP TO TURN' : 'FLAP!', width / 2, height * 0.3, '#e8f6ff', 30);
         break;
       case 'secret':
         this.burst(event.x, event.y, 40, '#e3d9ff', 260, 1.1);

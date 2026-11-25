@@ -8,6 +8,28 @@ The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Adventure grows
 story: the Claude Doc "Spore Flight: Adventure chapters plan" (7 phases). Launch prep (real ads, PWA, app stores)
 comes after.
 
+### Chapter 2: Glowcap Caverns (levels 12-19, secret 20)
+- **Darkness** (`dark`, drawing only, `render/darkness.ts`): the mushroom's glow lights a circle; sporelings,
+  pickups, bats' eyes, dripping stalactites and passed roots glow a little; the edges of every gap carry small
+  glowing tips, so the way is always readable. `fireflies` hover in the next 3 gaps.
+- **Glide mode** (`gameplay/modes.ts`): a dandelion seed, no gravity, a steady climb or dive at 150 px/s; a tap
+  turns it. Drawn as a white puff above the cap, upright or leaning right as before. **Portals** (level data
+  `portals`, after a root) switch the mode with a sound and "GLIDE! TAP TO TURN"; `startMode` sets the first.
+- **Hazards** (`gameplay/hazards.ts`, level data `hazards`, midway between roots, fixed patterns, no RNG):
+  bats flutter up and down around the gap height at a steady beat; a stalactite drips when you are 260 px away
+  and drops when you are 40 px away, so the rule is "drip means dip": pass it low. A shield takes a hit.
+- **Bosses by id**: a boss stage names its boss (`stoneThrower`, `batQueen`). The Bat Queen sends single
+  bats, swoops (a line of swaying bats), waves with one opening, and screeches that dim your light for 3 s
+  (with one bat in the dark). Every attack is announced by her eyes; a screech by her open mouth.
+  The Stone Thrower is unchanged (same random calls), so no rules version change.
+- **Levels**: Into the Dark (dark + fireflies), Lantern Path (dark only), Dripping Halls (stalactites, lit),
+  Bat Roost (bats, lit), Seed on the Wind (glide, flap stretch via portals), Echoing Forks (dark, bats,
+  stalactites, secret gap to Crystal Hollow), Glow Gauntlet (everything), The Bat Queen (45 s, dark).
+- **Story**: chapter 2's scene (the Stone Thrower falls, Old Lantern, the Bat Queen) plays the first time a
+  chapter 2 level is flown, then the level starts (`chapterStory`, story `then: { play }`).
+- To check by playing: bat beat and swing (tuning `hazards`), how dark the dark is (`darkness.alpha`,
+  `playerLight`), the stalactite rule, glide speed. A simple bot passes Dripping Halls and Seed on the Wind.
+
 ### Playtest build (turn off before launch)
 - `config/playtest.ts` `PLAYTEST = true`: Adventure opens without paying and every level (secret ones too) can be
   flown right away; the map title says PLAYTEST. Stars, coins and rewards still work as normal. Off under the

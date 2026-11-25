@@ -40,7 +40,9 @@ export function installTestHooks(
       state: machine.current,
       level: { id: world.level.id, name: world.level.name },
       field: { width: world.width, height: world.height, groundY: world.groundY },
-      player: { x: round(world.player.x), y: round(world.player.y), vy: round(world.player.vy), radius: world.player.radius },
+      player: { x: round(world.player.x), y: round(world.player.y), vy: round(world.player.vy), radius: world.player.radius, mode: world.player.mode, climbing: world.player.climbing },
+      hazards: world.hazards.map((h) => ({ kind: h.kind, x: round(h.x), y: round(h.y) })),
+      portals: world.portals.map((p) => ({ mode: p.mode, x: round(p.x) })),
       roots: world.roots.map((r) => ({
         left: round(rootLeft(r)), right: round(rootLeft(r) + r.width), gapTop: round(gapTop(r)), gapBottom: round(gapBottom(r)),
         gapCenter: round(r.gapCenter), motion: r.motion.kind, vein: r.vein,

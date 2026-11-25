@@ -3,20 +3,31 @@ import { TUNING } from '../config/tuning';
 import type { Random } from '../core/random';
 import { circlesTouch } from './collision';
 import { freePickup } from './pickups';
+import type { BossId } from '../config/levels';
 import type { World } from './world';
 
 const B = TUNING.boss;
 
-/** How a volley of rocks is thrown. Later in the fight, more kinds are possible. */
-export type ThrowPattern = 'aimed' | 'fan' | 'wall';
+/**
+ * How a volley is thrown. The Stone Thrower aims, fans and walls rocks; the
+ * Bat Queen sends bats aimed, in a swaying swoop, in a wave with one opening,
+ * and screeches to dim the light.
+ */
+export type ThrowPattern = 'aimed' | 'fan' | 'wall' | 'swoop' | 'screech';
 
+/** Something the boss throws: a rock, or one of the Bat Queen's bats (which sways as it flies). */
 export interface Rock {
+  kind: 'rock' | 'bat';
   x: number;
   y: number;
   vx: number;
   vy: number;
   spin: number;
   passed: boolean;
+  /** Seconds in flight. */
+  age: number;
+  /** How far it sways up and down as it flies, px (0: straight). */
+  sway: number;
 }
 
 /**
@@ -26,6 +37,7 @@ export interface Rock {
  * breather halfway.
  */
 export interface Boss {
+  id: BossId;
   x: number;
   y: number;
   /** Seconds the fight has lasted. */
@@ -42,10 +54,13 @@ export interface Boss {
   /** Seconds until the next coin floats in. */
   nextCoin: number;
   diamondDropped: boolean;
+  /** Seconds the light stays dimmed by a screech. */
+  dim: number;
 }
 
-export function createBoss(world: World, seconds: number): Boss {
+export function createBoss(world: World, seconds: number, id: BossId): Boss {
   return {
+    id,
     x: world.width + B.bodyRadius * 2,
     y: world.height * 0.42,
     time: 0,
@@ -57,6 +72,7 @@ export function createBoss(world: World, seconds: number): Boss {
     rocks: [],
     nextCoin: B.coinEverySeconds,
     diamondDropped: false,
+    dim: 0,
   };
 }
 
@@ -75,6 +91,7 @@ export function stepBoss(world: World, dt: number): void {
   const boss = world.boss;
   if (!boss) return;
   boss.time += dt;
+  boss.dim = Math.max(0, boss.dim - dt);
   moveBody(world, boss, dt);
   moveRocks(world, boss, dt);
   if (boss.leaving) {
@@ -91,7 +108,7 @@ export function stepBoss(world: World, dt: number): void {
   const before = boss.nextThrow;
   boss.nextThrow -= dt;
   if (before > B.warnSeconds && boss.nextThrow <= B.warnSeconds) {
-    boss.pattern = choosePattern(world.rng, progress);
+    boss.pattern = boss.id === 'batQueen' ? queenPattern(world.rng, progress) : choosePattern(world.rng, progress);
     world.events.push({ type: 'bossWarn', x: boss.x, y: boss.y });
   }
   if (boss.nextThrow > 0) return;
@@ -120,8 +137,10 @@ function moveBody(world: World, boss: Boss, dt: number): void {
 
 function moveRocks(world: World, boss: Boss, dt: number): void {
   for (const rock of boss.rocks) {
+    rock.age += dt;
     rock.x += rock.vx * dt;
-    rock.y += rock.vy * dt;
+    // A swaying bat: its height follows a wave around its straight path.
+    rock.y += (rock.vy + rock.sway * B.swoopBeat * cos(rock.age * B.swoopBeat)) * dt;
     rock.spin += dt * 6;
     if (!rock.passed && rock.x + B.rockRadius < world.player.x - world.player.radius) {
       rock.passed = true;
@@ -130,6 +149,14 @@ function moveRocks(world: World, boss: Boss, dt: number): void {
     }
   }
   boss.rocks = boss.rocks.filter((rock) => rock.x > -B.rockRadius * 2 && rock.y > -100 && rock.y < world.height + 100);
+}
+
+/** The Bat Queen: single bats first, then swoops; later waves with one opening, and screeches that dim the light. */
+function queenPattern(rng: Random, progress: number): ThrowPattern {
+  if (progress < 0.2) return 'aimed';
+  if (progress < 0.5) return rng.chance(0.5) ? 'aimed' : 'swoop';
+  const roll = rng.next();
+  return roll < 0.2 ? 'aimed' : roll < 0.5 ? 'swoop' : roll < 0.8 ? 'wall' : 'screech';
 }
 
 /** Early on only single aimed rocks; fans join, then walls with one opening. */
@@ -144,8 +171,9 @@ function throwRocks(world: World, boss: Boss, progress: number): void {
   const speed = B.startRockSpeed + (B.endRockSpeed - B.startRockSpeed) * progress;
   const from = { x: boss.x - B.bodyRadius * 0.6, y: boss.y };
   const aim = atan2(world.player.y - from.y, world.player.x - from.x);
-  const add = (x: number, y: number, angle: number): void => {
-    boss.rocks.push({ x, y, vx: cos(angle) * speed, vy: sin(angle) * speed, spin: 0, passed: false });
+  const kind = boss.id === 'batQueen' ? 'bat' : 'rock';
+  const add = (x: number, y: number, angle: number, sway = 0): void => {
+    boss.rocks.push({ kind, x, y, vx: cos(angle) * speed, vy: sin(angle) * speed, spin: 0, passed: false, age: 0, sway });
   };
   switch (boss.pattern) {
     case 'aimed':
@@ -164,6 +192,16 @@ function throwRocks(world: World, boss: Boss, progress: number): void {
       }
       break;
     }
+    case 'swoop':
+      // A line of bats at the mushroom's height, swaying in step: slip through where the wave opens.
+      for (let i = 0; i < B.swoopCount; i++) add(from.x + i * B.swoopSpacing, world.player.y, Math.PI, B.swoopSway);
+      break;
+    case 'screech':
+      // The light dims for a while, and one bat comes at the mushroom in the dark.
+      boss.dim = B.screechSeconds;
+      add(from.x, from.y, aim);
+      world.events.push({ type: 'bossScreech', x: boss.x, y: boss.y });
+      return;
   }
   world.events.push({ type: 'bossThrow', x: from.x, y: from.y });
 }

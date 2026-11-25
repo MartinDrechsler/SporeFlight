@@ -8,6 +8,8 @@ import { TUNING } from '../config/tuning';
 import { pickupPosition, type Pickup } from '../gameplay/pickups';
 import { extraGap, gapBottom, gapTop, rootLeft, solidSpans, type Root } from '../gameplay/roots';
 import { isBroken, type Vein } from '../gameplay/veins';
+import type { FlightMode } from '../config/levels';
+import type { Portal } from '../gameplay/world';
 import type { WindZone } from '../gameplay/wind';
 
 /** What an obstacle is made of and its colours. */
@@ -274,4 +276,35 @@ function sparkles(ctx: CanvasRenderingContext2D, radius: number, time: number, c
     ctx.fillRect(x - size, y - 0.75, size * 2, 1.5);
     ctx.fillRect(x - 0.75, y - size, 1.5, size * 2);
   }
+}
+
+/** What each flight mode is called on its portal. */
+const MODE_NAMES: Record<FlightMode, string> = { flap: 'FLAP', glide: 'GLIDE' };
+const MODE_COLORS: Record<FlightMode, string> = { flap: '#00f2c3', glide: '#e8f6ff' };
+
+/** A portal: a tall ring of light across the field with its mode's name above it, shimmering. */
+export function drawPortal(ctx: CanvasRenderingContext2D, portal: Portal, groundY: number, time: number): void {
+  const top = groundY * 0.1;
+  const bottom = groundY * 0.9;
+  const cy = (top + bottom) / 2;
+  const ry = (bottom - top) / 2;
+  const color = MODE_COLORS[portal.mode];
+  ctx.save();
+  ctx.globalAlpha = portal.passed ? 0.35 : 0.9;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([10, 8]);
+  ctx.lineDashOffset = -time * 40;
+  ctx.beginPath();
+  ctx.ellipse(portal.x, cy, 22, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+  ctx.font = '22px VT323, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = color;
+  ctx.fillText(MODE_NAMES[portal.mode], portal.x, top - 10);
+  ctx.restore();
 }

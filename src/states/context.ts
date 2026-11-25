@@ -36,7 +36,7 @@ export interface GameContext {
   /** Playtest build: Adventure open for free, every level flyable (config/playtest.ts). */
   playtest: boolean;
   /** The story scene the story screen plays next, and the screen it returns to. */
-  story: { id: StoryId; then: StateName };
+  story: { id: StoryId; then: StateName | { play: number } };
   /** The coin and diamond piles beside the home avatar; they catch up with the save while home shows. */
   treasure: TreasurePiles;
   /** Where the piles stand this frame; null hides them (home sets it in its update). */

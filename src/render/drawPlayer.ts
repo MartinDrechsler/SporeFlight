@@ -56,6 +56,8 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
     ctx.scale(act.scaleX, act.scaleY);
   }
 
+  // Gliding, it hangs from a dandelion seed's white puff.
+  if (player.mode === 'glide' && !look.crashed) drawSeedPuff(ctx, r, look.time);
   drawMushroom(ctx, r, {
     skin,
     face: act ? act.face : flightFace(look),
@@ -68,6 +70,39 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: 
   ctx.restore();
 
   if (look.shield) drawShieldBubble(ctx, x, player.y, r, look.time);
+}
+
+/** A dandelion seed above the cap: a thin stalk and a puff of fine white filaments, swaying gently. */
+function drawSeedPuff(ctx: CanvasRenderingContext2D, r: number, time: number): void {
+  const sway = Math.sin(time * 2.2) * 0.12;
+  const top = -r * 0.95;
+  const cx = Math.sin(sway) * r * 0.7;
+  const cy = top - r * 0.75;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(240, 248, 255, 0.9)';
+  ctx.lineWidth = Math.max(1, r * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(0, top);
+  ctx.quadraticCurveTo(cx * 0.3, top - r * 0.4, cx, cy);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(0.8, r * 0.03);
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 8;
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2 + sway;
+    const len = r * (0.55 + (i % 3) * 0.08);
+    const tx = cx + Math.cos(a) * len;
+    const ty = cy + Math.sin(a) * len * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(tx, ty, r * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawShieldBubble(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, time: number): void {

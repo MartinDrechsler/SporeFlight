@@ -61,7 +61,10 @@ async function fly(frames, snapshotAt = -1, snapshotName = '') {
       const s = JSON.parse(window.render_game_to_text());
       const next = s.roots.find((r) => r.right > s.player.x - s.player.radius);
       const target = next ? next.gapCenter + 10 : s.field.height * 0.45;
-      if (s.player.y > target && s.player.vy > 0) window.__test.flap();
+      if (s.player.mode === 'glide') {
+        // Gliding: turn whenever the seed heads away from the gap.
+        if ((s.player.y > target && !s.player.climbing) || (s.player.y < target - 20 && s.player.climbing)) window.__test.flap();
+      } else if (s.player.y > target && s.player.vy > 0) window.__test.flap();
       window.advanceTime(1000 / 30);
       return JSON.parse(window.render_game_to_text());
     });
@@ -377,6 +380,34 @@ for (const place of [2, 3, 4, 5, 6, 7, 8]) {
   await test(() => window.__test.invulnerable(true));
   await fly(150);
   await shot(`13-level-${place}`);
+}
+
+// 9b. Chapter 2 opens once the Stone Thrower is beaten: its story plays before the first cave level.
+await test((d) => window.__test.setSave({ levels: { 1: d, 2: d, 3: d, 7: d, 4: d, 6: d, 8: d, 5: d } }), done);
+await test(() => window.__test.go('levels'));
+await advance(50);
+await page.tap('.map-node:not(.secret) >> nth=8');
+await advance(50);
+check('the first cave level is open', (await page.textContent('#map-card-name')).includes('INTO THE DARK'));
+await tapButton('#map-play');
+await advance(60);
+s = await state();
+check('chapter 2 opens with its story', s.state === 'story');
+await shot('14a-story-chapter2');
+await tapButton('#story-skip');
+await advance(30);
+s = await state();
+check('after the story the cave level starts', s.state === 'playing' || s.state === 'ready');
+await test((d) => window.__test.setSave({ levels: { 1: d, 2: d, 3: d, 7: d, 4: d, 6: d, 8: d, 5: d, 12: d, 13: d, 14: d, 15: d, 16: d, 17: d, 18: d } }), done);
+for (const [place, frames] of [[9, 200], [11, 260], [12, 260], [13, 260], [15, 300], [16, 400]]) {
+  await test(() => window.__test.go('levels'));
+  await advance(50);
+  await page.tap(`.map-node:not(.secret) >> nth=${place - 1}`);
+  await advance(50);
+  await tapButton('#map-play');
+  await test(() => window.__test.invulnerable(true));
+  await fly(frames);
+  await shot(`14-level-${place}`);
 }
 
 // 10. Progress survives a reload.
