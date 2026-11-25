@@ -68,7 +68,8 @@
         </div>
         <dl class="stats">
           <div><dt>RECORD</dt><dd id="start-best">0</dd></div>
-          <div><dt>LIVES</dt><dd id="start-lives" class="lives">0</dd></div>
+          <!-- Out of lives it pulses red and opens the out of breath screen when tapped -->
+          <div id="start-lives-stat"><dt>LIVES</dt><dd><span id="start-lives" class="lives">0</span><span id="start-rest-time" class="rest-time" hidden></span></dd></div>
           <div><dt>COINS</dt><dd class="coins"><span class="icon-coin"></span><span id="start-coins">0</span></dd></div>
           <div><dt>DIAMONDS</dt><dd class="diamonds"><span class="icon-diamond"></span><span id="start-diamonds">0</span></dd></div>
         </dl>
@@ -94,6 +95,13 @@
             <span class="ring-label">RESTING</span>
           </div>
           <button id="watch-ad-button" class="choice-button ad" type="button">WATCH<br />AN AD</button>
+        </div>
+        <!-- Leaving without lives asks first -->
+        <button id="gameover-back" class="menu-button back-button-plain" type="button">BACK</button>
+        <div id="gameover-confirm" class="confirm-row" hidden>
+          <p class="panel-text">GO BACK WITHOUT LIVES?</p>
+          <button id="gameover-yes" class="menu-button small" type="button">YES</button>
+          <button id="gameover-no" class="menu-button small" type="button">NO</button>
         </div>
         <p id="ad-error" class="panel-text danger" hidden>The ad could not be shown. Please try again.</p>
       </section>

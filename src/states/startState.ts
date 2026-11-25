@@ -2,7 +2,7 @@ import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import type { State } from '../core/stateMachine';
 import { claimableCount, dayKey, refreshQuests } from '../meta/quests';
-import { byId, setText } from '../ui/dom';
+import { byId, clockText, setText } from '../ui/dom';
 import { showHearts } from '../ui/icons';
 import { showScreens } from '../ui/screens';
 import type { GameContext } from './context';
@@ -33,6 +33,14 @@ export function startState(ctx: GameContext): State {
     ctx.audio.ui('click');
     ctx.go(ctx.save.adventureUnlocked ? 'levels' : 'unlock');
   });
+  // Out of lives, the lives stat pulses red; tapping it opens the out of breath screen (rest or ad).
+  byId('start-lives-stat').addEventListener('click', () => {
+    if (ctx.current() !== 'start' || ctx.save.lives > 0) return;
+    ctx.audio.unlock();
+    ctx.audio.ui('click');
+    ctx.go('gameOver');
+  });
+
   byId('start-button').addEventListener('click', () => {
     ctx.audio.unlock();
     begin();
@@ -44,10 +52,8 @@ export function startState(ctx: GameContext): State {
 
   return {
     enter() {
-      if (ctx.save.lives <= 0) {
-        ctx.go('gameOver');
-        return;
-      }
+      // Out of lives the home screen still shows (the player chose to go back); flying leads to the
+      // out of breath screen (startRound), and so does tapping the pulsing lives stat.
       if (refreshQuests(ctx.save, dayKey(ctx.now()), ctx.rng)) ctx.persist();
       ctx.levelId = ENDLESS_LEVEL_ID;
       ctx.world = ctx.newWorld(ENDLESS_LEVEL_ID);
@@ -62,6 +68,7 @@ export function startState(ctx: GameContext): State {
 
     update(dt) {
       time += dt;
+      paintLives(ctx);
       hover(ctx, 'start-slot', time, dt);
       // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
       const room = byId('start-slot').getBoundingClientRect().height;
@@ -79,7 +86,7 @@ function refresh(ctx: GameContext): void {
   setText(byId('start-best'), save.bestScore);
   setText(byId('start-coins'), save.coins);
   setText(byId('start-diamonds'), save.diamonds);
-  showHearts(byId('start-lives'), save.lives);
+  paintLives(ctx);
   byId('start-last').hidden = ctx.lastScore === null;
   setText(byId('start-last-score'), ctx.lastScore ?? 0);
   byId('adventure-lock').hidden = save.adventureUnlocked;
@@ -87,4 +94,21 @@ function refresh(ctx: GameContext): void {
   const badge = byId('quests-badge');
   badge.hidden = claimable === 0;
   setText(badge, claimable);
+}
+
+/** Hearts, or out of lives: empty hearts pulsing red, or the rest countdown if a rest is running. */
+function paintLives(ctx: GameContext): void {
+  const { save } = ctx;
+  showHearts(byId('start-lives'), save.lives);
+  const out = save.lives <= 0;
+  const stat = byId('start-lives-stat');
+  stat.classList.toggle('out', out);
+  if (out) stat.setAttribute('role', 'button');
+  else stat.removeAttribute('role');
+  // Resting: the countdown takes the empty hearts' place.
+  const resting = out && save.restSecondsLeft > 0;
+  const time = byId('start-rest-time');
+  time.hidden = !resting;
+  byId('start-lives').hidden = resting;
+  if (resting) setText(time, clockText(save.restSecondsLeft));
 }

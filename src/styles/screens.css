@@ -634,3 +634,73 @@
     font-size: 1.4rem;
   }
 }
+
+/* Out of breath: BACK, and the question it asks first. */
+.back-button-plain {
+  max-width: 314px;
+}
+
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  width: 100%;
+}
+
+.confirm-row[hidden] {
+  display: none;
+}
+
+.confirm-row .panel-text {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--gold);
+}
+
+.confirm-row .menu-button {
+  width: auto;
+  min-width: 110px;
+}
+
+/* Home, out of lives: the lives stat pulses red and can be tapped. */
+#start-lives-stat.out {
+  margin: -3px -6px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--danger);
+  animation: lives-pulse 1.2s ease-in-out infinite;
+}
+
+#start-lives-stat.out dt {
+  color: var(--danger);
+}
+
+@keyframes lives-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(255, 60, 105, 0.5), 0 0 6px rgba(255, 60, 105, 0.3);
+    background: rgba(255, 60, 105, 0.06);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(255, 60, 105, 1), 0 0 18px rgba(255, 60, 105, 0.8);
+    background: rgba(255, 60, 105, 0.2);
+  }
+}
+
+#start-lives-stat dd,
+#start-lives-stat .lives {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.rest-time {
+  color: var(--gold);
+}
+
+.rest-time[hidden] {
+  display: none;
+}

@@ -139,6 +139,34 @@ await advance(2000);
 s = await state();
 check('resting refills lives', s.state === 'start' && s.save.lives === 5, `${s.state} lives ${s.save.lives}`);
 await loseAllLives();
+// Going back without lives asks first, then the home lives stat pulses red and leads back here.
+await tapButton('#gameover-back');
+check('back asks first', (await page.isVisible('#gameover-confirm')) && !(await page.isVisible('#gameover-back')));
+await shot('05g-back-confirm');
+await tapButton('#gameover-no');
+check('no keeps the out of breath screen', (await state()).state === 'gameOver' && (await page.isVisible('#gameover-back')));
+await tapButton('#gameover-back');
+await tapButton('#gameover-yes');
+s = await state();
+check('yes goes home with no lives', s.state === 'start' && s.save.lives === 0);
+check('the home lives stat pulses red', (await page.getAttribute('#start-lives-stat', 'class'))?.includes('out'));
+await shot('05h-home-no-lives');
+await tapButton('#start-button');
+check('flying without lives opens the out of breath screen', (await state()).state === 'gameOver');
+await tapButton('#gameover-back');
+await tapButton('#gameover-yes');
+await tapButton('#start-lives-stat');
+check('tapping the lives stat opens the out of breath screen', (await state()).state === 'gameOver');
+// A started rest goes on at home.
+await tapButton('#rest-button');
+await tapButton('#gameover-back');
+await tapButton('#gameover-yes');
+await advance(10000);
+s = await state();
+check('a started rest goes on away from its screen', s.state === 'start' && s.save.restSecondsLeft < 51 && s.save.restSecondsLeft > 0, `left ${s.save.restSecondsLeft}`);
+check('home shows the rest countdown', await page.isVisible('#start-rest-time'));
+await shot('05i-home-resting');
+await tapButton('#start-lives-stat');
 await tapButton('#watch-ad-button');
 await page.waitForTimeout(100); // the test ad resolves on the next tick
 await advance(50);
