@@ -71,9 +71,15 @@ export function startState(ctx: GameContext): State {
       paintLives(ctx);
       hover(ctx, 'start-slot', time, dt);
       // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
-      const room = byId('start-slot').getBoundingClientRect().height;
-      const scale = avatarScale(room, ctx.world.player.radius);
+      const slot = byId('start-slot').getBoundingClientRect();
+      const scale = avatarScale(slot.height, ctx.world.player.radius);
       ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time), act: acting.update(dt) };
+      // Coins to the avatar's lower left, diamonds to its right, standing level with its foot (not bobbing).
+      ctx.treasure.update(dt, ctx.save.coins, ctx.save.diamonds);
+      const r = ctx.world.player.radius * scale;
+      const field = byId('game').getBoundingClientRect();
+      const middle = slot.top - field.top + slot.height / 2;
+      ctx.treasureAt = { x: ctx.world.width / 2, y: middle + r * 0.95, r };
     },
 
     onTap: begin,

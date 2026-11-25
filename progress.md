@@ -7,6 +7,15 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Coin and diamond piles on home
+- Beside the home avatar: neat stacks of coins to its lower left (10 per stack, up to 5 stacks) and a
+  pyramid of diamonds to its right (5 at the bottom, up to 15), one piece for each one owned, with the
+  number at each pile's outer side. Past 50 coins or 15 diamonds the pile stays full and the number tells
+  the rest (`render/treasure.ts`).
+- When the amount changes (a purchase, a reward), the piles change one piece at a time: spent pieces pop
+  off the top and fade, new ones drop on. A big change still takes about a second. The piles catch up
+  whenever the home screen shows, so coming back from the shop shows the purchase leaving the pile.
+
 ### Going back without lives
 - **BACK on the out of breath screen** asks first: "GO BACK WITHOUT LIVES?" YES / NO, inline under the two
   choices. YES goes home with no lives.
