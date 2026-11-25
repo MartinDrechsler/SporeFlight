@@ -33,6 +33,7 @@ import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
 import { installIcons } from './ui/icons';
 import { NEUTRAL_POSE } from './render/avatar';
+import { TreasurePiles } from './render/treasure';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
 
@@ -66,6 +67,8 @@ const ctx: GameContext = {
   lastScore: null,
   pose: NEUTRAL_POSE,
   avatarMood: null,
+  treasure: new TreasurePiles(save.coins, save.diamonds),
+  treasureAt: null,
   newWorld: (levelId, startY) => {
     // Clumps from earlier rounds; this round's clump only grows once the mushroom has landed.
     earlierMarks = save.deathMarks[String(levelId)] ?? [];
@@ -111,6 +114,7 @@ const loop = createLoop(
     // Off the home screen the flying mushroom is simply in its place: the big home avatar does not shrink
     // into it. Home sets its pose again in its own update.
     ctx.pose = NEUTRAL_POSE;
+    ctx.treasureAt = null;
     machine.update(dt);
     if (machine.current !== 'gameOver') restWhileAway(ctx, dt);
     ctx.effects.update(dt);
@@ -124,6 +128,7 @@ const loop = createLoop(
       deathMarks: earlierMarks,
       time,
       pose: ctx.pose,
+      treasure: ctx.treasureAt ? { piles: ctx.treasure, place: ctx.treasureAt } : null,
     }),
 );
 

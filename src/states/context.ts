@@ -1,5 +1,6 @@
 import type { AnimationId } from '../config/animations';
 import type { Pose } from '../render/avatar';
+import type { TreasurePiles, TreasurePlace } from '../render/treasure';
 import type { RewardedAds } from '../ads/ads';
 import type { Audio } from '../audio/audio';
 import type { Random } from '../core/random';
@@ -31,6 +32,10 @@ export interface GameContext {
   pose: Pose;
   /** What the home avatar acts out next time the home screen shows (proud after a new badge); null: just idle. */
   avatarMood: AnimationId | null;
+  /** The coin and diamond piles beside the home avatar; they catch up with the save while home shows. */
+  treasure: TreasurePiles;
+  /** Where the piles stand this frame; null hides them (home sets it in its update). */
+  treasureAt: TreasurePlace | null;
   /** A fresh round of a level; `startY` carries the hovering mushroom's height over. */
   newWorld(levelId: number, startY?: number): World;
   /** Switch to another screen. */

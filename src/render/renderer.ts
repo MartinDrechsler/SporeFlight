@@ -14,6 +14,7 @@ import { drawBoss } from './drawBoss';
 import { applyView } from './view';
 import { drawGate, drawPickup, drawRoot, drawWind, type RootLook } from './drawRoots';
 import type { Effects } from './effects';
+import { drawTreasure, type TreasurePiles, type TreasurePlace } from './treasure';
 
 export interface Scene {
   world: World;
@@ -25,6 +26,8 @@ export interface Scene {
   time: number;
   /** How the mushroom is shown (the home screen avatar); never changes the flight. */
   pose: Pose;
+  /** The home screen's coin and diamond piles beside the avatar, or null. */
+  treasure: { piles: TreasurePiles; place: TreasurePlace } | null;
 }
 
 /** Draws one complete frame. Reads game state, never changes it. */
@@ -58,6 +61,7 @@ export function renderScene(surface: Surface, scene: Scene): void {
   const gateX = world.course.gateX;
   if (gateX !== null) drawGate(ctx, gateX, world.groundY, theme, time, world.course.finished);
   if (world.boss) drawBoss(ctx, world.boss, theme, time);
+  if (scene.treasure) drawTreasure(ctx, scene.treasure.piles, scene.treasure.place);
   drawPlayer(ctx, world.player, skinById(scene.skinId), {
     crashed: world.crashed,
     shield: world.shield,
