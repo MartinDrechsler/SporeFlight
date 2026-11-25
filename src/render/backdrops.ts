@@ -43,7 +43,57 @@ export function drawBackdrop(ctx: CanvasRenderingContext2D, backdrop: Backdrop, 
       trees(ctx, view, { speed: 0.06, spacing: 90, height: 0.3, color: far, shape: 'round' });
       windmills(ctx, view, mixColor(near, far, 0.5), light);
       break;
+    case 'caverns':
+      caverns(ctx, view, { speed: 0.05, spacing: 54, reach: 0.28, color: far, light: null });
+      caverns(ctx, view, { speed: 0.12, spacing: 88, reach: 0.4, color: near, light });
+      break;
   }
+}
+
+/**
+ * A cave: rock teeth hanging from the ceiling and rising from the floor, the
+ * near layer dotted with glowing fungi that pulse slowly.
+ */
+function caverns(
+  ctx: CanvasRenderingContext2D,
+  view: SceneryView,
+  layer: { speed: number; spacing: number; reach: number; color: string; light: string | null },
+): void {
+  const { groundY, time } = view;
+  ctx.fillStyle = layer.color;
+  scroll(view, layer.speed, layer.spacing, (x, n) => {
+    const w = layer.spacing * (0.55 + hash(n) * 0.5);
+    const down = groundY * layer.reach * (0.35 + hash(n + 3) * 0.65);
+    const up = groundY * layer.reach * 0.7 * (0.3 + hash(n + 7) * 0.7);
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, 0);
+    ctx.quadraticCurveTo(x - w * 0.15, down * 0.6, x, down);
+    ctx.quadraticCurveTo(x + w * 0.15, down * 0.6, x + w / 2, 0);
+    ctx.fill();
+    const bx = x + layer.spacing / 2;
+    ctx.beginPath();
+    ctx.moveTo(bx - w / 2, groundY);
+    ctx.quadraticCurveTo(bx - w * 0.12, groundY - up * 0.6, bx, groundY - up);
+    ctx.quadraticCurveTo(bx + w * 0.12, groundY - up * 0.6, bx + w / 2, groundY);
+    ctx.fill();
+    if (!layer.light || hash(n + 11) < 0.45) return;
+    // A cluster of glowing fungi on the rock.
+    const fx = bx + (hash(n + 13) - 0.5) * w * 0.5;
+    const fy = groundY - up * (0.2 + hash(n + 17) * 0.4);
+    const pulse = 0.45 + Math.sin(time * 1.6 + n) * 0.2;
+    const glow = ctx.createRadialGradient(fx, fy, 1, fx, fy, 22);
+    glow.addColorStop(0, `rgba(${layer.light}, ${pulse})`);
+    glow.addColorStop(1, `rgba(${layer.light}, 0)`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(fx - 22, fy - 22, 44, 44);
+    ctx.fillStyle = `rgba(${layer.light}, 0.85)`;
+    for (const [dx, r] of [[-4, 2.5], [2, 3.2], [6, 2]] as const) {
+      ctx.beginPath();
+      ctx.arc(fx + dx, fy - r, r, Math.PI, 0);
+      ctx.fill();
+    }
+    ctx.fillStyle = layer.color;
+  });
 }
 
 /** A large soft glow high in the sky, the level's own moon. */

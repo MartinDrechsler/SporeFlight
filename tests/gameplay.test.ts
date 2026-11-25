@@ -349,12 +349,12 @@ describe('the Stone Thrower', () => {
   it('a rock hit ends the round, unless a shield takes it', () => {
     const world = newWorld(4, level(5));
     run(world, 0.5);
-    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false, kind: 'rock', age: 0, sway: 0 });
     world.shield = true;
     stepWorld(world, 1 / 60);
     expect([world.crashed, world.shield, world.boss!.rocks.length]).toEqual([false, false, 0]);
     world.invulnerableTime = 0;
-    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false });
+    world.boss!.rocks.push({ x: world.player.x, y: world.player.y, vx: -200, vy: 0, spin: 0, passed: false, kind: 'rock', age: 0, sway: 0 });
     stepWorld(world, 1 / 60);
     expect(world.crashed).toBe(true);
   });

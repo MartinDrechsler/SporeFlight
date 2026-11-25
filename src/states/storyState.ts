@@ -1,4 +1,5 @@
 import { STORIES, type StoryPanel } from '../config/story';
+import { startRound } from './round';
 import { skinById } from '../config/skins';
 import type { State } from '../core/stateMachine';
 import { AvatarStage } from '../ui/avatarStage';
@@ -27,7 +28,9 @@ export function storyState(ctx: GameContext): State {
   const end = (): void => {
     if (!ctx.save.storySeen.includes(ctx.story.id)) ctx.save.storySeen.push(ctx.story.id);
     ctx.persist();
-    ctx.go(ctx.story.then);
+    const then = ctx.story.then;
+    if (typeof then === 'object') startRound(ctx, then.play);
+    else ctx.go(then);
   };
 
   byId('story-next').addEventListener('click', () => {

@@ -63,6 +63,10 @@ export const SOUNDS = {
     noise('bandpass', 1100, 0.12, 0.045, { to: 2600, q: 1.4, delay: 0.03 }),
   ],
   pass: [tone('sine', C6, 0.05, 0.03)],
+  // A stalactite starts to drip: two small high drops, a warning.
+  drip: [tone('sine', C6, 0.08, 0.06, { to: G5 }), tone('sine', C6, 0.08, 0.05, { to: G5, delay: 0.16 })],
+  // Through a portal: an airy whoosh that turns into a soft bell.
+  portal: [noise('bandpass', 300, 0.45, 0.1, { to: 2600, q: 1.2 }), tone('sine', G5, 0.5, 0.05, { to: C6, delay: 0.15 })],
   // A secret found: a mysterious rising shimmer, then a bright chord.
   secret: [
     noise('bandpass', 600, 0.6, 0.06, { to: 4000, q: 2, attack: 0.2 }),
@@ -100,6 +104,8 @@ export const SOUNDS = {
   ],
   wind: [noise('bandpass', 300, 0.9, 0.12, { to: 700, q: 0.7, attack: 0.25 })],
   bossWarn: [tone('sawtooth', 80, 0.7, 0.08, { to: 60 }), tone('square', 55, 0.7, 0.04), noise('lowpass', 300, 0.7, 0.18, { attack: 0.1 })],
+  // The Bat Queen's screech: a high shriek sliding down, with a hiss.
+  bossScreech: [tone('sawtooth', 2400, 0.7, 0.07, { to: 900 }), tone('square', 1800, 0.6, 0.04, { to: 700, delay: 0.05 }), noise('highpass', 3000, 0.6, 0.12)],
   bossThrow: [noise('bandpass', 300, 0.25, 0.14, { to: 1300, q: 1.5 }), tone('triangle', 320, 0.18, 0.06, { to: 140 })],
   // A crack and a diamond's glassy chime: every hit on a vein gives one.
   veinHit: [

@@ -17,6 +17,9 @@ export const TUNING = {
     maxFallSpeed: 660,
     /** Small upward bounce when crashing. */
     crashHopVelocity: -132,
+    /** Glide mode (a dandelion seed): steady climb or dive, px/s, and how fast it turns, px/s². */
+    glideSpeed: 150,
+    glideTurn: 1500,
   },
 
   world: {
@@ -113,6 +116,14 @@ export const TUNING = {
     coinEverySeconds: 3.5,
     bobAmplitude: 70,
     bobSpeed: 1.1,
+    /** The Bat Queen's bats: how far a swooping bat sways, px, and how fast, rad/s. */
+    swoopSway: 60,
+    swoopBeat: 4,
+    /** Bats in one swoop and the space between them, px. */
+    swoopCount: 4,
+    swoopSpacing: 70,
+    /** A screech dims the light for this long, s. */
+    screechSeconds: 3,
   },
 
   /** Crystal veins on root caps: every bounce off one cracks out a diamond; the third breaks it open. */
@@ -165,6 +176,34 @@ export const TUNING = {
     pillar: 78,
     /** Keep the second gap this far from the top and the ground, px. */
     margin: 24,
+  },
+
+  /** Cave hazards between roots (gameplay/hazards.ts), px and seconds. */
+  hazards: {
+    batRadius: 14,
+    /** How far a bat flutters up and down from the gap's height, and how fast, rad/s. */
+    batSwing: 70,
+    batBeat: 2.4,
+    stalactiteWidth: 24,
+    stalactiteLength: 72,
+    /** A stalactite drips when the mushroom is this far ahead of it, and drops when it is this close. */
+    dripAhead: 260,
+    dropAhead: 40,
+    fallGravity: 1200,
+  },
+
+  /** Dark cave levels: how far each light reaches, px, and how deep the dark is. */
+  darkness: {
+    alpha: 0.93,
+    playerLight: 150,
+    sporelingLight: 46,
+    pickupLight: 34,
+    passedRootLight: 70,
+    fireflyLight: 44,
+    hazardLight: 40,
+    bossLight: 110,
+    /** A screech shrinks the mushroom's light to this share. */
+    screechDim: 0.55,
   },
 
   /** Checkpoints: restarting from one gives a moment without danger. */

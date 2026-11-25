@@ -1,4 +1,6 @@
-import type { LevelConfig } from '../config/levels';
+import type { FlightMode, LevelConfig } from '../config/levels';
+import { setMode } from './modes';
+import { hazardHittingPlayer, stepHazards, type Hazard } from './hazards';
 import type { RunStats } from '../config/rewards';
 import { TUNING } from '../config/tuning';
 import { createRandom, type Random } from '../core/random';
@@ -29,6 +31,10 @@ export type GameEvent =
   | { type: 'milestone'; score: number }
   /** Past the level's checkpoint: a crash from here on may restart from it. */
   | { type: 'checkpoint'; x: number }
+  /** A stalactite starts to drip: it will drop when the mushroom is below. */
+  | { type: 'drip'; x: number }
+  /** Through a portal: the flight mode changes. */
+  | { type: 'portal'; x: number; mode: FlightMode }
   /** Through a secret gap: the level is finished and a secret level found. */
   | { type: 'secret'; x: number; y: number }
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
@@ -41,6 +47,8 @@ export type GameEvent =
   /** The Stone Thrower is about to throw (its eyes flare). */
   | { type: 'bossWarn'; x: number; y: number }
   | { type: 'bossThrow'; x: number; y: number }
+  /** The Bat Queen screeches: the light dims for a while. */
+  | { type: 'bossScreech'; x: number; y: number }
   /** The mushroom flew through the finish gate. */
   | { type: 'finish'; x: number; y: number };
 
@@ -48,6 +56,13 @@ export type GameEvent =
  * Everything about one round of play, from the first flap until a crash or the finish gate.
  * Lives, saving and screens are handled outside, by the states.
  */
+/** A ring across the field after a root: passing it switches the flight mode. */
+export interface Portal {
+  x: number;
+  mode: FlightMode;
+  passed: boolean;
+}
+
 /** A passed checkpoint: the first root after it, and what the run had earned and been offered by then. */
 export interface Checkpoint {
   root: number;
@@ -79,6 +94,10 @@ export interface World extends Field {
   winds: WindZone[];
   /** Numbers for achievements and quests; `stats.score` is the round's score (1 per root). */
   stats: RunStats;
+  /** Bats and stalactites between roots. */
+  hazards: Hazard[];
+  /** Portals ahead and behind: rings that switch the flight mode as the mushroom passes them. */
+  portals: Portal[];
   /** The level's checkpoint once passed: where a restart begins, with what had been earned by then. */
   checkpoint: Checkpoint | null;
   /** Valuables that appeared this round, for the star rating. */
@@ -116,6 +135,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, s
   const layoutRng = level.fixedLayout ? createRandom(LAYOUT_SEED + level.id) : rng;
   const player = createPlayer(width, height);
   if (startY !== undefined) player.y = startY;
+  setMode(player, level.startMode);
   return {
     width,
     height,
@@ -135,6 +155,8 @@ export function createWorld(width: number, height: number, level: LevelConfig, s
     winds: [],
     stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, sporelings: 0 },
     checkpoint: null,
+    portals: [],
+    hazards: [],
     offered: { coins: 0, diamonds: 0, sporelings: 0 },
     rootsSpawned: 0,
     rootsPassed: 0,
@@ -202,6 +224,8 @@ export function stepWorld(world: World, dt: number): void {
   stepCourse(world, speed * dt, dt);
   for (const root of world.roots) stepRoot(root, dt, speed);
   for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+  passPortals(world, speed * dt);
+  stepHazards(world, speed * dt, dt);
   stepBoss(world, dt);
   if (checkHits(world)) return;
 
@@ -219,6 +243,7 @@ function stepFinished(world: World, dt: number): void {
   world.distance += speed * dt;
   for (const root of world.roots) stepRoot(root, dt, speed);
   for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+  stepHazards(world, speed * dt, dt);
   stepBoss(world, dt);
   if (world.course.gateX !== null) world.course.gateX -= speed * dt;
   const player = world.player;
@@ -312,7 +337,10 @@ function checkHits(world: World): boolean {
   const rock = rockHittingPlayer(world);
   // A rock that is absorbed shatters, so it cannot hit twice.
   if (rock) removeRock(world, rock);
-  const hit = rock !== null || world.roots.some((root) => playerHitsRoot(world.player, root, world.groundY));
+  // So does a bat or stalactite.
+  const hazard = hazardHittingPlayer(world);
+  if (hazard) world.hazards = world.hazards.filter((h) => h !== hazard);
+  const hit = rock !== null || hazard !== null || world.roots.some((root) => playerHitsRoot(world.player, root, world.groundY));
   if (!hit) return false;
 
   if (world.shield) {
@@ -425,6 +453,8 @@ export function startFromCheckpoint(world: World, checkpoint: Checkpoint): void 
     stepCourse(world, speed * dt, dt);
     for (const root of world.roots) stepRoot(root, dt, speed);
     for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+    passPortals(world, speed * dt);
+    stepHazards(world, speed * dt, dt);
     for (const root of world.roots) {
       if (root.passed || rootLeft(root) + root.width >= world.player.x) continue;
       root.passed = true;
@@ -439,8 +469,22 @@ export function startFromCheckpoint(world: World, checkpoint: Checkpoint): void 
   world.checkpoint = checkpoint;
   world.events.length = 0;
   world.player.vy = 0;
+  world.player.climbing = false;
   world.player.y = world.height * TUNING.player.startYFraction;
   world.invulnerableTime = TUNING.checkpoint.graceSeconds;
+}
+
+/** Moves the portals along; passing one switches the mushroom's flight mode. */
+function passPortals(world: World, travelled: number): void {
+  for (const portal of world.portals) {
+    portal.x -= travelled;
+    if (portal.passed || portal.x > world.player.x) continue;
+    portal.passed = true;
+    if (world.player.mode === portal.mode) continue;
+    setMode(world.player, portal.mode);
+    world.events.push({ type: 'portal', x: portal.x, mode: portal.mode });
+  }
+  world.portals = world.portals.filter((portal) => portal.x > -60);
 }
 
 function checkMilestones(world: World): void {

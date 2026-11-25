@@ -1,4 +1,5 @@
 import { levelById } from '../config/levels';
+import { chapterStory } from '../config/story';
 import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
@@ -19,6 +20,13 @@ export function levelsState(ctx: GameContext): State {
   byId('map-play').addEventListener('click', () => {
     if (!open(selected)) return;
     ctx.audio.unlock();
+    // A new chapter opens with its story, the first time one of its levels is flown.
+    const story = chapterStory(levelById(selected).chapter);
+    if (story && !ctx.save.storySeen.includes(story)) {
+      ctx.story = { id: story, then: { play: selected } };
+      ctx.go('story');
+      return;
+    }
     startRound(ctx, selected);
   });
 

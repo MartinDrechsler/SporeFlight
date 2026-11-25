@@ -186,6 +186,8 @@ export function soundFor(event: GameEvent): SoundName | null {
       return 'bossWarn';
     case 'bossThrow':
       return 'bossThrow';
+    case 'bossScreech':
+      return 'bossScreech';
     case 'veinHit':
       return 'veinHit';
     case 'veinBreak':
@@ -194,5 +196,9 @@ export function soundFor(event: GameEvent): SoundName | null {
       return 'milestone';
     case 'secret':
       return 'secret';
+    case 'portal':
+      return 'portal';
+    case 'drip':
+      return 'drip';
   }
 }

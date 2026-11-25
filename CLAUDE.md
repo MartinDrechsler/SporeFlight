@@ -31,8 +31,8 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 - `src/gameplay/`: the flight rules as plain data + pure functions. No DOM, no timers, no `Math.random`.
   `world.ts` runs one round and reports what happened as `GameEvent`s. `course.ts` walks a level's stages to the
   finish gate (endless is one stage that never ends). `spawner.ts` turns level data into roots, pickups and wind.
-  `boss.ts` is the Stone Thrower, `veins.ts` the crystal veins. `replay.ts` replays a recorded endless run.
-  `modes.ts` holds the flight modes (what a tap does; only flap so far). Forks (a second gap past a pillar),
+  `boss.ts` is the bosses (Stone Thrower, Bat Queen), `hazards.ts` the bats and stalactites, `veins.ts` the crystal veins. `replay.ts` replays a recorded endless run.
+  `modes.ts` holds the flight modes (what a tap does: flap, glide); portals switch them. Forks (a second gap past a pillar),
   the secret gap and the checkpoint are root data built in `spawner.ts`; `startFromCheckpoint` is in `world.ts`.
 - `src/meta/`: everything outside flight, as pure functions on `SaveData`: economy (banking, shop, unlock,
   lives), adventure (stars, which levels are open), achievements, daily quests, names, leaderboard (what to send).
@@ -41,7 +41,7 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 - `server/`: the leaderboard server. `api.ts` checks every input and replays each run before accepting a score;
   `store.ts` is Upstash Redis (env `KV_REST_API_URL`, `KV_REST_API_TOKEN`) or memory in tests; `node.ts` adapts
   it to a Vercel Node function. Imports game rules from `src/`, never DOM code.
-- `src/render/`: canvas drawing. Reads the world, never changes it. `effects.ts` is visual only. `view.ts`
+- `src/render/`: canvas drawing. Reads the world, never changes it. `effects.ts` is visual only. `darkness.ts` lays the dark over cave levels; `hazards.ts` draws bats and stalactites. `view.ts`
   mirrors the picture for twist levels (upside down, backwards); the rules never change. `obstacles.ts` and
   `scenery.ts` draw each biome's obstacles, distant world and life in the air; `backdrops.ts` the adventure
   levels' distant worlds. `sprites.ts` draws the pixel icons; `avatar.ts` is the home screen pose (shift, size,
