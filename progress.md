@@ -7,6 +7,14 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### A diamond for every crack
+- Crystal veins stay (endless: root 20, then every 30; one per Adventure level), but every bounce off one
+  now cracks out a diamond, so a vein gives 3 in all (was 1, on the third hit). "+1 DIAMOND 1/3" shows at
+  each crack, with a crack and a diamond chime; the third breaks it open ("CRACKED OPEN!").
+- An Adventure level's third star still needs the whole vein: it now counts the vein's 3 diamonds.
+- Economy: veins now give three times the diamonds; one vein in endless pays the 3 diamonds of the
+  Adventure unlock. Watch this when playing (Martin wanted diamonds rare).
+
 ### Bigger mushroom, same difficulty
 - The mushroom is drawn 15% bigger in flight (and the home avatar with it), `LOOK_SCALE` in
   render/drawPlayer.ts. Its hitbox stays radius 18: a bigger hitbox would tighten every gap (endless gaps are
