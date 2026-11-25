@@ -141,9 +141,9 @@ export class Effects {
     }
   }
 
-  /** Celebrates a new best score at the end of a round. */
+  /** Celebrates a new record (best endless score) at the end of a round. */
   newBest(width: number, height: number): void {
-    this.text('NEW BEST!', width / 2, height * 0.42, '#ffd23f', 40);
+    this.text('NEW RECORD!', width / 2, height * 0.42, '#ffd23f', 40);
     this.confetti(width / 2, height * 0.42, '#ff5e9c');
   }
 

@@ -538,14 +538,35 @@
   font-size: 1.7rem;
   line-height: 1.05;
   letter-spacing: 0.06em;
-  color: var(--bg);
-  background: var(--accent);
-  box-shadow: 0 0 24px rgba(0, 242, 195, 0.45);
+  /* Hollow: no colour fill, only a dark inside so the scenery behind never shows through. */
+  background: rgba(3, 16, 13, 0.9);
+  border: 3px solid currentColor;
 }
 
+/* Rest: hollow, yellow border and text. */
+.choice-button.rest {
+  color: var(--gold);
+  box-shadow: 0 0 14px rgba(255, 210, 63, 0.35), inset 0 0 10px rgba(255, 210, 63, 0.15);
+  text-shadow: 0 0 8px rgba(255, 210, 63, 0.6);
+}
+
+/* Watch an ad: hollow, glowing green border and text, its glow gently pulsing (the button itself stays still). */
 .choice-button.ad {
-  background: var(--gold);
-  box-shadow: 0 0 24px rgba(255, 210, 63, 0.45);
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0, 242, 195, 0.8);
+  animation: glow-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(0, 242, 195, 0.4), inset 0 0 6px rgba(0, 242, 195, 0.15);
+    text-shadow: 0 0 6px rgba(0, 242, 195, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 242, 195, 0.95), inset 0 0 18px rgba(0, 242, 195, 0.45);
+    text-shadow: 0 0 14px rgba(0, 242, 195, 1);
+  }
 }
 
 .choice-button:active {
@@ -556,6 +577,8 @@
   position: relative;
   display: grid;
   place-items: center;
+  border-radius: 50%;
+  background: rgba(3, 16, 13, 0.9);
 }
 
 .rest-ring[hidden] {
@@ -577,18 +600,21 @@
 }
 
 .ring-track {
-  stroke: var(--panel-line);
+  stroke: rgba(255, 210, 63, 0.18);
 }
 
+/* The rest countdown keeps the rest button's yellow. */
 .ring-progress {
-  stroke: var(--accent);
+  stroke: var(--gold);
   stroke-linecap: round;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 4px rgba(0, 242, 195, 0.7));
+  filter: drop-shadow(0 0 4px rgba(255, 210, 63, 0.7));
 }
 
 .ring-time {
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(255, 210, 63, 0.6);
   font-size: 2.4rem;
   line-height: 1;
   margin-top: -0.6rem;
@@ -599,5 +625,12 @@
   bottom: 26%;
   font-size: 1rem;
   letter-spacing: 0.1em;
-  color: var(--muted);
+  color: rgba(255, 210, 63, 0.75);
+}
+
+/* Small phones: the two choices keep their words on two lines. */
+@media (max-height: 700px) {
+  .choice-button {
+    font-size: 1.4rem;
+  }
 }
