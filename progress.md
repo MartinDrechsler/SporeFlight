@@ -7,6 +7,15 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Going back without lives
+- **BACK on the out of breath screen** asks first: "GO BACK WITHOUT LIVES?" YES / NO, inline under the two
+  choices. YES goes home with no lives.
+- **Home with no lives**: the home screen shows (it no longer jumps straight to out of breath). The lives
+  stat pulses red; tapping it, or TAP TO FLAP, opens the out of breath screen, where the player still has to
+  rest a minute or watch an ad.
+- **A started rest goes on** anywhere in the game while it is open (`restWhileAway`, main loop); on the home
+  screen the countdown shows in place of the empty hearts. When it ends: "RESTED! +5 LIVES".
+
 ### Out of breath, and home vs flight
 - **"Record" instead of "best"** everywhere on screen: home, HUD, out of breath, leaderboard, NEW RECORD!
 - **Home and flight are separate**: tapping TAP TO FLAP no longer shrinks the big home mushroom into the

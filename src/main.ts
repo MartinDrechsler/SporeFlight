@@ -19,7 +19,7 @@ import { adState } from './states/adState';
 import { adventureOverState } from './states/adventureOverState';
 import { badgesState } from './states/badgesState';
 import type { GameContext, StateName } from './states/context';
-import { gameOverState } from './states/gameOverState';
+import { gameOverState, restWhileAway } from './states/gameOverState';
 import { levelCompleteState } from './states/levelCompleteState';
 import { levelsState } from './states/levelsState';
 import { playingState } from './states/playingState';
@@ -112,6 +112,7 @@ const loop = createLoop(
     // into it. Home sets its pose again in its own update.
     ctx.pose = NEUTRAL_POSE;
     machine.update(dt);
+    if (machine.current !== 'gameOver') restWhileAway(ctx, dt);
     ctx.effects.update(dt);
     ctx.audio.setMusic(machine.current === null ? null : MUSIC[machine.current]);
   },

@@ -34,3 +34,9 @@ export function button(label: string, className: string, onClick: (() => void) |
 export function starText(stars: number): string {
   return '★'.repeat(stars) + '☆'.repeat(3 - stars);
 }
+
+/** Seconds as a clock, rounded up: 42.3 -> "0:43". */
+export function clockText(seconds: number): string {
+  const total = Math.ceil(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}

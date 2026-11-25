@@ -3,7 +3,7 @@ import { skinById } from '../config/skins';
 import type { State } from '../core/stateMachine';
 import { awaitingChoice, rest, restProgress, startRest } from '../meta/economy';
 import { AvatarStage } from '../ui/avatarStage';
-import { byId, setText } from '../ui/dom';
+import { byId, clockText, setText } from '../ui/dom';
 import { showScreens } from '../ui/screens';
 import { toast } from '../ui/toast';
 import type { GameContext } from './context';
@@ -37,8 +37,7 @@ export function gameOverState(ctx: GameContext): State {
     byId('rest-button').hidden = !choosing;
     byId('rest-ring').hidden = choosing;
     byId('rest-ring-progress').style.strokeDashoffset = String(100 * (1 - restProgress(ctx.save)));
-    const total = Math.ceil(ctx.save.restSecondsLeft);
-    setText(byId('gameover-timer'), `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`);
+    setText(byId('gameover-timer'), clockText(ctx.save.restSecondsLeft));
   };
 
   byId('rest-button').addEventListener('click', () => {
@@ -48,6 +47,27 @@ export function gameOverState(ctx: GameContext): State {
     ctx.persist();
     paint();
     act(recoveryStep(0));
+  });
+
+  // BACK asks first: going home leaves the player without lives (the home lives stat then pulses red).
+  const confirming = (on: boolean): void => {
+    byId('gameover-back').hidden = on;
+    byId('gameover-confirm').hidden = !on;
+  };
+  byId('gameover-back').addEventListener('click', () => {
+    ctx.audio.ui('click');
+    confirming(true);
+  });
+  byId('gameover-no').addEventListener('click', () => {
+    ctx.audio.ui('click');
+    confirming(false);
+  });
+  byId('gameover-yes').addEventListener('click', () => {
+    if (leaving !== null) return;
+    ctx.audio.ui('click');
+    ctx.persist();
+    ctx.lastScore = null;
+    ctx.go('start');
   });
 
   byId('watch-ad-button').addEventListener('click', () => {
@@ -63,6 +83,7 @@ export function gameOverState(ctx: GameContext): State {
       sinceSave = 0;
       step = null;
       leaving = null;
+      confirming(false);
       setText(byId('gameover-score'), ctx.lastScore ?? 0);
       setText(byId('gameover-best'), ctx.save.bestScore);
       paint();
@@ -97,6 +118,26 @@ export function gameOverState(ctx: GameContext): State {
       leaving = JUMP_SECONDS;
     },
   };
+}
+
+let awaySinceSave = 0;
+
+/**
+ * A rest that was started goes on while the player is elsewhere in the game
+ * (home, shop...): the game is open, so the minute counts. Call every frame
+ * while the out of breath screen is not shown.
+ */
+export function restWhileAway(ctx: GameContext, dt: number): void {
+  if (ctx.save.lives > 0 || ctx.save.restSecondsLeft <= 0) return;
+  const rested = rest(ctx.save, dt);
+  awaySinceSave += dt;
+  if (awaySinceSave >= 1 || rested) {
+    awaySinceSave = 0;
+    ctx.persist();
+  }
+  if (!rested) return;
+  ctx.audio.ui('reward');
+  toast(`RESTED! +${ctx.save.lives} LIVES`);
 }
 
 /** Shows or hides the "ad failed" message on the game over screen. */
