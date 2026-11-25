@@ -31,7 +31,7 @@
         <div class="hud-bottom">
           <span class="hud-stat coins"><span class="icon-coin"></span><span id="hud-coins">0</span></span>
           <span class="hud-stat diamonds"><span class="icon-diamond"></span><span id="hud-diamonds">0</span></span>
-          <span id="hud-best-stat" class="hud-stat">BEST <span id="hud-best">0</span></span>
+          <span id="hud-best-stat" class="hud-stat">RECORD <span id="hud-best">0</span></span>
         </div>
         <div class="powerups">
           <div id="hud-shield" class="powerup shield" hidden>SHIELD</div>
@@ -67,7 +67,7 @@
           <button id="menu-ranks" class="menu-button wide" type="button">🏆 LEADERBOARD</button>
         </div>
         <dl class="stats">
-          <div><dt>BEST</dt><dd id="start-best">0</dd></div>
+          <div><dt>RECORD</dt><dd id="start-best">0</dd></div>
           <div><dt>LIVES</dt><dd id="start-lives" class="lives">0</dd></div>
           <div><dt>COINS</dt><dd class="coins"><span class="icon-coin"></span><span id="start-coins">0</span></dd></div>
           <div><dt>DIAMONDS</dt><dd class="diamonds"><span class="icon-diamond"></span><span id="start-diamonds">0</span></dd></div>
@@ -80,11 +80,11 @@
         <h2 class="panel-title danger">OUT OF BREATH!</h2>
         <dl class="stats">
           <div><dt>SCORE</dt><dd id="gameover-score">0</dd></div>
-          <div><dt>BEST</dt><dd id="gameover-best">0</dd></div>
+          <div><dt>RECORD</dt><dd id="gameover-best">0</dd></div>
         </dl>
         <!-- Two ways to get lives back; nothing happens until one is chosen. Resting turns its button into a countdown ring. -->
         <div class="choice-row">
-          <button id="rest-button" class="choice-button" type="button">REST<br />1 MINUTE</button>
+          <button id="rest-button" class="choice-button rest" type="button">REST<br />1 MINUTE</button>
           <div id="rest-ring" class="rest-ring" hidden>
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <circle class="ring-track" cx="50" cy="50" r="44" />
@@ -167,8 +167,8 @@
         <p id="ranks-you" class="ranks-you" hidden></p>
         <div id="ranks-join" class="ranks-box" hidden>
           <p class="panel-text small">
-            Join as <strong id="ranks-name"></strong>. The leaderboard keeps only your name, country and best endless
-            score, with a random player number stored on this phone. Leave any time to delete your entry.
+            Join as <strong id="ranks-name"></strong>. The leaderboard keeps only your name, country and endless
+            record, with a random player number stored on this phone. Leave any time to delete your entry.
           </p>
           <label class="field">COUNTRY <select id="ranks-join-country"></select></label>
           <button id="ranks-join-button" class="primary-button compact" type="button">JOIN</button>

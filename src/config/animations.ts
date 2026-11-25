@@ -76,36 +76,9 @@ export const ANIMATIONS = {
   /** The home screen and anything calm: just being there. */
   idle: { length: 4, loop: true, moves: [], faces: [{ at: 0, face: 'neutral' }] },
 
-  /** Out of lives, before the player chooses: slumped, head swaying round, crossed eyes, stars circling. */
-  knockedOut: {
-    length: 2.4,
-    loop: true,
-    moves: [
-      { move: 'slump', at: 0, for: 0, amount: 0.1 },
-      { move: 'daze', at: 0, for: 2.4, amount: 0.14 },
-      { move: 'stars', at: 0, for: 2.4 },
-    ],
-    faces: [{ at: 0, face: 'dizzy' }],
-  },
+  // Out of lives and resting one minute: the mushroom gets better step by step (see RECOVERY below).
 
-  // Resting one minute: the mushroom gets better step by step (see RECOVERY below).
-
-  /** It flops over onto its side. */
-  restFall: {
-    length: 1,
-    loop: false,
-    then: 'restOut',
-    moves: [
-      { move: 'slump', at: 0, for: 0, amount: 0.1 },
-      { move: 'lie', at: 0.15, for: 0.35 },
-      { move: 'squash', at: 0.5, for: 0.2, amount: 0.12 },
-    ],
-    faces: [
-      { at: 0, face: 'dizzy' },
-      { at: 0.5, face: 'knockedOut' },
-    ],
-  },
-  /** Lying knocked out, stars circling, a twitch now and then. */
+  /** Out of lives: lying knocked out, tongue out, stars circling, a twitch now and then. Also the start of a rest. */
   restOut: {
     length: 2.6,
     loop: true,
@@ -299,12 +272,13 @@ export type AnimationId = keyof typeof ANIMATIONS;
 
 /**
  * Resting one minute, out of lives: what the avatar does as the rest goes
- * on, by the share of the rest done. Lying knocked out, then sitting up and
+ * on, by the share of the rest done. It starts as it lay while the player
+ * chose (knocked out), then sits up and
  * opening its eyes, a drink of water, standing up, and a jump when the
  * lives are back.
  */
 export const RECOVERY: readonly { from: number; play: AnimationId }[] = [
-  { from: 0, play: 'restFall' },
+  { from: 0, play: 'restOut' },
   { from: 0.25, play: 'restSitUp' },
   { from: 0.5, play: 'restDrink' },
   { from: 0.75, play: 'restStand' },

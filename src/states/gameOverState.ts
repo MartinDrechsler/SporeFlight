@@ -12,11 +12,11 @@ import type { GameContext } from './context';
 const JUMP_SECONDS = 1.6;
 
 /**
- * Out of lives. The mushroom sits knocked out, stars circling its head. The
+ * Out of lives. The mushroom lies knocked out, stars circling its head. The
  * player chooses: rest one minute (counting only while the game is open) or
- * watch a short ad. Nothing happens until one is tapped. While resting, a
- * ring counts down and the mushroom gets better step by step
- * (config/animations.ts, RECOVERY).
+ * watch a short ad. Nothing happens until one is tapped. Resting starts the
+ * ring countdown, and the mushroom gets better step by step from where it
+ * lies (config/animations.ts, RECOVERY).
  */
 export function gameOverState(ctx: GameContext): State {
   let sinceSave = 0;
@@ -66,7 +66,7 @@ export function gameOverState(ctx: GameContext): State {
       setText(byId('gameover-score'), ctx.lastScore ?? 0);
       setText(byId('gameover-best'), ctx.save.bestScore);
       paint();
-      act(awaitingChoice(ctx.save) ? 'knockedOut' : recoveryStep(restProgress(ctx.save)));
+      act(recoveryStep(restProgress(ctx.save)));
       showScreens('gameOver');
     },
 

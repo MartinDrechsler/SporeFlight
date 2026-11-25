@@ -25,16 +25,15 @@ describe('avatar animations as data', () => {
 });
 
 describe('scenes', () => {
-  it('knocked out (before choosing): sitting, crossed eyes, head swaying round, stars circling', () => {
-    const ko = ANIMATIONS.knockedOut;
-    const frames = Array.from({ length: 120 }, (_, i) => frameAt(ko, (i / 120) * ko.length));
-    expect(frames.every((f) => f.lie === 0 && f.stars !== null && f.face.eyes === 'cross')).toBe(true);
-    expect(Math.max(...frames.map((f) => f.rotation))).toBeGreaterThan(0.1);
-    expect(Math.min(...frames.map((f) => f.rotation))).toBeLessThan(-0.1);
+  it('out of lives: lies knocked out (crossed eyes, stars) while choosing, and the rest starts from there', () => {
+    const out = ANIMATIONS.restOut;
+    const frames = Array.from({ length: 120 }, (_, i) => frameAt(out, (i / 120) * out.length));
+    expect(frames.every((f) => f.lie === 1 && f.stars !== null && f.face.eyes === 'cross')).toBe(true);
+    expect(recoveryStep(0)).toBe('restOut');
   });
 
   it('resting gets better step by step: knocked out, sitting up with eyes open, drinking, standing, jumping', () => {
-    expect([0, 0.2, 0.3, 0.6, 0.8, 1].map(recoveryStep)).toEqual(['restFall', 'restFall', 'restSitUp', 'restDrink', 'restStand', 'restJump']);
+    expect([0, 0.2, 0.3, 0.6, 0.8, 1].map(recoveryStep)).toEqual(['restOut', 'restOut', 'restSitUp', 'restDrink', 'restStand', 'restJump']);
     const out = frameAt(ANIMATIONS.restOut, 1);
     expect([out.lie, out.face.eyes, out.stars !== null]).toEqual([1, 'cross', true]);
     const sat = frameAt(ANIMATIONS.restSitUp, ANIMATIONS.restSitUp.length);

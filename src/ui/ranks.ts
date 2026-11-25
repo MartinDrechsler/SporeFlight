@@ -20,7 +20,7 @@ export function renderBoard(data: BoardData, onReport: (entry: BoardEntry, row: 
   );
   const you = byId('ranks-you');
   you.hidden = data.you === null;
-  if (data.you) setText(you, `YOUR RANK #${data.you.rank} · BEST ${data.you.score}`);
+  if (data.you) setText(you, `YOUR RANK #${data.you.rank} · RECORD ${data.you.score}`);
 }
 
 export function clearBoard(): void {

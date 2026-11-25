@@ -124,7 +124,7 @@ await shot('05-game-over');
 await tapButton('#rest-button');
 check('choosing rest shows the countdown ring', await page.isVisible('#rest-ring'));
 await advance(5000);
-await shot('05b-rest-knocked-out');
+await shot('05b-rest-started');
 await advance(15000);
 s = await state();
 check('rest counts down while open', s.state === 'gameOver' && s.save.restSecondsLeft < 45, `left ${s.save.restSecondsLeft}`);
