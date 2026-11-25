@@ -8,6 +8,11 @@ The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Adventure grows
 story: the Claude Doc "Spore Flight: Adventure chapters plan" (7 phases). Launch prep (real ads, PWA, app stores)
 comes after.
 
+### Playtest build (turn off before launch)
+- `config/playtest.ts` `PLAYTEST = true`: Adventure opens without paying and every level (secret ones too) can be
+  flown right away; the map title says PLAYTEST. Stars, coins and rewards still work as normal. Off under the
+  phone harness (?test=1) unless ?playtest=1 is added. **Set it to false before launch.**
+
 ### Adventure chapters, phase 1b: forks, checkpoints, a secret, flight modes, the story
 - **Forks**: in a fork section a root has a second, tighter gap (118 px) past a pillar (78 px), on the side with more
   room, with a coin in it; the main gap stays the safe route. Chapter 1 has forks from Drifting Canopy on.

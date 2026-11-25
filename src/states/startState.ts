@@ -32,7 +32,7 @@ export function startState(ctx: GameContext): State {
   byId('menu-adventure').addEventListener('click', () => {
     ctx.audio.unlock();
     ctx.audio.ui('click');
-    ctx.go(ctx.save.adventureUnlocked ? 'levels' : 'unlock');
+    ctx.go(ctx.save.adventureUnlocked || ctx.playtest ? 'levels' : 'unlock');
   });
   // Out of lives, the lives stat pulses red; tapping it opens the out of breath screen (rest or ad).
   byId('start-lives-stat').addEventListener('click', () => {
@@ -94,7 +94,7 @@ function refresh(ctx: GameContext): void {
   paintLives(ctx);
   byId('start-last').hidden = ctx.lastScore === null;
   setText(byId('start-last-score'), ctx.lastScore ?? 0);
-  byId('adventure-lock').hidden = save.adventureUnlocked;
+  byId('adventure-lock').hidden = save.adventureUnlocked || ctx.playtest;
   const claimable = claimableCount(save);
   const badge = byId('quests-badge');
   badge.hidden = claimable === 0;

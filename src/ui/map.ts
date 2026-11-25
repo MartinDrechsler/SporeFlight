@@ -3,7 +3,7 @@ import { ADVENTURE_LEVELS, chapterLevels, secretLevels, type LevelConfig } from 
 import type { Skin } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { SaveData } from '../core/save';
-import { isLevelOpen, levelNumber, levelStars } from '../meta/adventure';
+import { levelNumber, levelStars } from '../meta/adventure';
 import { button, byId, el, setText } from './dom';
 import { skinPreview } from './panels';
 
@@ -25,15 +25,17 @@ export function renderMap(
   selected: number,
   skin: Skin,
   onPick: (levelId: number) => void,
+  /** Whether a level can be flown (normally isLevelOpen; everything in a playtest). */
+  isOpen: (levelId: number) => boolean,
 ): void {
   const container = byId('map-path');
   const height = mapHeight();
   container.style.height = `${height}px`;
   const stops = ADVENTURE_LEVELS.map((level, index) => ({ level, ...stopPosition(index, height) }));
-  const reached = stops.filter((stop) => isLevelOpen(save, stop.level.id));
+  const reached = stops.filter((stop) => isOpen(stop.level.id));
 
   const nodes = stops.map(({ level, x, y }) => {
-    const open = isLevelOpen(save, level.id);
+    const open = isOpen(level.id);
     const classes = ['map-node'];
     if (!open) classes.push('locked');
     if (level.id === current) classes.push('current');
@@ -59,7 +61,7 @@ export function renderMap(
 
   // Secret levels, once found: beside the level whose secret gap leads there, on a dotted side path.
   const secrets = secretLevels().flatMap((level) => {
-    if (!save.secrets.includes(level.id)) return [];
+    if (!isOpen(level.id)) return [];
     const from = stops.find((stop) => stop.level.id === level.secretOf);
     if (!from) return [];
     const at = { x: from.x > 50 ? from.x - 34 : from.x + 34, y: from.y - STEP * 0.55 };
@@ -79,7 +81,7 @@ export function renderMap(
     pathLine(stops, height, 'trail'),
     pathLine(reached, height, 'travelled'),
     ...secrets.map((s) => s.line),
-    ...chapterBanners(save, height),
+    ...chapterBanners(isOpen, height),
     ...nodes,
     ...secrets.map((s) => s.node),
     marker,
@@ -96,7 +98,7 @@ function mapHeight(): number {
  * A banner where each chapter begins, just below its first stop (the path climbs
  * upwards); a chapter with no levels yet shows above the last stop as coming soon.
  */
-function chapterBanners(save: SaveData, height: number): HTMLElement[] {
+function chapterBanners(isOpen: (levelId: number) => boolean, height: number): HTMLElement[] {
   let coming = 0;
   return CHAPTERS.map((chapter) => {
     const levels = chapterLevels(chapter.id);
@@ -107,7 +109,7 @@ function chapterBanners(save: SaveData, height: number): HTMLElement[] {
     if (levels.length > 0) {
       const index = ADVENTURE_LEVELS.indexOf(levels[0]!);
       y = stopPosition(index, height).y + STEP * 0.48;
-      if (!isLevelOpen(save, levels[0]!.id)) banner.classList.add('locked');
+      if (!isOpen(levels[0]!.id)) banner.classList.add('locked');
     } else {
       coming += 1;
       y = stopPosition(ADVENTURE_LEVELS.length - 1 + coming, height).y;

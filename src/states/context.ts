@@ -33,6 +33,8 @@ export interface GameContext {
   pose: Pose;
   /** What the home avatar acts out next time the home screen shows (proud after a new badge); null: just idle. */
   avatarMood: AnimationId | null;
+  /** Playtest build: Adventure open for free, every level flyable (config/playtest.ts). */
+  playtest: boolean;
   /** The story scene the story screen plays next, and the screen it returns to. */
   story: { id: StoryId; then: StateName };
   /** The coin and diamond piles beside the home avatar; they catch up with the save while home shows. */
