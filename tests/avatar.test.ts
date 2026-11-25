@@ -19,8 +19,8 @@ describe('home screen avatar', () => {
 
 describe('avatar size', () => {
   it('grows into the room the home screen has, within limits', () => {
-    expect(avatarScale(1000, 16)).toBe(1.7);
+    expect(avatarScale(1000, 16)).toBe(2.1);
     expect(avatarScale(10, 16)).toBe(1);
-    expect(avatarScale(16 * 3.2 * 1.3, 16)).toBeCloseTo(1.3);
+    expect(avatarScale(16 * 2.9 * 1.3, 16)).toBeCloseTo(1.3);
   });
 });

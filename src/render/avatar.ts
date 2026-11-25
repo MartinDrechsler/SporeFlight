@@ -21,9 +21,9 @@ export interface Pose {
 export const NEUTRAL_POSE: Pose = { shiftX: 0, scale: 1, gaze: 0, blink: 0, act: null };
 
 /** On the home screen the mushroom is the player's avatar: centred and up to this much bigger. */
-const AVATAR_MAX_SCALE = 1.7;
+const AVATAR_MAX_SCALE = 2.1;
 /** The avatar's height, bob included, in mushroom radii at normal size. */
-const AVATAR_HEIGHT_IN_RADII = 3.2;
+const AVATAR_HEIGHT_IN_RADII = 2.9;
 
 /** As big as the avatar can be in a space `room` px tall: never bigger than the maximum, never smaller than in flight. */
 export function avatarScale(room: number, radius: number): number {

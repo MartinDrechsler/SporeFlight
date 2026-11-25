@@ -16,6 +16,9 @@ const PILES = {
   coinStacks: 5,
   /** Diamonds in the bottom row of the pyramid; each row above holds one fewer. */
   diamondBase: 5,
+  /** How far out from the avatar's centre the piles start, and how far below its foot they stand (radii). */
+  besideAvatar: 1.75,
+  belowFoot: 0.3,
   /** Seconds a piece takes to drop on or pop off. */
   flySeconds: 0.35,
   /** Seconds between pieces, and the most a whole change may take. */
@@ -98,25 +101,32 @@ export class TreasurePiles {
   }
 }
 
-/** Where the avatar stands on the home screen: centre x, the line its foot rests on, its radius. */
+/** Where the avatar stands on the home screen: centre x, the line its foot rests on, its radius, and the floor. */
 export interface TreasurePlace {
   x: number;
   y: number;
   r: number;
+  /** The lowest the piles may stand: the bottom of the avatar's space, above the buttons. */
+  floor: number;
 }
 
 export function drawTreasure(ctx: CanvasRenderingContext2D, piles: TreasurePiles, place: TreasurePlace): void {
-  drawCoins(ctx, piles, place);
-  drawDiamonds(ctx, piles, place);
+  // A little lower than the avatar's foot, so it stands clear with room around it.
+  const ground = { ...place, y: Math.min(place.y + place.r * PILES.belowFoot, place.floor) };
+  // Pieces keep the size they have beside a normal-size avatar, and shrink only when the screen is too
+  // narrow for five stacks and a number beside the bigger avatar (about 4 piece sizes past the gap).
+  const piece = Math.min(place.r / 1.25, (place.x - 6 - place.r * PILES.besideAvatar) / 4);
+  drawCoins(ctx, piles, ground, piece);
+  drawDiamonds(ctx, piles, ground, piece);
 }
 
-function drawCoins(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, r }: TreasurePlace): void {
-  const w = r * 0.52;
+function drawCoins(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, r }: TreasurePlace, u: number): void {
+  const w = u * 0.52;
   const face = w * 0.36;
   const thick = w * 0.22;
   const gap = w * 1.12;
   // Stack 0 stands nearest the avatar; the others line up to the left.
-  const near = x - r * 1.3 - w / 2;
+  const near = x - r * PILES.besideAvatar - w / 2;
   const at = (index: number): { cx: number; cy: number } => ({
     cx: near - Math.floor(index / PILES.coinsPerStack) * gap,
     cy: y - (index % PILES.coinsPerStack) * thick - face / 2 - thick,
@@ -127,20 +137,20 @@ function drawCoins(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, 
     const { cx, cy } = at(i);
     const drop = piles.flight('coin', i, 'in');
     // A new coin falls onto its stack.
-    const offset = drop === null ? 0 : -(1 - easeOut(drop)) * r * 1.2;
+    const offset = drop === null ? 0 : -(1 - easeOut(drop)) * u * 1.2;
     drawCoin(ctx, cx, cy + offset, w, face, thick, drop === null ? 1 : Math.min(1, drop * 2));
   }
   for (const flight of piles.outgoing('coin')) {
     if (flight.index >= MAX_COINS_SHOWN) continue;
     const { cx, cy } = at(flight.index);
     const p = flight.age / PILES.flySeconds;
-    drawCoin(ctx, cx, cy - easeOut(p) * r * 0.9, w, face, thick, 1 - p);
+    drawCoin(ctx, cx, cy - easeOut(p) * u * 0.9, w, face, thick, 1 - p);
   }
 
   // The number stands at the pile's outer side, level with its bottom row (small phones have no room below).
   const stacks = Math.max(1, Math.min(PILES.coinStacks, Math.ceil(count / PILES.coinsPerStack)));
-  const outer = near - (stacks - 1) * gap - w / 2 - r * 0.12;
-  label(ctx, String(piles.count('coin')), outer, y - thick - face / 2, r, '#ffd23f', 'right');
+  const outer = near - (stacks - 1) * gap - w / 2 - u * 0.12;
+  label(ctx, String(piles.count('coin')), outer, y - thick - face / 2, u, '#ffd23f', 'right');
 }
 
 /** One coin lying flat: its edge, then its face on top. */
@@ -173,13 +183,13 @@ function drawCoin(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: numb
   ctx.globalAlpha = 1;
 }
 
-function drawDiamonds(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, r }: TreasurePlace): void {
-  const size = r * 0.42;
+function drawDiamonds(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, r }: TreasurePlace, u: number): void {
+  const size = u * 0.42;
   const image = spriteImage(DIAMOND);
   const height = (size * image.height) / image.width;
   const across = size * 0.92;
   const up = height * 0.72;
-  const center = x + r * 1.3 + (PILES.diamondBase * across) / 2;
+  const center = x + r * PILES.besideAvatar + (PILES.diamondBase * across) / 2;
   const count = Math.min(piles.count('diamond'), MAX_DIAMONDS_SHOWN);
   // Rows fill from the bottom; each row is centred on the pile.
   const at = (index: number, total: number): { cx: number; cy: number } => {
@@ -197,7 +207,7 @@ function drawDiamonds(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, 
     const { cx, cy } = at(i, count);
     const drop = piles.flight('diamond', i, 'in');
     ctx.globalAlpha = drop === null ? 1 : Math.min(1, drop * 2);
-    drawSprite(ctx, DIAMOND, cx, cy - (drop === null ? 0 : (1 - easeOut(drop)) * r * 1.2), size);
+    drawSprite(ctx, DIAMOND, cx, cy - (drop === null ? 0 : (1 - easeOut(drop)) * u * 1.2), size);
   }
   for (const flight of piles.outgoing('diamond')) {
     if (flight.index >= MAX_DIAMONDS_SHOWN) continue;
@@ -205,11 +215,11 @@ function drawDiamonds(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, 
     const { cx, cy } = at(flight.index, flight.index + 1);
     const p = flight.age / PILES.flySeconds;
     ctx.globalAlpha = 1 - p;
-    drawSprite(ctx, DIAMOND, cx, cy - easeOut(p) * r * 0.9, size);
+    drawSprite(ctx, DIAMOND, cx, cy - easeOut(p) * u * 0.9, size);
   }
   ctx.globalAlpha = 1;
   const row = Math.min(PILES.diamondBase, Math.max(1, count));
-  label(ctx, String(piles.count('diamond')), center + (row * across) / 2 + r * 0.12, y - height / 2, r, '#3fd8ff', 'left');
+  label(ctx, String(piles.count('diamond')), center + (row * across) / 2 + u * 0.12, y - height / 2, u, '#3fd8ff', 'left');
 }
 
 /** A pile's number, in the game's pixel font, at (x, y): `align` says which side of x the text goes. */
