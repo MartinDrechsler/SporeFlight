@@ -2,10 +2,10 @@ import { byId } from './dom';
 
 export type ScreenName =
   | 'username' | 'start' | 'hud' | 'gameOver' | 'ad' | 'adventureOver' | 'levelComplete'
-  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks' | 'settings';
+  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks' | 'settings' | 'story';
 
 const ALL: readonly ScreenName[] = [
-  'username', 'start', 'hud', 'gameOver', 'ad', 'adventureOver', 'levelComplete', 'shop', 'badges', 'quests', 'levels', 'unlock', 'ranks', 'settings',
+  'username', 'start', 'hud', 'gameOver', 'ad', 'adventureOver', 'levelComplete', 'shop', 'badges', 'quests', 'levels', 'unlock', 'ranks', 'settings', 'story',
 ];
 
 /**

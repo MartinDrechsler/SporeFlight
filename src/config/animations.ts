@@ -212,6 +212,14 @@ export const ANIMATIONS = {
     ],
   },
 
+  /** Sad, with a slow sigh. */
+  sad: {
+    length: 3.2,
+    loop: true,
+    moves: [{ move: 'breathe', at: 0.4, for: 2.4, amount: 0.04 }],
+    faces: [{ at: 0, face: 'sad' }],
+  },
+
   /** Happy little hops, after a reveal or a win. */
   celebrate: {
     length: 1.6,

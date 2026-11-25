@@ -1,5 +1,5 @@
 import { CHAPTERS } from '../config/chapters';
-import { ADVENTURE_LEVELS, chapterLevels, type LevelConfig } from '../config/levels';
+import { ADVENTURE_LEVELS, chapterLevels, secretLevels, type LevelConfig } from '../config/levels';
 import type { Skin } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { SaveData } from '../core/save';
@@ -57,7 +57,33 @@ export function renderMap(
     marker.append(skinPreview(skin));
   }
 
-  container.replaceChildren(pathLine(stops, height, 'trail'), pathLine(reached, height, 'travelled'), ...chapterBanners(save, height), ...nodes, marker);
+  // Secret levels, once found: beside the level whose secret gap leads there, on a dotted side path.
+  const secrets = secretLevels().flatMap((level) => {
+    if (!save.secrets.includes(level.id)) return [];
+    const from = stops.find((stop) => stop.level.id === level.secretOf);
+    if (!from) return [];
+    const at = { x: from.x > 50 ? from.x - 34 : from.x + 34, y: from.y - STEP * 0.55 };
+    const classes = ['map-node', 'secret'];
+    if (level.id === current) classes.push('current');
+    if (level.id === selected) classes.push('selected');
+    const node = button('?', classes.join(' '), () => onPick(level.id));
+    node.style.left = `${at.x}%`;
+    node.style.top = `${at.y}px`;
+    node.style.setProperty('--level-color', '#e3d9ff');
+    node.setAttribute('aria-label', `Secret level: ${level.name}`);
+    node.append(starRow(levelStars(save, level.id)), el('span', 'map-node-tag', 'SECRET'));
+    return [{ node, line: pathLine([from, at], height, 'secret-trail') }];
+  });
+
+  container.replaceChildren(
+    pathLine(stops, height, 'trail'),
+    pathLine(reached, height, 'travelled'),
+    ...secrets.map((s) => s.line),
+    ...chapterBanners(save, height),
+    ...nodes,
+    ...secrets.map((s) => s.node),
+    marker,
+  );
 }
 
 /** Map height: the stops, plus a step for each chapter still to come. */

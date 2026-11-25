@@ -1,7 +1,7 @@
 import { hypot } from '../core/fmath';
 import { TUNING } from '../config/tuning';
 import type { Player } from './player';
-import { gapBottom, gapTop, rootLeft, type Root } from './roots';
+import { rootLeft, solidSpans, type Root } from './roots';
 
 /** A solid rectangle of a root, in screen coordinates. */
 interface Box {
@@ -28,10 +28,7 @@ export function circlesTouch(ax: number, ay: number, ar: number, bx: number, by:
 
 function columnBoxes(root: Root, groundY: number): Box[] {
   const x = rootLeft(root);
-  return [
-    { x, y: 0, w: root.width, h: gapTop(root) },
-    { x, y: gapBottom(root), w: root.width, h: groundY - gapBottom(root) },
-  ];
+  return solidSpans(root, groundY).map(([top, bottom]) => ({ x, y: top, w: root.width, h: bottom - top }));
 }
 
 /** The closest the mushroom is to either column of a root. Negative means it is touching. */

@@ -1,4 +1,5 @@
 import type { AnimationId } from '../config/animations';
+import type { StoryId } from '../config/story';
 import type { Pose } from '../render/avatar';
 import type { TreasurePiles, TreasurePlace } from '../render/treasure';
 import type { RewardedAds } from '../ads/ads';
@@ -10,7 +11,7 @@ import type { Effects } from '../render/effects';
 
 export type StateName =
   | 'username' | 'start' | 'playing' | 'roundOver' | 'gameOver' | 'ad' | 'adventureOver' | 'levelComplete'
-  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks' | 'settings';
+  | 'shop' | 'badges' | 'quests' | 'levels' | 'unlock' | 'ranks' | 'settings' | 'story';
 
 /**
  * What the states share. A state reads and changes this, then switches to
@@ -32,6 +33,8 @@ export interface GameContext {
   pose: Pose;
   /** What the home avatar acts out next time the home screen shows (proud after a new badge); null: just idle. */
   avatarMood: AnimationId | null;
+  /** The story scene the story screen plays next, and the screen it returns to. */
+  story: { id: StoryId; then: StateName };
   /** The coin and diamond piles beside the home avatar; they catch up with the save while home shows. */
   treasure: TreasurePiles;
   /** Where the piles stand this frame; null hides them (home sets it in its update). */

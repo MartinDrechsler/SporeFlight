@@ -1,4 +1,5 @@
 import { TUNING } from '../config/tuning';
+import { MODES, type FlightMode } from './modes';
 
 const P = TUNING.player;
 
@@ -10,6 +11,8 @@ export interface Player {
   readonly radius: number;
   /** Seconds since the last flap; drives the squash-and-stretch animation. */
   sinceFlap: number;
+  /** What a tap does and how it moves between taps (gameplay/modes.ts). */
+  mode: FlightMode;
 }
 
 export function createPlayer(fieldWidth: number, fieldHeight: number): Player {
@@ -19,19 +22,18 @@ export function createPlayer(fieldWidth: number, fieldHeight: number): Player {
     vy: 0,
     radius: P.radius,
     sinceFlap: Infinity,
+    mode: 'flap',
   };
 }
 
-/** A flap always sets the same upward speed, so every jump has the same air time. */
+/** A tap, as the current flight mode answers it. */
 export function flap(player: Player): void {
-  player.vy = P.flapVelocity;
+  MODES[player.mode].tap(player);
   player.sinceFlap = 0;
 }
 
-/** Rising is soft and round; once falling, gravity pulls harder (Flappy-style). */
+/** One step of movement in the current flight mode. */
 export function stepPlayer(player: Player, dt: number): void {
-  const pull = player.vy < 0 ? P.gravity : P.fallGravity;
-  player.vy = Math.min(player.vy + pull * dt, P.maxFallSpeed);
-  player.y += player.vy * dt;
+  MODES[player.mode].step(player, dt);
   player.sinceFlap += dt;
 }

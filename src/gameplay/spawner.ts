@@ -71,9 +71,35 @@ export function makeRoot(
       : null,
     slidePhase: level.slide ? rng.range(0, Math.PI * 2) : null,
     vein: onSchedule(level.veins, index) ? { side: rng.chance(0.5) ? 'top' : 'bottom', hits: 0 } : null,
+    extra: null,
+    checkpoint: level.checkpoint === index,
     passed: false,
     nearMiss: 'none',
   };
+}
+
+/**
+ * A fork root's second gap: on the side of the screen with more room, past a
+ * pillar, tighter than the main gap. A secret gap is smaller. Null when this
+ * root is no fork, carries a vein, or the gap would not fit. No random
+ * numbers: fixed layouts stay exactly as they were.
+ */
+export function forkGap(level: LevelConfig, field: Field, root: Root): Root['extra'] {
+  const secret = level.secret?.root === root.index;
+  const fork = level.forks.some((f) => root.index >= f.first && root.index < f.first + f.roots);
+  if ((!secret && !fork) || root.vein) return null;
+  const F = TUNING.forks;
+  const size = secret ? F.secretGap : F.gap;
+  const reach = root.gapSize / 2 + F.pillar + size / 2;
+  const top = PK.minY + size / 2;
+  const bottom = field.groundY - F.margin - size / 2;
+  const roomAbove = root.gapCenter - reach >= top;
+  const roomBelow = root.gapCenter + reach <= bottom;
+  // A secret hides up high when it can; a fork goes where there is more room.
+  const above = secret ? roomAbove : root.gapCenter > (root.centerMin + root.centerMax) / 2 ? roomAbove : !roomBelow && roomAbove;
+  if (above) return { offset: -reach, size, secret };
+  if (roomBelow) return { offset: reach, size, secret };
+  return null;
 }
 
 export function gapSizeFor(level: LevelConfig, index: number): number {

@@ -29,7 +29,7 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
 
   const levelBadge = byId('hud-level');
   levelBadge.hidden = endless;
-  setText(levelBadge, `LEVEL ${levelNumber(world.level.id)}`);
+  setText(levelBadge, levelNumber(world.level.id) > 0 ? `LEVEL ${levelNumber(world.level.id)}` : 'SECRET');
   levelBadge.style.setProperty('--level-color', THEMES[world.level.theme].accent);
   const progress = byId('hud-progress');
   progress.hidden = endless;

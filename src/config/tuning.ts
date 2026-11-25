@@ -153,6 +153,25 @@ export const TUNING = {
     width: 60,
   },
 
+  /**
+   * Forks: some roots have a second, tighter gap with a coin in it, on the other side of a pillar. The main gap
+   * stays the safe route. A secret gap is a small second gap that leads to a secret level.
+   */
+  forks: {
+    /** Height of the second gap, px (main gaps are about 130 to 150). */
+    gap: 118,
+    secretGap: 108,
+    /** Pillar between the two gaps, px. */
+    pillar: 78,
+    /** Keep the second gap this far from the top and the ground, px. */
+    margin: 24,
+  },
+
+  /** Checkpoints: restarting from one gives a moment without danger. */
+  checkpoint: {
+    graceSeconds: 1.5,
+  },
+
   /** Inside an adventure level: easy opening, a breather halfway, a climax before the gate. */
   levelCurve: {
     openingRoots: 3,

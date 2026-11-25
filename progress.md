@@ -8,6 +8,23 @@ The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Adventure grows
 story: the Claude Doc "Spore Flight: Adventure chapters plan" (7 phases). Launch prep (real ads, PWA, app stores)
 comes after.
 
+### Adventure chapters, phase 1b: forks, checkpoints, a secret, flight modes, the story
+- **Forks**: in a fork section a root has a second, tighter gap (118 px) past a pillar (78 px), on the side with more
+  room, with a coin in it; the main gap stays the safe route. Chapter 1 has forks from Drifting Canopy on.
+  Built without random numbers, so layouts outside the forks are unchanged.
+- **Secret gap**: Creeping Roots has a small gap high above at root 13, with a faint violet shimmer. Flying through
+  it finishes the level ("A SECRET!") and opens the secret level **Hidden Grove** (18 roots, 5 sporelings, coins and
+  a diamond). Found secrets show on the map beside their level, on a dotted side path.
+- **Checkpoints**: levels of 28 roots or more get a golden lantern halfway (Creeping Roots, Forest Edge). After a crash
+  past it, FLY AGAIN becomes FROM CHECKPOINT (RESTART LEVEL starts over). The level ahead is rebuilt exactly
+  (the course runs on without the mushroom), what was earned by then is kept, and 1.5 s of grace follow. A crash
+  still costs a life.
+- **Flight modes** (`gameplay/modes.ts`): a tap and the fall go through the mushroom's mode; flap is the only one,
+  with exactly the same physics (replays unchanged). Portals come with glide in chapter 2.
+- **Story**: the opening scene plays the first time the map opens (5 panels, the mushroom acting each, lost
+  sporelings around it in one; SKIP or NEXT). Seen scenes are kept in the save.
+- Save (still v8): `secrets` and `storySeen`, empty in older saves.
+
 ### Adventure chapters, phase 1a: chapters, stars, sporelings
 - **Chapters** (`config/chapters.ts`): Whispering Woods, Glowcap Caverns, Bramble Marsh, Sky Canopy, The Heartwood.
   Chapter 1 has 8 levels in a new order: First Light, Narrow Passage, Drifting Canopy, Upside-Down Grove,

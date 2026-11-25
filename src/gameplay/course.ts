@@ -2,7 +2,7 @@ import { rootCount, type Stage } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import { createBoss, sendAway } from './boss';
 import type { World } from './world';
-import { isClearing, makeCoinCluster, makePickup, makeRoot, makeSporeling, sporelingSide } from './spawner';
+import { forkGap, isClearing, makeCoinCluster, makePickup, makeRoot, makeSporeling, sporelingSide } from './spawner';
 
 /**
  * A level's route: its stages in order, then the finish gate. Endless is one
@@ -20,10 +20,12 @@ export interface Course {
   /** Screen x of the finish gate's centre once it has appeared. */
   gateX: number | null;
   finished: boolean;
+  /** Finished through the secret gap instead of the gate. */
+  secret: boolean;
 }
 
 export function createCourse(): Course {
-  return { stage: 0, stageRoots: 0, stageTime: 0, afterClearing: false, gateX: null, finished: false };
+  return { stage: 0, stageRoots: 0, stageTime: 0, afterClearing: false, gateX: null, finished: false, secret: false };
 }
 
 export function currentStage(world: World): Stage | null {
@@ -107,7 +109,13 @@ function spawnRoot(world: World): void {
   }
   const root = makeRoot(world.layoutRng, world.level, world, world.width, index, previous?.gapCenter ?? null);
   const pickup = makePickup(world.layoutRng, root, index, world.level, world);
+  root.extra = forkGap(world.level, world, root);
   world.roots.push(root);
+  // The tight route of a fork pays a coin.
+  if (root.extra && !root.extra.secret) {
+    world.pickups.push({ kind: 'coin', root, offsetX: root.width / 2, offsetY: root.extra.offset, vx: 0, vy: 0, collected: false });
+    world.offered.coins += 1;
+  }
   // Every hit on a vein gives a diamond.
   if (root.vein) world.offered.diamonds += TUNING.veins.hitsToBreak;
   if (pickup) {

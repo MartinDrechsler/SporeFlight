@@ -51,6 +51,10 @@ export interface SaveData {
   levels: Record<string, LevelProgress>;
   /** Diamonds already paid per Adventure level id: a level pays its diamonds only once. */
   levelDiamonds: Record<string, number>;
+  /** Secret levels found (by id), through a secret gap. */
+  secrets: number[];
+  /** Story scenes already shown (by id), so each plays once. */
+  storySeen: string[];
   coins: number;
   diamonds: number;
   lives: number;
@@ -85,6 +89,8 @@ export function defaultSave(): SaveData {
     bestScore: 0,
     levels: {},
     levelDiamonds: {},
+    secrets: [],
+    storySeen: [],
     coins: 0,
     diamonds: 0,
     lives: TUNING.session.startLives,
@@ -130,6 +136,9 @@ export function migrate(raw: unknown): SaveData {
     // Version 8 keeps goals instead of a star count; older stars become goals (cleanLevels).
     levels: version >= 8 ? cleanLevels(data.levels) : levelsFromStars(cleanStars(data.levelStars)),
     levelDiamonds: version >= 8 ? cleanCounts(data.levelDiamonds) : diamondsFromStars(cleanStars(data.levelStars)),
+    // Added within version 8: missing in older saves, so they start empty.
+    secrets: [...new Set(Array.isArray(data.secrets) ? data.secrets.filter((n): n is number => Number.isInteger(n)) : [])],
+    storySeen: [...new Set(stringList(data.storySeen))],
     coins: count(data.coins, 0),
     diamonds: count(data.diamonds, 0),
     lives: count(data.lives, base.lives),

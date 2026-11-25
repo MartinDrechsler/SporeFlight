@@ -29,6 +29,7 @@ import { ranksState } from './states/ranksState';
 import { shopState } from './states/shopState';
 import { startState } from './states/startState';
 import { unlockState } from './states/unlockState';
+import { storyState } from './states/storyState';
 import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
 import { installIcons } from './ui/icons';
@@ -67,6 +68,7 @@ const ctx: GameContext = {
   lastScore: null,
   pose: NEUTRAL_POSE,
   avatarMood: null,
+  story: { id: 'opening', then: 'levels' },
   treasure: new TreasurePiles(save.coins, save.diamonds),
   treasureAt: null,
   newWorld: (levelId, startY) => {
@@ -97,12 +99,13 @@ const machine = new StateMachine<StateName>({
   levels: levelsState(ctx),
   unlock: unlockState(ctx),
   settings: settingsState(ctx),
+  story: storyState(ctx),
 });
 
 /** The music behind each screen: the calm loop in menus, the faster one in flight, none during an ad. */
 const MUSIC: Record<StateName, Track | null> = {
   username: 'menu', start: 'menu', settings: 'menu', shop: 'menu', ranks: 'menu', badges: 'menu', quests: 'menu', levels: 'menu', unlock: 'menu',
-  gameOver: 'menu', adventureOver: 'menu', levelComplete: 'menu',
+  gameOver: 'menu', adventureOver: 'menu', levelComplete: 'menu', story: 'menu',
   playing: 'flight', roundOver: 'flight',
   ad: null,
 };

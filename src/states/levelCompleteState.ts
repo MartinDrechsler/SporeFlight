@@ -4,7 +4,7 @@ import { THEMES } from '../config/theme';
 import type { SaveData } from '../core/save';
 import type { State } from '../core/stateMachine';
 import { stepWorld } from '../gameplay/world';
-import { finishLevel, levelNumber, levelProgress, nextLevelId } from '../meta/adventure';
+import { findSecret, finishLevel, levelNumber, levelTitle, levelProgress, nextLevelId } from '../meta/adventure';
 import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText } from '../ui/dom';
 import { updateHud } from '../ui/hud';
@@ -19,6 +19,8 @@ const STAR_DELAY = 0.45;
 export function levelCompleteState(ctx: GameContext): State {
   let time = 0;
   let starsShown = 0;
+  /** Set when the level was finished through its secret gap: the secret level NEXT leads to. */
+  let secretNext: number | null = null;
   let stars = 0;
   const stage = new AvatarStage(byId<HTMLCanvasElement>('complete-stage'), { skin: skinById(ctx.save.activeSkin) });
 
@@ -28,7 +30,8 @@ export function levelCompleteState(ctx: GameContext): State {
   });
   byId('complete-next').addEventListener('click', () => {
     ctx.audio.unlock();
-    const next = nextLevelId(ctx.levelId);
+    // Through a secret gap, NEXT leads into the secret level.
+    const next = secretNext ?? nextLevelId(ctx.levelId);
     if (next === null) ctx.go('levels');
     else startRound(ctx, next);
   });
@@ -45,6 +48,8 @@ export function levelCompleteState(ctx: GameContext): State {
         sporelings: world.stats.sporelings,
         sporelingsOffered: world.offered.sporelings,
       });
+      const found = world.course.secret ? findSecret(save, level.id) : null;
+      secretNext = world.course.secret ? (level.secret?.levelId ?? null) : null;
       addQuest(ctx, 'levelsFinished', 1);
       checkAchievements(ctx);
       ctx.persist();
@@ -55,16 +60,17 @@ export function levelCompleteState(ctx: GameContext): State {
       time = 0;
       starsShown = 0;
       const name = byId('complete-level');
-      setText(name, `${levelNumber(level.id)}. ${level.name}`);
+      setText(name, levelTitle(level.id));
       name.style.setProperty('--level-color', THEMES[level.theme].accent);
       for (const star of byId('screen-levelComplete').querySelectorAll('.big-star')) star.classList.remove('earned');
       setText(byId('complete-sporelings'), `${world.stats.sporelings}/${world.offered.sporelings}`);
       setText(byId('complete-coins'), `${world.stats.coins}/${world.offered.coins}`);
       setText(byId('complete-hint'), hintFor(save, level.id));
       const opened = byId('complete-opened');
-      opened.hidden = result.opened === null;
+      opened.hidden = result.opened === null && secretNext === null;
       if (result.opened !== null) setText(opened, `LEVEL ${levelNumber(result.opened)} IS OPEN: ${levelById(result.opened).name}`);
-      setText(byId('complete-next'), nextLevelId(level.id) === null ? 'MAP' : 'NEXT LEVEL');
+      if (secretNext !== null) setText(opened, `${found !== null ? 'A SECRET LEVEL IS OPEN' : 'THE SECRET WAY'}: ${levelById(secretNext).name}`);
+      setText(byId('complete-next'), secretNext !== null ? 'SECRET LEVEL' : nextLevelId(level.id) === null ? 'MAP' : 'NEXT LEVEL');
       ctx.effects.celebrate(world.width, world.height, THEMES[level.theme].accent);
       showScreens('levelComplete');
     },

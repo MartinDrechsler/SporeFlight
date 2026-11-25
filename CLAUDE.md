@@ -24,7 +24,7 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
   levels as stages, described by flags, never by name), `biomes.ts` (the 8 endless biomes), `theme.ts`
   (11 level colour themes), `chapters.ts` (the 5 Adventure chapters; which levels are in each, in order, is in
   `levels.ts`), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool), `sprites.ts`
-  (pixel icons: hearts, coin, diamond), `expressions.ts` (the mushroom's faces as numbers: eyes, lids, brows,
+  (pixel icons: hearts, coin, diamond), `story.ts` (story scenes: panels of animation and one line), `expressions.ts` (the mushroom's faces as numbers: eyes, lids, brows,
   mouth, cheeks) and `animations.ts` (avatar performances: moves like hop, spin, flash, plus face cues).
 - `src/core/`: fixed-step loop, state machine, seeded random, versioned save file, run record, and `fmath.ts`
   (sin, cos, atan2, hypot from basic arithmetic, identical on every device). Game-agnostic.
@@ -32,6 +32,8 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
   `world.ts` runs one round and reports what happened as `GameEvent`s. `course.ts` walks a level's stages to the
   finish gate (endless is one stage that never ends). `spawner.ts` turns level data into roots, pickups and wind.
   `boss.ts` is the Stone Thrower, `veins.ts` the crystal veins. `replay.ts` replays a recorded endless run.
+  `modes.ts` holds the flight modes (what a tap does; only flap so far). Forks (a second gap past a pillar),
+  the secret gap and the checkpoint are root data built in `spawner.ts`; `startFromCheckpoint` is in `world.ts`.
 - `src/meta/`: everything outside flight, as pure functions on `SaveData`: economy (banking, shop, unlock,
   lives), adventure (stars, which levels are open), achievements, daily quests, names, leaderboard (what to send).
 - `src/ads/`: the rewarded-ads interface. A mock today; a real ad network plugs in here only.

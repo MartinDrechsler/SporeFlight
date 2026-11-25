@@ -63,6 +63,14 @@ export interface LevelConfig {
   veins: Schedule | null;
   /** Adventure chapter (1 to 5); endless is 0. */
   chapter: number;
+  /** Fork sections: from root `first`, the next `roots` roots each have a second, tighter gap with a coin. */
+  forks: readonly { first: number; roots: number }[];
+  /** A secret gap at root `root`: flying through it finishes the level and opens secret level `levelId`. */
+  secret: { root: number; levelId: number } | null;
+  /** Root index of a halfway checkpoint (null: none). A crash after it may restart from there. */
+  checkpoint: number | null;
+  /** A secret level: found through the secret gap of this level id (null: an ordinary level). */
+  secretOf: number | null;
   /** Sporelings to rescue, spread through the level's roots, each near a gap's edge. */
   sporelings: number;
   /** Chance that a coin is a huge golden one worth 10 (a surprise, so endless only). */
@@ -79,7 +87,7 @@ export interface LevelConfig {
 type Defaults =
   | 'fixedLayout' | 'gapPulse' | 'layout' | 'drift' | 'sway' | 'slide'
   | 'windFromRoot' | 'magnetFromRoot' | 'clearings' | 'diamonds' | 'veins' | 'goldenCoinChance' | 'progressive' | 'view'
-  | 'sporelings';
+  | 'sporelings' | 'forks' | 'secret' | 'checkpoint' | 'secretOf';
 
 /** An adventure level: fixed layout, one crystal vein in the climax, everything else off unless set. */
 const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): LevelConfig => {
@@ -98,6 +106,11 @@ const level = (config: Omit<LevelConfig, Defaults> & Partial<LevelConfig>): Leve
     veins: roots > 0 ? { first: roots - 3, every: null } : null,
     goldenCoinChance: 0,
     sporelings: 0,
+    forks: [],
+    secret: null,
+    // Long levels get a checkpoint halfway.
+    checkpoint: roots >= 28 ? Math.floor(roots / 2) : null,
+    secretOf: null,
     progressive: false,
     view: 'normal',
     ...config,
@@ -128,11 +141,13 @@ export const LEVELS: readonly LevelConfig[] = [
     id: 3, chapter: 1, sporelings: 3, name: 'DRIFTING CANOPY', theme: 'amber', backdrop: 'skyline', description: 'The gaps slowly move. Aim where they will be.',
     stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
     drift: { chance: 1, speed: 40 },
+    forks: [{ first: 9, roots: 3 }],
   }),
   level({
     id: 4, chapter: 1, sporelings: 4, name: 'BREATHING HOLLOW', theme: 'purple', backdrop: 'towers', description: 'The gaps breathe. Slip through as they open.',
     stages: [{ kind: 'roots', count: 26 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 112, max: 172 },
     gapPulse: true,
+    forks: [{ first: 6, roots: 3 }, { first: 17, roots: 3 }],
   }),
   level({
     id: 5, chapter: 1, name: 'THE STONE THROWER', theme: 'crimson', backdrop: 'ruins', description: 'No roots. Something in the dark throws rocks. Survive.',
@@ -142,17 +157,22 @@ export const LEVELS: readonly LevelConfig[] = [
     id: 6, chapter: 1, sporelings: 4, name: 'CREEPING ROOTS', theme: 'red', backdrop: 'castle', description: 'Roots slide sideways. Watch the spacing.',
     stages: [{ kind: 'roots', count: 28 }], speed: 128, speedMultiplier: 1.1, spacing: 290, gap: { min: 140, max: 140 },
     slide: true,
+    forks: [{ first: 6, roots: 3 }, { first: 18, roots: 3 }],
+    // The chapter's secret: a small gap high above, halfway through.
+    secret: { root: 13, levelId: 11 },
   }),
   level({
     id: 7, chapter: 1, sporelings: 3, name: 'UPSIDE-DOWN GROVE', theme: 'green', backdrop: 'forest', description: 'Gravity is reversed: you fall up, a tap pushes you down.',
     stages: [{ kind: 'roots', count: 24 }], speed: 124, speedMultiplier: 1, spacing: 300, gap: { min: 148, max: 148 },
     view: 'upsideDown',
+    forks: [{ first: 12, roots: 3 }],
   }),
   level({
     id: 8, chapter: 1, sporelings: 5, name: 'FOREST EDGE', theme: 'canopy', backdrop: 'windmills',
     description: 'Wind and moving gaps together: everything the woods taught you.',
     stages: [{ kind: 'roots', count: 30 }], speed: 128, speedMultiplier: 1.05, spacing: 290, gap: { min: 145, max: 145 },
     windFromRoot: 0, drift: { chance: 0.5, speed: 34 },
+    forks: [{ first: 5, roots: 4 }, { first: 16, roots: 4 }],
   }),
   level({
     id: 9, chapter: 5, sporelings: 4, name: 'THE WAY HOME', theme: 'orange', backdrop: 'skyline', description: 'Fly back from right to left, through moving gaps.',
@@ -164,7 +184,19 @@ export const LEVELS: readonly LevelConfig[] = [
     stages: [{ kind: 'roots', count: 40 }, { kind: 'boss', seconds: 30 }], speed: 130, speedMultiplier: 1.1, spacing: 170,
     gap: { min: 138, max: 138 }, layout: 'tunnel', sway: true,
   }),
+  // Secret levels: found only through a secret gap, outside the chapter's order.
+  level({
+    id: 11, chapter: 1, sporelings: 5, secretOf: 6, name: 'HIDDEN GROVE', theme: 'biolume', backdrop: 'forest',
+    description: 'A secret grove full of light, coins and lost sporelings.',
+    stages: [{ kind: 'roots', count: 18 }], speed: 120, speedMultiplier: 1, spacing: 280, gap: { min: 150, max: 150 },
+    clearings: { fromRoot: 2, chance: 0.3 }, diamonds: { first: 8, every: null }, forks: [{ first: 4, roots: 3 }, { first: 12, roots: 3 }],
+  }),
 ];
+
+/** Levels found only through a secret gap. */
+export function secretLevels(): readonly LevelConfig[] {
+  return LEVELS.filter((config) => config.secretOf !== null);
+}
 
 export function levelById(id: number): LevelConfig {
   return LEVELS.find((config) => config.id === id) ?? LEVELS[0]!;
