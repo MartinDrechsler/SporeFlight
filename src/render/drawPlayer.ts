@@ -24,11 +24,19 @@ function flightFace(look: PlayerLook): Expression {
   return look.bossNear ? EXPRESSIONS.nervous : EXPRESSIONS.neutral;
 }
 
+/**
+ * The mushroom is drawn this much bigger than its hitbox (TUNING.player.radius). A bigger hitbox would make
+ * every gap tighter; a bigger drawing on the same hitbox only makes it easier to see, and a cap edge that
+ * brushes a root by a pixel or two forgives instead of punishing (Schell: a crash must feel like the
+ * player's own mistake, never the game's).
+ */
+export const LOOK_SCALE = 1.15;
+
 /** The glowing mushroom in flight. Its lean, squeeze and stretch, and its eyes all follow from its motion. */
 export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player, skin: Skin, look: PlayerLook): void {
   if (look.invulnerable && Math.floor(look.time * 12) % 2 === 0) return;
   const { pose } = look;
-  const r = player.radius * pose.scale;
+  const r = player.radius * LOOK_SCALE * pose.scale;
   const x = player.x + pose.shiftX;
 
   if (look.magnet) drawMagnetAura(ctx, x, player.y, r, look.time);

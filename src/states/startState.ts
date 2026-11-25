@@ -9,6 +9,7 @@ import type { GameContext } from './context';
 import { hover } from './hover';
 import { avatarScale, idleLook } from '../render/avatar';
 import { AvatarPlayer } from '../render/timeline';
+import { LOOK_SCALE } from '../render/drawPlayer';
 import { startRound } from './round';
 import { syncLeaderboard } from './syncLeaderboard';
 
@@ -72,11 +73,11 @@ export function startState(ctx: GameContext): State {
       hover(ctx, 'start-slot', time, dt);
       // The avatar: centred, bigger, glancing around and blinking. Its real place stays where flights begin.
       const slot = byId('start-slot').getBoundingClientRect();
-      const scale = avatarScale(slot.height, ctx.world.player.radius);
+      const scale = avatarScale(slot.height, ctx.world.player.radius * LOOK_SCALE);
       ctx.pose = { shiftX: ctx.world.width / 2 - ctx.world.player.x, scale, ...idleLook(time), act: acting.update(dt) };
       // Coins to the avatar's lower left, diamonds to its right, standing level with its foot (not bobbing).
       ctx.treasure.update(dt, ctx.save.coins, ctx.save.diamonds);
-      const r = ctx.world.player.radius * scale;
+      const r = ctx.world.player.radius * LOOK_SCALE * scale;
       const field = byId('game').getBoundingClientRect();
       const middle = slot.top - field.top + slot.height / 2;
       ctx.treasureAt = { x: ctx.world.width / 2, y: middle + r * 0.95, r, floor: slot.bottom - field.top - 4 };

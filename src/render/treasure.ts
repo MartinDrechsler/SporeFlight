@@ -4,7 +4,7 @@ import { drawSprite, spriteImage } from './sprites';
 /**
  * The player's savings, on show beside the home avatar: neat stacks of coins
  * to its lower left and a pyramid of diamonds to its right, each with its
- * number at its outer side. One coin or diamond is drawn for each one owned, up to what fits;
+ * number and name (COINS, DIAMONDS) at its outer side. One coin or diamond is drawn for each one owned, up to what fits;
  * past that the pile stays full and the number tells the rest.
  *
  * When the amount changes (a purchase, a reward), the piles change one piece
@@ -150,7 +150,7 @@ function drawCoins(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, y, 
   // The number stands at the pile's outer side, level with its bottom row (small phones have no room below).
   const stacks = Math.max(1, Math.min(PILES.coinStacks, Math.ceil(count / PILES.coinsPerStack)));
   const outer = near - (stacks - 1) * gap - w / 2 - u * 0.12;
-  label(ctx, String(piles.count('coin')), outer, y - thick - face / 2, u, '#ffd23f', 'right');
+  label(ctx, String(piles.count('coin')), 'COINS', outer, y - thick - face / 2, u, '#ffd23f', 'right');
 }
 
 /** One coin lying flat: its edge, then its face on top. */
@@ -219,19 +219,30 @@ function drawDiamonds(ctx: CanvasRenderingContext2D, piles: TreasurePiles, { x, 
   }
   ctx.globalAlpha = 1;
   const row = Math.min(PILES.diamondBase, Math.max(1, count));
-  label(ctx, String(piles.count('diamond')), center + (row * across) / 2 + u * 0.12, y - height / 2, u, '#3fd8ff', 'left');
+  label(ctx, String(piles.count('diamond')), 'DIAMONDS', center + (row * across) / 2 + u * 0.12, y - height / 2, u, '#3fd8ff', 'left');
 }
 
-/** A pile's number, in the game's pixel font, at (x, y): `align` says which side of x the text goes. */
-function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, r: number, color: string, align: CanvasTextAlign): void {
-  ctx.font = `${Math.round(Math.max(16, r * 0.62))}px VT323, monospace`;
+/**
+ * A pile's number with its name above it (COINS / 15), in the game's pixel font: the number's middle at
+ * height y, both lines on the side of x that `align` says. Above, not below: small phones have no room
+ * under the piles.
+ */
+function label(ctx: CanvasRenderingContext2D, value: string, name: string, x: number, y: number, r: number, color: string, align: CanvasTextAlign): void {
+  const size = Math.round(Math.max(16, r * 0.62));
+  const small = Math.round(Math.max(12, size * 0.62));
   ctx.textAlign = align;
   ctx.textBaseline = 'middle';
   ctx.lineWidth = 3;
   ctx.strokeStyle = 'rgba(3, 16, 13, 0.85)';
-  ctx.strokeText(text, x, y);
   ctx.fillStyle = color;
-  ctx.fillText(text, x, y);
+  ctx.font = `${size}px VT323, monospace`;
+  ctx.strokeText(value, x, y);
+  ctx.fillText(value, x, y);
+  ctx.font = `${small}px VT323, monospace`;
+  ctx.globalAlpha = 0.75;
+  ctx.strokeText(name, x, y - size * 0.7);
+  ctx.fillText(name, x, y - size * 0.7);
+  ctx.globalAlpha = 1;
 }
 
 function easeOut(p: number): number {
