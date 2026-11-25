@@ -189,11 +189,11 @@ describe('a full round', () => {
     expect(endless(1)).not.toEqual(endless(2));
   });
 
-  it('counts the coins and the diamond a level offers, for its stars', () => {
+  it('counts the coins and the diamonds a level offers, for its stars (its vein gives one per hit)', () => {
     const world = newWorld(3, level(2));
     world.invulnerableTime = Infinity;
     for (let i = 0; i < 60 * 120 && !world.course.finished; i++) stepWorld(world, 1 / 60);
-    expect(world.offered.diamonds).toBe(1);
+    expect(world.offered.diamonds).toBe(TUNING.veins.hitsToBreak);
     expect(world.offered.coins).toBeGreaterThan(0);
   });
 });
@@ -514,11 +514,16 @@ describe('crystal veins', () => {
     expect(world.player.vy).toBeGreaterThan(0);
   });
 
-  it('breaks open on the third hit and gives a diamond; then the cap is deadly again', () => {
+  it('every hit gives a diamond; the third breaks it open; then the cap is deadly again', () => {
     const { world, root } = veinWorld('bottom');
-    root.vein!.hits = 2;
+    root.vein!.hits = 1;
     stepWorld(world, 1 / 60);
-    expect([world.stats.diamonds, world.stats.veins]).toEqual([1, 1]);
+    expect([world.stats.diamonds, world.stats.veins]).toEqual([1, 0]);
+    world.veinCooldown = 0;
+    world.player.y = gapBottom(root) - world.player.radius + 4;
+    world.player.vy = 0;
+    stepWorld(world, 1 / 60);
+    expect([world.stats.diamonds, world.stats.veins]).toEqual([2, 1]);
     expect(world.events.some((e) => e.type === 'veinBreak')).toBe(true);
     world.veinCooldown = 0;
     world.player.y = gapBottom(root) - world.player.radius + 4;

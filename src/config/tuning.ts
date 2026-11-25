@@ -113,7 +113,7 @@ export const TUNING = {
     bobSpeed: 1.1,
   },
 
-  /** Crystal veins on root caps: bounce off them three times to break out a diamond. */
+  /** Crystal veins on root caps: every bounce off one cracks out a diamond; the third breaks it open. */
   veins: {
     hitsToBreak: 3,
     bounceSpeed: 300,

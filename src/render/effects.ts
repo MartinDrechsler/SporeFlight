@@ -106,12 +106,12 @@ export class Effects {
         break;
       case 'veinHit':
         this.burst(event.x, event.y, 10, '#7fe6ff', 160, 0.45);
-        this.text(`CRACK ${event.hits}/${TUNING.veins.hitsToBreak}`, event.x, event.y - 24, '#7fe6ff');
+        this.text(`+1 DIAMOND ${event.hits}/${TUNING.veins.hitsToBreak}`, event.x, event.y - 24, '#3fd8ff');
         this.shake(0.1, 2.5);
         break;
       case 'veinBreak':
         this.burst(event.x, event.y, 34, '#7fe6ff', 260, 0.9);
-        this.text('+1 DIAMOND!', event.x, event.y - 40, '#3fd8ff', 30);
+        this.text('CRACKED OPEN!', event.x, event.y - 52, '#7fe6ff', 30);
         this.flash('0, 229, 255');
         break;
       case 'finish':

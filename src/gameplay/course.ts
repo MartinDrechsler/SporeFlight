@@ -108,7 +108,8 @@ function spawnRoot(world: World): void {
   const root = makeRoot(world.layoutRng, world.level, world, world.width, index, previous?.gapCenter ?? null);
   const pickup = makePickup(world.layoutRng, root, index, world.level, world);
   world.roots.push(root);
-  if (root.vein) world.offered.diamonds += 1;
+  // Every hit on a vein gives a diamond.
+  if (root.vein) world.offered.diamonds += TUNING.veins.hitsToBreak;
   if (pickup) {
     world.pickups.push(pickup);
     if (pickup.kind === 'coin') world.offered.coins += 1;
