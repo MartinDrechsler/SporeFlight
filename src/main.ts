@@ -1,3 +1,4 @@
+import { PLAYTEST } from './config/playtest';
 import '@fontsource/vt323/latin-400.css';
 import './styles/base.css';
 import './styles/screens.css';
@@ -68,6 +69,7 @@ const ctx: GameContext = {
   lastScore: null,
   pose: NEUTRAL_POSE,
   avatarMood: null,
+  playtest: PLAYTEST && (!isTest || params.has('playtest')),
   story: { id: 'opening', then: 'levels' },
   treasure: new TreasurePiles(save.coins, save.diamonds),
   treasureAt: null,
