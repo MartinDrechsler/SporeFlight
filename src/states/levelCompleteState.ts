@@ -1,9 +1,10 @@
 import { levelById } from '../config/levels';
 import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
+import type { SaveData } from '../core/save';
 import type { State } from '../core/stateMachine';
 import { stepWorld } from '../gameplay/world';
-import { finishLevel, nextLevelId } from '../meta/adventure';
+import { finishLevel, levelNumber, levelProgress, nextLevelId } from '../meta/adventure';
 import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText } from '../ui/dom';
 import { updateHud } from '../ui/hud';
@@ -41,7 +42,8 @@ export function levelCompleteState(ctx: GameContext): State {
         coins: world.stats.coins,
         coinsOffered: world.offered.coins,
         diamonds: world.stats.diamonds,
-        diamondsOffered: world.offered.diamonds,
+        sporelings: world.stats.sporelings,
+        sporelingsOffered: world.offered.sporelings,
       });
       addQuest(ctx, 'levelsFinished', 1);
       checkAchievements(ctx);
@@ -53,15 +55,15 @@ export function levelCompleteState(ctx: GameContext): State {
       time = 0;
       starsShown = 0;
       const name = byId('complete-level');
-      setText(name, `${level.id}. ${level.name}`);
+      setText(name, `${levelNumber(level.id)}. ${level.name}`);
       name.style.setProperty('--level-color', THEMES[level.theme].accent);
       for (const star of byId('screen-levelComplete').querySelectorAll('.big-star')) star.classList.remove('earned');
+      setText(byId('complete-sporelings'), `${world.stats.sporelings}/${world.offered.sporelings}`);
       setText(byId('complete-coins'), `${world.stats.coins}/${world.offered.coins}`);
-      setText(byId('complete-diamond'), world.offered.diamonds === 0 ? '-' : world.stats.diamonds >= world.offered.diamonds ? '✓' : '✗');
-      setText(byId('complete-hint'), hintFor(stars));
+      setText(byId('complete-hint'), hintFor(save, level.id));
       const opened = byId('complete-opened');
       opened.hidden = result.opened === null;
-      if (result.opened !== null) setText(opened, `LEVEL ${result.opened} IS OPEN: ${levelById(result.opened).name}`);
+      if (result.opened !== null) setText(opened, `LEVEL ${levelNumber(result.opened)} IS OPEN: ${levelById(result.opened).name}`);
       setText(byId('complete-next'), nextLevelId(level.id) === null ? 'MAP' : 'NEXT LEVEL');
       ctx.effects.celebrate(world.width, world.height, THEMES[level.theme].accent);
       showScreens('levelComplete');
@@ -81,9 +83,12 @@ export function levelCompleteState(ctx: GameContext): State {
   };
 }
 
-/** What would earn another star. */
-function hintFor(stars: number): string {
-  if (stars === 1) return 'Collect most of the coins for a second star.';
-  if (stars === 2) return 'Every coin and the diamond earn the third star.';
-  return 'A perfect run!';
+/** What would still earn a star on this level. */
+function hintFor(save: SaveData, levelId: number): string {
+  const progress = levelProgress(save, levelId);
+  if (!progress) return '';
+  if (!progress.sporelings && !progress.coins) return 'Rescue every sporeling and collect every coin for two more stars.';
+  if (!progress.sporelings) return 'Rescue every sporeling for the last star.';
+  if (!progress.coins) return 'Collect every coin for the last star.';
+  return 'Every star! A perfect level.';
 }

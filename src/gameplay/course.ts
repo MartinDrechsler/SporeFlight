@@ -2,7 +2,7 @@ import { rootCount, type Stage } from '../config/levels';
 import { TUNING } from '../config/tuning';
 import { createBoss, sendAway } from './boss';
 import type { World } from './world';
-import { isClearing, makeCoinCluster, makePickup, makeRoot } from './spawner';
+import { isClearing, makeCoinCluster, makePickup, makeRoot, makeSporeling, sporelingSide } from './spawner';
 
 /**
  * A level's route: its stages in order, then the finish gate. Endless is one
@@ -114,6 +114,11 @@ function spawnRoot(world: World): void {
     world.pickups.push(pickup);
     if (pickup.kind === 'coin') world.offered.coins += 1;
     if (pickup.kind === 'diamond') world.offered.diamonds += 1;
+  }
+  const side = sporelingSide(world.level, index);
+  if (side !== null) {
+    world.pickups.push(makeSporeling(root, side));
+    world.offered.sporelings += 1;
   }
   world.rootsSpawned += 1;
   world.course.stageRoots += 1;

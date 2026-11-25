@@ -2,7 +2,7 @@ import { levelById } from '../config/levels';
 import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
-import { currentLevelId, isLevelOpen, levelStars } from '../meta/adventure';
+import { currentLevelId, isLevelOpen, levelNumber, levelProgress, levelStars } from '../meta/adventure';
 import { byId, setText, starText } from '../ui/dom';
 import { renderMap, scrollMapTo, showMapStars } from '../ui/map';
 import { showScreens } from '../ui/screens';
@@ -34,10 +34,19 @@ export function levelsState(ctx: GameContext): State {
     const level = levelById(selected);
     const open = isLevelOpen(save, level.id);
     const name = byId('map-card-name');
-    setText(name, `${level.id}. ${level.name}`);
+    setText(name, `${levelNumber(level.id)}. ${level.name}`);
     name.style.setProperty('--level-color', THEMES[level.theme].accent);
     setText(byId('map-card-stars'), starText(levelStars(save, level.id)));
-    setText(byId('map-card-text'), open ? level.description : `Finish level ${level.id - 1} to open this one.`);
+    setText(byId('map-card-text'), open ? level.description : `Finish level ${levelNumber(level.id) - 1} to open this one.`);
+    // What each star asks for, ticked once earned.
+    const progress = levelProgress(save, level.id);
+    const tick = (done: boolean | undefined): string => (done ? '★' : '☆');
+    setText(
+      byId('map-card-goals'),
+      level.sporelings > 0
+        ? `${tick(progress !== null)} FINISH  ${tick(progress?.sporelings)} ${level.sporelings} SPORELINGS  ${tick(progress?.coins)} EVERY COIN`
+        : `${tick(progress !== null)} FINISH  ${tick(progress?.sporelings)} SURVIVE  ${tick(progress?.coins)} EVERY COIN`,
+    );
     byId('map-play').hidden = !open;
   };
 

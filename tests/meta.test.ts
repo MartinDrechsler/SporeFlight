@@ -5,7 +5,8 @@ import { QUEST_POOL, QUESTS_PER_DAY } from '../src/config/rewards';
 import { TUNING } from '../src/config/tuning';
 import { createRandom } from '../src/core/random';
 import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '../src/core/save';
-import { finishLevel, isLevelOpen, starsFor, currentLevelId } from '../src/meta/adventure';
+import { finishLevel, isLevelOpen, currentLevelId, levelNumber, levelStars } from '../src/meta/adventure';
+import { ADVENTURE_LEVELS, chapterLevels } from '../src/config/levels';
 import { unlockAchievements } from '../src/meta/achievements';
 import { accepted, join, leave, refused, rememberRun, setCountry, submissionFor } from '../src/meta/leaderboard';
 import { awaitingChoice, bankRound, buyLook, refillLives, rest, restProgress, selectLook, startRest, unlockAdventure } from '../src/meta/economy';
@@ -16,7 +17,7 @@ function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
   return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v) };
 }
 
-const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, endless: true };
+const noStats = { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, sporelings: 0, endless: true };
 
 describe('save', () => {
   it('returns defaults when nothing or garbage is saved', () => {
@@ -40,12 +41,12 @@ describe('save', () => {
   it('upgrades older versions of the save', () => {
     const v1 = { version: 1, bestScore: 40, coins: 7, diamonds: 1, lives: 3, restUntil: 123, soundOn: false };
     const fromV1 = migrate(v1);
-    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([7, 40, 7, 3, false]);
+    expect([fromV1.version, fromV1.bestScore, fromV1.coins, fromV1.lives, fromV1.soundOn]).toEqual([8, 40, 7, 3, false]);
     const fromV2 = migrate({ version: 2, deathMarks: [100, 200] });
     expect(fromV2.deathMarks).toEqual({ '0': [100, 200] });
     // Version 4 replaced the levels: old per-level scores do not become stars.
     const fromV3 = migrate({ version: 3, levelBest: [0, 25, 12], levelStars: { '2': 9, '3': 'x' } });
-    expect(fromV3.levelStars).toEqual({ '2': 3 });
+    expect(fromV3.levels).toEqual({ '2': { sporelings: false, coins: true } });
     expect('levelBest' in fromV3).toBe(false);
     // Version 5: new quest pool (old quests replaced), trails added, removed badges dropped, badge trails owned.
     const fromV4 = migrate({
@@ -151,49 +152,79 @@ describe('achievements', () => {
     expect(selectLook(save, 'trail', 'rainbow')).toBe(true);
   });
 
-  it('adventure badges follow finished levels and stars', () => {
+  it('adventure badges follow beaten chapters and stars', () => {
     const save = defaultSave();
-    for (let id = 1; id <= 5; id++) save.levelStars[String(id)] = 1;
+    for (const level of chapterLevels(1).slice(0, -1)) save.levels[String(level.id)] = { sporelings: false, coins: false };
+    expect(unlockAchievements(save, noStats)).toEqual([]);
+    save.levels['5'] = { sporelings: false, coins: false };
     expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['stone_breaker']);
-    for (let id = 1; id <= 10; id++) save.levelStars[String(id)] = 3;
-    expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['storm_rider', 'perfect_explorer', 'forest_master']);
-    expect(save.ownedTrails).toEqual(expect.arrayContaining(['lightning', 'aurora']));
+    for (const level of chapterLevels(1)) save.levels[String(level.id)] = { sporelings: true, coins: true };
+    expect(unlockAchievements(save, noStats).map((a) => a.id)).toEqual(['perfect_explorer', 'forest_master']);
+    expect(save.ownedTrails).toContain('aurora');
   });
 
   it('three stars on any level earns the explorer badge', () => {
     const save = defaultSave();
-    save.levelStars['3'] = 3;
+    save.levels['3'] = { sporelings: true, coins: true };
     expect(unlockAchievements(save, { ...noStats, endless: false }).map((a) => a.id)).toEqual(['perfect_explorer']);
   });
 });
 
 describe('adventure progress', () => {
-  const run = { levelId: 1, coins: 10, coinsOffered: 10, diamonds: 1, diamondsOffered: 1 };
+  const run = { levelId: 1, coins: 10, coinsOffered: 10, diamonds: 3, sporelings: 3, sporelingsOffered: 3 };
 
-  it('stars: finishing, most coins, then every coin and the diamond', () => {
-    expect(starsFor({ ...run, coins: 2 })).toBe(1);
-    expect(starsFor({ ...run, coins: 8, diamonds: 0 })).toBe(2);
-    expect(starsFor({ ...run, diamonds: 0 })).toBe(2);
-    expect(starsFor(run)).toBe(3);
+  it('stars: finishing, every sporeling, every coin, each kept once earned', () => {
+    const save = defaultSave();
+    expect(finishLevel(save, { ...run, coins: 2, sporelings: 1 }).stars).toBe(1);
+    expect(finishLevel(save, { ...run, coins: 2 }).stars).toBe(2);
+    expect(finishLevel(save, { ...run, sporelings: 0 })).toMatchObject({ stars: 3, improved: true, goals: { sporelings: false, coins: true } });
+    expect(levelStars(save, 1)).toBe(3);
   });
 
-  it('finishing a level banks its coins, keeps lives, keeps the best stars and opens the next', () => {
+  it('finishing a level banks its coins, keeps lives and opens the next in chapter order', () => {
     const save = defaultSave();
-    expect([isLevelOpen(save, 1), isLevelOpen(save, 2)]).toEqual([true, false]);
-    expect(currentLevelId(save)).toBe(1);
-    const first = finishLevel(save, { ...run, coins: 2 });
-    expect(first).toEqual({ stars: 1, improved: true, opened: 2 });
-    expect([save.coins, save.diamonds, save.lives]).toEqual([2, 1, TUNING.session.startLives]);
-    expect(isLevelOpen(save, 2)).toBe(true);
-    expect(currentLevelId(save)).toBe(2);
-    expect(finishLevel(save, run)).toEqual({ stars: 3, improved: true, opened: null });
-    expect(finishLevel(save, { ...run, coins: 0 }).improved).toBe(false);
-    expect(save.levelStars['1']).toBe(3);
+    const [first, second] = chapterLevels(1);
+    expect([isLevelOpen(save, first!.id), isLevelOpen(save, second!.id)]).toEqual([true, false]);
+    expect(currentLevelId(save)).toBe(first!.id);
+    expect(finishLevel(save, { ...run, levelId: first!.id, coins: 2 }).opened).toBe(second!.id);
+    expect([save.coins, save.lives]).toEqual([2, TUNING.session.startLives]);
+    expect(currentLevelId(save)).toBe(second!.id);
+    expect(levelNumber(second!.id)).toBe(2);
+  });
+
+  it("a level's diamonds pay out only once, however many times it is played", () => {
+    const save = defaultSave();
+    expect(finishLevel(save, { ...run, diamonds: 2 }).diamondsPaid).toBe(2);
+    expect(finishLevel(save, { ...run, diamonds: 2 }).diamondsPaid).toBe(0);
+    expect(finishLevel(save, { ...run, diamonds: 3 }).diamondsPaid).toBe(1);
+    expect(save.diamonds).toBe(3);
+    // A crash pays the same way.
+    bankRound(save, { levelId: 1, score: 0, coins: 0, diamonds: 3, distance: 0 });
+    expect(save.diamonds).toBe(3);
+    bankRound(save, { levelId: 0, score: 0, coins: 0, diamonds: 3, distance: 0 });
+    expect(save.diamonds).toBe(6);
+  });
+
+  it('old stars become goals: a 3-star level kept every coin and paid its diamond', () => {
+    const save = migrate({ version: 7, levelStars: { '1': 3, '2': 2, '3': 1 } });
+    expect(save.levels).toEqual({
+      '1': { sporelings: false, coins: true },
+      '2': { sporelings: false, coins: false },
+      '3': { sporelings: false, coins: false },
+    });
+    expect(save.levelDiamonds).toEqual({ '1': 1 });
+    expect([levelStars(save, 1), levelStars(save, 2)]).toEqual([2, 1]);
+  });
+
+  it('a finished level stays open even when the order changed around it', () => {
+    const save = defaultSave();
+    save.levels['4'] = { sporelings: false, coins: false };
+    expect(isLevelOpen(save, 4)).toBe(true);
   });
 
   it('the last level opens nothing', () => {
     const save = defaultSave();
-    expect(finishLevel(save, { ...run, levelId: 10 }).opened).toBeNull();
+    expect(finishLevel(save, { ...run, levelId: ADVENTURE_LEVELS.at(-1)!.id }).opened).toBeNull();
   });
 });
 

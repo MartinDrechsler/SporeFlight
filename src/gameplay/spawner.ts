@@ -148,6 +148,39 @@ function choosePickupKind(rng: Random, level: LevelConfig, index: number, chance
   return 'coin';
 }
 
+/**
+ * A sporeling to rescue at this root, and on which side of the gap it waits
+ * (-1 near the top, 1 near the bottom); null when none. A level's sporelings
+ * are spread evenly through its roots and alternate sides, so the safe line
+ * through the middle misses them: rescuing one is a risk the player chooses.
+ * No random numbers are used, so fixed layouts stay exactly as they were.
+ */
+export function sporelingSide(level: LevelConfig, index: number): -1 | 1 | null {
+  const count = level.sporelings;
+  const roots = rootCount(level);
+  if (count <= 0 || roots <= 0) return null;
+  for (let k = 0; k < count; k++) {
+    let slot = Math.floor(((k + 0.5) * roots) / count);
+    // Never on the vein's root: one risk at a time.
+    if (onSchedule(level.veins, slot)) slot = Math.max(0, slot - 1);
+    if (slot === index) return k % 2 === 0 ? -1 : 1;
+  }
+  return null;
+}
+
+/** A sporeling inside a root's gap, near one edge; it rides along with the gap. */
+export function makeSporeling(root: Root, side: -1 | 1): Pickup {
+  return {
+    kind: 'sporeling',
+    root,
+    offsetX: root.width / 2,
+    offsetY: side * root.gapSize * PK.sporelingEdge,
+    vx: 0,
+    vy: 0,
+    collected: false,
+  };
+}
+
 function onSchedule(schedule: Schedule | null, index: number): boolean {
   if (!schedule || index < schedule.first) return false;
   return schedule.every === null ? index === schedule.first : (index - schedule.first) % schedule.every === 0;

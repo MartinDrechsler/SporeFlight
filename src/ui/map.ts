@@ -1,8 +1,9 @@
-import { ADVENTURE_LEVELS, type LevelConfig } from '../config/levels';
+import { CHAPTERS } from '../config/chapters';
+import { ADVENTURE_LEVELS, chapterLevels, type LevelConfig } from '../config/levels';
 import type { Skin } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { SaveData } from '../core/save';
-import { isLevelOpen, levelStars } from '../meta/adventure';
+import { isLevelOpen, levelNumber, levelStars } from '../meta/adventure';
 import { button, byId, el, setText } from './dom';
 import { skinPreview } from './panels';
 
@@ -14,7 +15,9 @@ const MARGIN = 120;
 /**
  * Draws the Adventure map: a winding path from the bottom (level 1) upwards,
  * with finished levels showing their stars, the next one glowing with the
- * player's mushroom on it, and locked ones waiting further along.
+ * player's mushroom on it, and locked ones waiting further along. Each
+ * chapter starts with a banner; chapters not built yet wait at the top as
+ * coming soon.
  */
 export function renderMap(
   save: SaveData,
@@ -24,7 +27,7 @@ export function renderMap(
   onPick: (levelId: number) => void,
 ): void {
   const container = byId('map-path');
-  const height = MARGIN * 2 + STEP * (ADVENTURE_LEVELS.length - 1);
+  const height = mapHeight();
   container.style.height = `${height}px`;
   const stops = ADVENTURE_LEVELS.map((level, index) => ({ level, ...stopPosition(index, height) }));
   const reached = stops.filter((stop) => isLevelOpen(save, stop.level.id));
@@ -36,11 +39,11 @@ export function renderMap(
     if (level.id === current) classes.push('current');
     if (level.id === selected) classes.push('selected');
     if (hasBoss(level)) classes.push('boss');
-    const node = button(open ? String(level.id) : '🔒', classes.join(' '), () => onPick(level.id));
+    const node = button(open ? String(levelNumber(level.id)) : '🔒', classes.join(' '), () => onPick(level.id));
     node.style.left = `${x}%`;
     node.style.top = `${y}px`;
     node.style.setProperty('--level-color', THEMES[level.theme].accent);
-    node.setAttribute('aria-label', `Level ${level.id}: ${level.name}`);
+    node.setAttribute('aria-label', `Level ${levelNumber(level.id)}: ${level.name}`);
     if (open) node.append(starRow(levelStars(save, level.id)));
     if (hasBoss(level)) node.append(el('span', 'map-node-tag', 'BOSS'));
     return node;
@@ -54,14 +57,47 @@ export function renderMap(
     marker.append(skinPreview(skin));
   }
 
-  container.replaceChildren(pathLine(stops, height, 'trail'), pathLine(reached, height, 'travelled'), ...nodes, marker);
+  container.replaceChildren(pathLine(stops, height, 'trail'), pathLine(reached, height, 'travelled'), ...chapterBanners(save, height), ...nodes, marker);
+}
+
+/** Map height: the stops, plus a step for each chapter still to come. */
+function mapHeight(): number {
+  const coming = CHAPTERS.filter((chapter) => chapterLevels(chapter.id).length === 0).length;
+  return MARGIN * 2 + STEP * (ADVENTURE_LEVELS.length - 1 + coming);
+}
+
+/**
+ * A banner where each chapter begins, just below its first stop (the path climbs
+ * upwards); a chapter with no levels yet shows above the last stop as coming soon.
+ */
+function chapterBanners(save: SaveData, height: number): HTMLElement[] {
+  let coming = 0;
+  return CHAPTERS.map((chapter) => {
+    const levels = chapterLevels(chapter.id);
+    const banner = el('div', 'map-chapter');
+    banner.style.setProperty('--chapter-color', chapter.color);
+    banner.append(el('span', 'map-chapter-number', `CHAPTER ${chapter.id}`), el('span', 'map-chapter-name', chapter.name));
+    let y: number;
+    if (levels.length > 0) {
+      const index = ADVENTURE_LEVELS.indexOf(levels[0]!);
+      y = stopPosition(index, height).y + STEP * 0.48;
+      if (!isLevelOpen(save, levels[0]!.id)) banner.classList.add('locked');
+    } else {
+      coming += 1;
+      y = stopPosition(ADVENTURE_LEVELS.length - 1 + coming, height).y;
+      banner.classList.add('locked', 'soon');
+      banner.append(el('span', 'map-chapter-soon', 'COMING SOON'));
+    }
+    banner.style.top = `${y}px`;
+    return banner;
+  });
 }
 
 /** Scrolls the map so the given level sits in the middle of the view. */
 export function scrollMapTo(levelId: number): void {
   const scroll = byId('map-scroll');
   const index = Math.max(0, ADVENTURE_LEVELS.findIndex((level) => level.id === levelId));
-  const height = MARGIN * 2 + STEP * (ADVENTURE_LEVELS.length - 1);
+  const height = mapHeight();
   scroll.scrollTop = stopPosition(index, height).y - scroll.clientHeight / 2;
 }
 

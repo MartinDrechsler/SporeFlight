@@ -1,3 +1,4 @@
+import { claimLevelDiamonds } from './adventure';
 import { ADVENTURE_UNLOCK_COST, ENDLESS_LEVEL_ID } from '../config/levels';
 import { SKINS, type Price } from '../config/skins';
 import { TRAILS } from '../config/trails';
@@ -24,7 +25,8 @@ export interface RoundResult {
  */
 export function bankRound(save: SaveData, result: RoundResult): boolean {
   save.coins += result.coins;
-  save.diamonds += result.diamonds;
+  // An Adventure level pays its diamonds only once, crash or finish.
+  save.diamonds += result.levelId === ENDLESS_LEVEL_ID ? result.diamonds : claimLevelDiamonds(save, result.levelId, result.diamonds);
   save.lives = Math.max(0, save.lives - 1);
   const key = String(result.levelId);
   save.deathMarks[key] = [...(save.deathMarks[key] ?? []), result.distance].slice(-TUNING.session.deathMarks);

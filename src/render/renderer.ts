@@ -14,6 +14,7 @@ import { drawBoss } from './drawBoss';
 import { applyView } from './view';
 import { drawGate, drawPickup, drawRoot, drawWind, type RootLook } from './drawRoots';
 import type { Effects } from './effects';
+import { drawRescued } from './sporeling';
 import { drawTreasure, type TreasurePiles, type TreasurePlace } from './treasure';
 
 export interface Scene {
@@ -71,6 +72,10 @@ export function renderScene(surface: Surface, scene: Scene): void {
     pose: scene.pose,
     bossNear: world.boss !== null && !world.boss.leaving,
   });
+  // Rescued sporelings follow the mushroom (Adventure).
+  if (world.stats.sporelings > 0 && !world.crashed) {
+    drawRescued(ctx, world.player.x + scene.pose.shiftX, world.player.y, world.player.vy, world.stats.sporelings, time);
+  }
   // Clumps sit in front, so the one growing beside a fallen mushroom is not hidden behind it.
   const newMark =
     world.landedTime === null ? null : { at: crashSpot(world), grow: Math.min(1, world.landedTime / TUNING.roundOver.clumpGrowSeconds) };

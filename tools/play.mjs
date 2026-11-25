@@ -335,24 +335,27 @@ await test(() => window.__test.invulnerable(true));
 for (let i = 0; i < 120 && (await state()).state === 'playing'; i++) await fly(30);
 await advance(1600);
 s = await state();
-check('the finish gate completes the level', s.state === 'levelComplete' && (s.save.levelStars['1'] ?? 0) >= 1, `${s.state}`);
+check('the finish gate completes the level', s.state === 'levelComplete' && s.save.levels['1'] !== undefined, `${s.state}`);
+check('the complete screen counts sporelings', /\d+\/[1-9]/.test(await page.textContent('#complete-sporelings')));
 await shot('12b-level-complete');
 await tapButton('#complete-map');
 s = await state();
 check('the map shows level 2 open next', s.state === 'levels' && (await page.isVisible('.map-node.current')));
 await shot('12c-map-progress');
 
-// 9. Every adventure level looks right mid-flight (all open, invulnerable to reach later parts).
-await test(() => window.__test.setSave({ levelStars: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1 } }));
-for (const id of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+// 9. Every adventure level looks right mid-flight (all of chapter 1 open, invulnerable to reach later parts).
+const done = { sporelings: false, coins: false };
+await test((d) => window.__test.setSave({ levels: { 1: d, 2: d, 3: d, 7: d, 4: d, 6: d, 8: d } }), done);
+check('the map shows chapter banners and chapters to come', (await page.locator('.map-chapter').count()) === 5);
+for (const place of [2, 3, 4, 5, 6, 7, 8]) {
   await test(() => window.__test.go('levels'));
   await advance(50);
-  await page.tap(`.map-node >> nth=${id - 1}`);
+  await page.tap(`.map-node >> nth=${place - 1}`);
   await advance(50);
   await tapButton('#map-play');
   await test(() => window.__test.invulnerable(true));
   await fly(150);
-  await shot(`13-level-${id}`);
+  await shot(`13-level-${place}`);
 }
 
 // 10. Progress survives a reload.
