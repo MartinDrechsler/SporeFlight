@@ -6,8 +6,8 @@ const V = TUNING.veins;
 
 /**
  * A glowing crystal vein on a root's cap, facing the gap. Touching it does
- * not kill: the mushroom bounces off and the crystal cracks. The last hit
- * breaks it open and releases a diamond. Going for it is a risk next to a
+ * not kill: the mushroom bounces off and the crystal cracks, and every crack
+ * releases a diamond. The last hit breaks it open (3 diamonds in all). Going for it is a risk next to a
  * root; leaving it alone is always allowed.
  */
 export interface Vein {
@@ -41,9 +41,9 @@ export function bounceOffVeins(world: World): boolean {
     vein.hits += 1;
     world.veinCooldown = V.cooldownSeconds;
     const at = { x: rootLeft(root) + root.width / 2, y: vein.side === 'bottom' ? gapBottom(root) : gapTop(root) };
+    world.stats.diamonds += 1;
     world.events.push({ type: 'veinHit', ...at, hits: vein.hits });
     if (isBroken(vein)) {
-      world.stats.diamonds += 1;
       world.stats.veins += 1;
       world.events.push({ type: 'veinBreak', ...at });
     }

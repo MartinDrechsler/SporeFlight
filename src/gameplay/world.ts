@@ -30,9 +30,9 @@ export type GameEvent =
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
   | { type: 'crash'; x: number; y: number }
   | { type: 'landed'; x: number; y: number }
-  /** The mushroom bounced off a crystal vein and cracked it (`hits` so far). */
+  /** The mushroom bounced off a crystal vein and cracked a diamond out of it (`hits` so far). */
   | { type: 'veinHit'; x: number; y: number; hits: number }
-  /** The vein broke open: a diamond. */
+  /** The vein broke open on its last hit (its last diamond came with that hit). */
   | { type: 'veinBreak'; x: number; y: number }
   /** The Stone Thrower is about to throw (its eyes flare). */
   | { type: 'bossWarn'; x: number; y: number }

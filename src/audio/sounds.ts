@@ -89,7 +89,13 @@ export const SOUNDS = {
   wind: [noise('bandpass', 300, 0.9, 0.12, { to: 700, q: 0.7, attack: 0.25 })],
   bossWarn: [tone('sawtooth', 80, 0.7, 0.08, { to: 60 }), tone('square', 55, 0.7, 0.04), noise('lowpass', 300, 0.7, 0.18, { attack: 0.1 })],
   bossThrow: [noise('bandpass', 300, 0.25, 0.14, { to: 1300, q: 1.5 }), tone('triangle', 320, 0.18, 0.06, { to: 140 })],
-  veinHit: [noise('highpass', 5000, 0.03, 0.1), tone('sine', 2349, 0.22, 0.07), tone('sine', 2349 * 2.76, 0.15, 0.025)],
+  // A crack and a diamond's glassy chime: every hit on a vein gives one.
+  veinHit: [
+    noise('highpass', 5000, 0.03, 0.1),
+    tone('sine', 2349, 0.22, 0.07),
+    tone('sine', 2349 * 2.76, 0.15, 0.025),
+    ...arpeggio('sine', [C7, E7, G7], 0.045, 0.4, 0.035, 0.06),
+  ],
   veinBreak: [
     noise('highpass', 3000, 0.45, 0.22),
     ...arpeggio('sine', [E7, G7, C8, E7 * 2], 0.035, 0.4, 0.04),
