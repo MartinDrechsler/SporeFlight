@@ -79,7 +79,7 @@ export function startState(ctx: GameContext): State {
       const r = ctx.world.player.radius * scale;
       const field = byId('game').getBoundingClientRect();
       const middle = slot.top - field.top + slot.height / 2;
-      ctx.treasureAt = { x: ctx.world.width / 2, y: middle + r * 0.95, r };
+      ctx.treasureAt = { x: ctx.world.width / 2, y: middle + r * 0.95, r, floor: slot.bottom - field.top - 4 };
     },
 
     onTap: begin,
