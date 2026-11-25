@@ -2,7 +2,7 @@ import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
 import { courseProgress } from '../gameplay/course';
-import { levelStars } from '../meta/adventure';
+import { levelNumber, levelStars } from '../meta/adventure';
 import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText, starText } from '../ui/dom';
 import { showScreens } from '../ui/screens';
@@ -26,7 +26,7 @@ export function adventureOverState(ctx: GameContext): State {
       const level = ctx.world.level;
       const color = THEMES[level.theme].accent;
       const name = byId('adventure-over-level');
-      setText(name, `${level.id}. ${level.name}`);
+      setText(name, `${levelNumber(level.id)}. ${level.name}`);
       name.style.setProperty('--level-color', color);
       const percent = Math.round(courseProgress(ctx.world) * 100);
       setText(byId('adventure-over-progress'), `${percent}%`);

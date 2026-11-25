@@ -1,3 +1,4 @@
+import { levelNumber } from '../meta/adventure';
 import { ENDLESS_LEVEL_ID } from '../config/levels';
 import { THEMES } from '../config/theme';
 import { TUNING } from '../config/tuning';
@@ -28,7 +29,7 @@ export function updateHud(world: World, save: SaveData, options: { banked: boole
 
   const levelBadge = byId('hud-level');
   levelBadge.hidden = endless;
-  setText(levelBadge, `LEVEL ${world.level.id}`);
+  setText(levelBadge, `LEVEL ${levelNumber(world.level.id)}`);
   levelBadge.style.setProperty('--level-color', THEMES[world.level.theme].accent);
   const progress = byId('hud-progress');
   progress.hidden = endless;

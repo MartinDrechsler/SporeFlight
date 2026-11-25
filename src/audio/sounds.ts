@@ -63,6 +63,12 @@ export const SOUNDS = {
     noise('bandpass', 1100, 0.12, 0.045, { to: 2600, q: 1.4, delay: 0.03 }),
   ],
   pass: [tone('sine', C6, 0.05, 0.03)],
+  // A sporeling rescued: a happy little two-note chirp and a soft chime.
+  sporeling: [
+    tone('sine', 880, 0.08, 0.06, { to: 1320 }),
+    tone('sine', 1320, 0.12, 0.06, { to: 1760, delay: 0.09 }),
+    tone('triangle', E6, 0.3, 0.02, { delay: 0.09 }),
+  ],
   nearMiss: [noise('bandpass', 3200, 0.2, 0.16, { to: 700, q: 2 }), tone('sine', E6, 0.14, 0.04, { to: G6, delay: 0.04 })],
   coin: coinRing(),
   goldCoin: [...coinRing(), ...arpeggio('triangle', [E6, G6, C7, E7], 0.07, 0.25, 0.04, 0.12), noise('highpass', 8000, 0.4, 0.04, { delay: 0.12 })],

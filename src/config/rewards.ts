@@ -14,6 +14,8 @@ export interface RunStats {
   nearMisses: number;
   /** Crystal veins broken open. */
   veins: number;
+  /** Sporelings rescued (Adventure). */
+  sporelings: number;
 }
 
 /** What a badge measures: the round just played, or progress kept in the save. */
@@ -23,9 +25,11 @@ export type BadgeStat =
   | 'biome'
   | 'nearMisses'
   | 'runDiamonds'
-  | 'highestLevel'
+  /** Adventure chapters whose boss (their last level) is beaten. */
+  | 'chaptersBeaten'
   | 'bestLevelStars'
-  | 'perfectLevels';
+  /** Adventure chapters with 3 stars on every level. */
+  | 'perfectChapters';
 
 /**
  * A badge is pure honour: it pays no coins (coins only come from collecting
@@ -55,10 +59,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   })),
   { id: 'near_miss_master', name: 'NEAR-MISS MASTER', description: '5 near misses in one run', stat: 'nearMisses', target: 5, trail: 'gold' },
   { id: 'diamond_hunter', name: 'DIAMOND HUNTER', description: 'Collect 3 diamonds in one run', stat: 'runDiamonds', target: 3 },
-  { id: 'stone_breaker', name: 'STONE BREAKER', description: 'Beat the Stone Thrower (level 5)', stat: 'highestLevel', target: 5 },
-  { id: 'storm_rider', name: 'STORM RIDER', description: 'Finish Heart of the Storm (level 10)', stat: 'highestLevel', target: 10, trail: 'lightning' },
+  { id: 'stone_breaker', name: 'STONE BREAKER', description: 'Beat the Stone Thrower (chapter 1)', stat: 'chaptersBeaten', target: 1 },
+  { id: 'storm_rider', name: 'STORM RIDER', description: 'Beat the Storm Cloud (chapter 4)', stat: 'chaptersBeaten', target: 4, trail: 'lightning' },
   { id: 'perfect_explorer', name: 'PERFECT EXPLORER', description: '3 stars on any adventure level', stat: 'bestLevelStars', target: 3 },
-  { id: 'forest_master', name: 'FOREST MASTER', description: '3 stars on every adventure level', stat: 'perfectLevels', target: 10, trail: 'aurora' },
+  { id: 'forest_master', name: 'FOREST MASTER', description: '3 stars on every level of the Whispering Woods', stat: 'perfectChapters', target: 1, trail: 'aurora' },
 ];
 
 function titleCase(text: string): string {

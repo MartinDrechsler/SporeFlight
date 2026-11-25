@@ -22,7 +22,8 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
 
 - `src/config/`: all data. `tuning.ts` (every number, px and seconds), `levels.ts` (endless + 10 adventure
   levels as stages, described by flags, never by name), `biomes.ts` (the 8 endless biomes), `theme.ts`
-  (11 level colour themes), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool), `sprites.ts`
+  (11 level colour themes), `chapters.ts` (the 5 Adventure chapters; which levels are in each, in order, is in
+  `levels.ts`), `skins.ts` and `trails.ts` (looks and prices), `rewards.ts` (badges, daily quest pool), `sprites.ts`
   (pixel icons: hearts, coin, diamond), `expressions.ts` (the mushroom's faces as numbers: eyes, lids, brows,
   mouth, cheeks) and `animations.ts` (avatar performances: moves like hop, spin, flash, plus face cues).
 - `src/core/`: fixed-step loop, state machine, seeded random, versioned save file, run record, and `fmath.ts`
@@ -45,6 +46,7 @@ Dependencies point one way: `states -> meta / gameplay -> core / config`. `rende
   glances, blinks), drawing only. `mushroom.ts` draws the Button mushroom (used in flight, on stages and as
   SVG in the shop), `face.ts` its face, `timeline.ts` turns an animation into a frame for any moment, and
   `avatarScene.ts` draws a frame with its effects (burst, glow, z z, trail). `avatars.html` plays them all.
+  `sporeling.ts` draws the sporelings to rescue in Adventure.
 - `src/ui/`: the only code that touches the DOM: screens, HUD, menu lists, the Adventure map, toast, `avatarStage.ts`
   (a small canvas where the avatar acts out a scene), and
   `icons.ts` (hands the pixel sprites to CSS as `--icon-*`).

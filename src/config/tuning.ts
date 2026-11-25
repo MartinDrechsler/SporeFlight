@@ -65,6 +65,8 @@ export const TUNING = {
     /** Keep pickups away from the screen edges. */
     minY: 60,
     bottomMargin: 130,
+    /** A sporeling waits inside a root's gap, this share of the gap's height away from its middle: near an edge. */
+    sporelingEdge: 0.28,
   },
 
 

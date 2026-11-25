@@ -545,3 +545,43 @@
   /* Solid, so the forest and the mushroom never show through the text. */
   background: #05140f;
 }
+
+/* Adventure map: a banner where each chapter begins; chapters still to come wait at the top. */
+.map-chapter {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--chapter-color);
+  background: rgba(3, 16, 13, 0.92);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--chapter-color) 40%, transparent);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.map-chapter-number {
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.map-chapter-name {
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  color: var(--chapter-color);
+}
+
+.map-chapter.locked {
+  opacity: 0.55;
+}
+
+.map-chapter-soon {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}

@@ -69,7 +69,7 @@ export interface World extends Field {
   /** Numbers for achievements and quests; `stats.score` is the round's score (1 per root). */
   stats: RunStats;
   /** Valuables that appeared this round, for the star rating. */
-  offered: { coins: number; diamonds: number };
+  offered: { coins: number; diamonds: number; sporelings: number };
   rootsSpawned: number;
   rootsPassed: number;
   milestonesReached: number;
@@ -120,8 +120,8 @@ export function createWorld(width: number, height: number, level: LevelConfig, s
     roots: [],
     pickups: [],
     winds: [],
-    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0 },
-    offered: { coins: 0, diamonds: 0 },
+    stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, sporelings: 0 },
+    offered: { coins: 0, diamonds: 0, sporelings: 0 },
     rootsSpawned: 0,
     rootsPassed: 0,
     milestonesReached: 0,
@@ -363,6 +363,9 @@ function applyPickup(world: World, kind: PickupKind): number {
       return 0;
     case 'magnet':
       world.magnetTime = TUNING.magnet.seconds;
+      return 0;
+    case 'sporeling':
+      world.stats.sporelings += 1;
       return 0;
   }
 }

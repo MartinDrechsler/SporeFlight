@@ -1,3 +1,4 @@
+import { drawSporeling, sporelingColor } from './sporeling';
 import type { ObstacleStyle } from '../config/biomes';
 import type { Theme } from '../config/theme';
 import { drawColumn } from './obstacles';
@@ -111,6 +112,10 @@ export function drawPickup(ctx: CanvasRenderingContext2D, pickup: Pickup, time: 
       drawSprite(ctx, DIAMOND, 0, 0, r * 2.9);
       ctx.shadowBlur = 0;
       sparkles(ctx, r * 1.3, time * 1.4, '#ffffff', 1);
+      break;
+    case 'sporeling':
+      // Waiting near the gap's edge, glowing, looking up at the mushroom with hopeful eyes.
+      drawSporeling(ctx, 0, 0, r * 1.05, { color: sporelingColor(pickup.root?.index ?? 0), rescued: false, gaze: Math.sin(time * 1.3) });
       break;
     case 'shield':
       glow(ctx, '#00baff', 14);

@@ -35,14 +35,22 @@ export interface LeaderboardState {
   nameRefused: boolean;
 }
 
+/** A finished Adventure level: which goals have been reached (each is a star, finishing is the first). */
+export interface LevelProgress {
+  sporelings: boolean;
+  coins: boolean;
+}
+
 export interface SaveData {
-  version: 7;
+  version: 8;
   /** Null until the player has chosen a name on first launch. */
   username: string | null;
   /** Endless best score. */
   bestScore: number;
-  /** Stars (1 to 3) per finished adventure level id. A level opens when the one before has stars. */
-  levelStars: Record<string, number>;
+  /** Finished Adventure levels by id, with the goals reached. A level opens when the one before is finished. */
+  levels: Record<string, LevelProgress>;
+  /** Diamonds already paid per Adventure level id: a level pays its diamonds only once. */
+  levelDiamonds: Record<string, number>;
   coins: number;
   diamonds: number;
   lives: number;
@@ -72,10 +80,11 @@ const QUEST_KINDS: readonly QuestKind[] = QUEST_POOL.map((template) => template.
 
 export function defaultSave(): SaveData {
   return {
-    version: 7,
+    version: 8,
     username: null,
     bestScore: 0,
-    levelStars: {},
+    levels: {},
+    levelDiamonds: {},
     coins: 0,
     diamonds: 0,
     lives: TUNING.session.startLives,
@@ -114,11 +123,13 @@ export function migrate(raw: unknown): SaveData {
   const version = typeof data.version === 'number' ? data.version : 0;
 
   return {
-    version: 7,
+    version: 8,
     username: cleanUsername(data.username),
     bestScore: count(data.bestScore, 0),
     // Version 4 brought a new set of levels, so older per-level results do not carry over.
-    levelStars: cleanStars(data.levelStars),
+    // Version 8 keeps goals instead of a star count; older stars become goals (cleanLevels).
+    levels: version >= 8 ? cleanLevels(data.levels) : levelsFromStars(cleanStars(data.levelStars)),
+    levelDiamonds: version >= 8 ? cleanCounts(data.levelDiamonds) : diamondsFromStars(cleanStars(data.levelStars)),
     coins: count(data.coins, 0),
     diamonds: count(data.diamonds, 0),
     lives: count(data.lives, base.lives),
@@ -250,6 +261,44 @@ function cleanStars(value: unknown): Record<string, number> {
     if (clean > 0) stars[level] = clean;
   }
   return stars;
+}
+
+function cleanLevels(value: unknown): Record<string, LevelProgress> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  const levels: Record<string, LevelProgress> = {};
+  for (const [level, entry] of Object.entries(value)) {
+    if (typeof entry !== 'object' || entry === null) continue;
+    const e = entry as Record<string, unknown>;
+    levels[level] = { sporelings: e.sporelings === true, coins: e.coins === true };
+  }
+  return levels;
+}
+
+function cleanCounts(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  const counts: Record<string, number> = {};
+  for (const [key, n] of Object.entries(value)) {
+    const clean = count(n, 0);
+    if (clean > 0) counts[key] = clean;
+  }
+  return counts;
+}
+
+/**
+ * Before version 8 a level kept 1 to 3 stars: 2 meant most coins, 3 every coin and the diamond.
+ * Finished stays finished, and 3 stars means every coin was collected; sporelings are new.
+ */
+function levelsFromStars(stars: Record<string, number>): Record<string, LevelProgress> {
+  const levels: Record<string, LevelProgress> = {};
+  for (const [level, n] of Object.entries(stars)) levels[level] = { sporelings: false, coins: n >= 3 };
+  return levels;
+}
+
+/** A 3-star level's single diamond was paid before version 8. */
+function diamondsFromStars(stars: Record<string, number>): Record<string, number> {
+  const diamonds: Record<string, number> = {};
+  for (const [level, n] of Object.entries(stars)) if (n >= 3) diamonds[level] = 1;
+  return diamonds;
 }
 
 function cleanQuests(value: unknown): SaveData['quests'] {

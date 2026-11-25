@@ -273,6 +273,10 @@ export class Effects {
         this.burst(x, y, 16, '#00e5ff', 160, 0.6);
         this.text('MAGNET!', x, y - 18, '#00e5ff');
         break;
+      case 'sporeling':
+        this.burst(x, y, 18, '#ffd6e8', 150, 0.7);
+        this.text('RESCUED!', x, y - 20, '#ffd6e8');
+        break;
     }
   }
 

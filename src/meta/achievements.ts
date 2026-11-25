@@ -1,5 +1,6 @@
 import { BIOMES, biomeAt } from '../config/biomes';
-import { ADVENTURE_LEVELS } from '../config/levels';
+import { CHAPTERS } from '../config/chapters';
+import { chapterLevels } from '../config/levels';
 import { ACHIEVEMENTS, type Achievement, type BadgeStat, type RunStats } from '../config/rewards';
 import type { SaveData } from '../core/save';
 import { bestLevelStars, levelStars } from './adventure';
@@ -27,14 +28,14 @@ export function unlockAchievements(save: SaveData, run: RunResult): Achievement[
 }
 
 function badgeValues(save: SaveData, run: RunResult): Record<BadgeStat, number> {
-  const finished = ADVENTURE_LEVELS.filter((level) => levelStars(save, level.id) > 0).map((level) => level.id);
+  const built = CHAPTERS.map((chapter) => chapterLevels(chapter.id)).filter((levels) => levels.length > 0);
   return {
     endlessScore: run.endless ? run.score : 0,
     biome: run.endless ? BIOMES.indexOf(biomeAt(run.score)) : 0,
     nearMisses: run.nearMisses,
     runDiamonds: run.diamonds,
-    highestLevel: Math.max(0, ...finished),
+    chaptersBeaten: built.filter((levels) => levelStars(save, levels.at(-1)!.id) > 0).length,
     bestLevelStars: bestLevelStars(save),
-    perfectLevels: ADVENTURE_LEVELS.filter((level) => levelStars(save, level.id) === 3).length,
+    perfectChapters: built.filter((levels) => levels.every((level) => levelStars(save, level.id) === 3)).length,
   };
 }

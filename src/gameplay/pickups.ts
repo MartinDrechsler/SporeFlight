@@ -4,8 +4,11 @@ import { rootLeft, type Root } from './roots';
 
 const M = TUNING.magnet;
 
-/** A golden coin is a rare, huge coin worth 10. */
-export type PickupKind = 'coin' | 'goldCoin' | 'diamond' | 'shield' | 'magnet';
+/**
+ * A golden coin is a rare, huge coin worth 10. A sporeling is a little lost
+ * creature to rescue in Adventure: touch it and it follows you home.
+ */
+export type PickupKind = 'coin' | 'goldCoin' | 'diamond' | 'shield' | 'magnet' | 'sporeling';
 
 /**
  * Something to collect. Most float in the space after a root and ride along

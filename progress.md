@@ -3,9 +3,29 @@
 Original goal: rebuild Spore Flight (old version: github.com/MartinDrechsler/spore-flight) in clean
 TypeScript, keeping its idea, principles and flow, then develop it further towards a public launch.
 
-## Status: phase 4 live (leaderboard connected); polish and sound after playing (2026-11-24)
-The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
-app stores, playtesting).
+## Status: Adventure chapters, phase 1 under way (2026-11-25)
+The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Adventure grows into 5 chapters of 8 levels with a
+story: the Claude Doc "Spore Flight: Adventure chapters plan" (7 phases). Launch prep (real ads, PWA, app stores)
+comes after.
+
+### Adventure chapters, phase 1a: chapters, stars, sporelings
+- **Chapters** (`config/chapters.ts`): Whispering Woods, Glowcap Caverns, Bramble Marsh, Sky Canopy, The Heartwood.
+  Chapter 1 has 8 levels in a new order: First Light, Narrow Passage, Drifting Canopy, Upside-Down Grove,
+  Breathing Hollow, Creeping Roots, Forest Edge (was Canopy Winds; wind plus moving gaps), The Stone Thrower.
+  Levels are numbered by their place, not their id. The Way Home and Heart of the Storm wait for chapters 5 and 4.
+  The map shows a banner where each chapter begins, and chapters 2 to 5 as coming soon. A chapter opens by beating
+  the previous boss.
+- **Stars are three goals**, each kept once earned, even on different runs: finish, rescue every sporeling, collect
+  every coin. The map card lists them; the complete screen counts sporelings and coins and says what is left.
+- **Sporelings** (`render/sporeling.ts`): small, round, pastel, glowing, with little eyes; their own design.
+  3 to 5 per level (none in boss levels), spread evenly, alternating near the top and bottom edge of a gap, never on
+  the vein's root. Placed without random numbers, so every level's layout is exactly as before. Touch one: a chirp,
+  "RESCUED!", and it follows the mushroom in a little line.
+- **Diamonds pay out once per level**, crash or finish; replays never farm them (`claimLevelDiamonds`).
+- **Badges by chapter**: Stone Breaker for beating chapter 1, Storm Rider for chapter 4 (Storm Cloud), Forest
+  Master for 3 stars on every Whispering Woods level.
+- **Save v8**: `levels` (goals per finished level) and `levelDiamonds` replace `levelStars`. Old stars carry over:
+  finished stays finished, 3 stars kept every coin and paid its diamond.
 
 ### A diamond for every crack
 - Crystal veins stay (endless: root 20, then every 30; one per Adventure level), but every bounce off one

@@ -7,6 +7,7 @@ import { createLoop } from './core/loop';
 import type { SceneLook } from './render/avatarScene';
 import { holdFace } from './render/timeline';
 import { jumpShape } from './render/jump';
+import { drawSporeling, sporelingColor } from './render/sporeling';
 import { drawMushroom } from './render/mushroom';
 import { TUNING } from './config/tuning';
 import { AvatarStage } from './ui/avatarStage';
@@ -78,9 +79,38 @@ requestAnimationFrame(() => {
   }
 });
 
+// Sporelings close up: waiting to be rescued (top), rescued (bottom), in each colour.
+const crowd = document.createElement('section');
+crowd.style.cssText = 'grid-column:1/-1;background:#0b2a22;border-radius:12px;padding:8px;text-align:center;font-size:22px;';
+const crowdCanvas = document.createElement('canvas');
+crowdCanvas.style.cssText = 'width:100%;height:130px;display:block;';
+crowd.append(crowdCanvas, 'sporelings: waiting, then rescued');
+root.prepend(crowd);
+let crowdTime = 0;
+const drawCrowd = (dt: number): void => {
+  crowdTime += dt;
+  const box = crowdCanvas.getBoundingClientRect();
+  if (box.width === 0) return;
+  const ratio = window.devicePixelRatio || 1;
+  if (crowdCanvas.width !== Math.round(box.width * ratio)) {
+    crowdCanvas.width = Math.round(box.width * ratio);
+    crowdCanvas.height = Math.round(box.height * ratio);
+  }
+  const g = crowdCanvas.getContext('2d')!;
+  g.setTransform(ratio, 0, 0, ratio, 0, 0);
+  g.clearRect(0, 0, box.width, box.height);
+  for (let i = 0; i < 5; i++) {
+    const x = (box.width / 6) * (i + 1);
+    const bob = Math.sin(crowdTime * 4 + i) * 3;
+    drawSporeling(g, x, 38 + bob, 16, { color: sporelingColor(i * 7 + 3), rescued: false, gaze: Math.sin(crowdTime * 1.3 + i) });
+    drawSporeling(g, x, 95 + bob, 16, { color: sporelingColor(i + 1), rescued: true, gaze: 0 });
+  }
+};
+
 createLoop(
   (dt) => {
     for (const stage of stages) stage.update(dt);
+    drawCrowd(dt);
   },
   () => {},
 ).start();
