@@ -1,4 +1,4 @@
-import { ADVENTURE_LEVELS } from '../config/levels';
+import { ADVENTURE_LEVELS, levelById } from '../config/levels';
 import type { LevelProgress, SaveData } from '../core/save';
 
 /**
@@ -36,12 +36,20 @@ export function levelStars(save: SaveData, levelId: number): number {
   return 1 + (progress.sporelings ? 1 : 0) + (progress.coins ? 1 : 0);
 }
 
-/** A level's number as players see it: its place in Adventure, counting from 1. */
+/** A level's number as players see it: its place in Adventure, counting from 1 (0: a secret level). */
 export function levelNumber(levelId: number): number {
   return ADVENTURE_LEVELS.findIndex((level) => level.id === levelId) + 1;
 }
 
+/** "3. DRIFTING CANOPY", or "SECRET: HIDDEN GROVE". */
+export function levelTitle(levelId: number): string {
+  const level = levelById(levelId);
+  const number = levelNumber(levelId);
+  return number > 0 ? `${number}. ${level.name}` : `SECRET: ${level.name}`;
+}
+
 export function isLevelOpen(save: SaveData, levelId: number): boolean {
+  if (levelById(levelId).secretOf !== null) return save.secrets.includes(levelId);
   const index = ADVENTURE_LEVELS.findIndex((level) => level.id === levelId);
   if (index < 0) return false;
   const before = ADVENTURE_LEVELS[index - 1];
@@ -52,7 +60,16 @@ export function isLevelOpen(save: SaveData, levelId: number): boolean {
 /** The level after this one, or null after the last. */
 export function nextLevelId(levelId: number): number | null {
   const index = ADVENTURE_LEVELS.findIndex((level) => level.id === levelId);
+  if (index < 0) return null;
   return ADVENTURE_LEVELS[index + 1]?.id ?? null;
+}
+
+/** The secret level found through this level's secret gap; returns it if it was new. */
+export function findSecret(save: SaveData, levelId: number): number | null {
+  const secret = levelById(levelId).secret;
+  if (!secret || save.secrets.includes(secret.levelId)) return null;
+  save.secrets.push(secret.levelId);
+  return secret.levelId;
 }
 
 /** The furthest level the player may fly: the first open level without stars, else the last. */

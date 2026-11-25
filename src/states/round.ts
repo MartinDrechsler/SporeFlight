@@ -1,3 +1,4 @@
+import { startFromCheckpoint, type Checkpoint } from '../gameplay/world';
 import { flapPlayer, type GameEvent, type World } from '../gameplay/world';
 import type { QuestKind } from '../config/rewards';
 import { unlockAchievements } from '../meta/achievements';
@@ -13,7 +14,11 @@ import type { GameContext } from './context';
  * Starts a new round of a level and gives the first flap. `fromHover` keeps
  * the mushroom where it was hovering on the menu, so it does not jump.
  */
-export function startRound(ctx: GameContext, levelId: number, options: { fromHover: boolean } = { fromHover: false }): void {
+export function startRound(
+  ctx: GameContext,
+  levelId: number,
+  options: { fromHover?: boolean; checkpoint?: Checkpoint | null } = {},
+): void {
   // Every way into a round passes here, so this is the one place that checks for lives.
   if (ctx.save.lives <= 0) {
     ctx.go('gameOver');
@@ -22,6 +27,7 @@ export function startRound(ctx: GameContext, levelId: number, options: { fromHov
   const hoverY = ctx.world.player.y;
   ctx.levelId = levelId;
   ctx.world = ctx.newWorld(levelId, options.fromHover ? hoverY : undefined);
+  if (options.checkpoint) startFromCheckpoint(ctx.world, options.checkpoint);
   ctx.go('playing');
   flapPlayer(ctx.world);
 }

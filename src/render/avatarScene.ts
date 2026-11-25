@@ -3,6 +3,7 @@ import type { Trail } from '../config/trails';
 import { idleLook } from './avatar';
 import { hash } from './color';
 import { drawMushroom } from './mushroom';
+import { drawSporeling, sporelingColor } from './sporeling';
 import type { AvatarFrame } from './timeline';
 
 /** What the avatar wears in a scene: before and after a reveal. */
@@ -13,6 +14,8 @@ export interface SceneLook {
   /** A glow trail streaming behind; shown only once revealed when `trailIsNew`. */
   trail?: Trail;
   trailIsNew?: boolean;
+  /** Lost sporelings floating around it, far off (story scenes). */
+  sporelings?: number;
 }
 
 /** The mushroom stands this many radii above the ground line. */
@@ -46,6 +49,13 @@ export function drawAvatarScene(ctx: CanvasRenderingContext2D, width: number, he
   if (look.trail && (!look.trailIsNew || frame.revealed) && frame.lie === 0) drawTrail(ctx, look.trail, cx, cy, r, time);
   if (frame.burst !== null) drawBurst(ctx, cx, cy, r, frame.burst, skin);
 
+  for (let i = 0; i < (look.sporelings ?? 0); i++) {
+    // Scattered to both sides, small and far, bobbing, looking about for the way home.
+    const side = i % 2 === 0 ? -1 : 1;
+    const sx = width / 2 + side * width * (0.3 + 0.08 * Math.floor(i / 2));
+    const sy = height * (0.3 + 0.2 * ((i * 0.37) % 1)) + Math.sin(time * 2 + i) * 4;
+    drawSporeling(ctx, sx, sy, r * 0.22, { color: sporelingColor(i + 2), rescued: false, gaze: Math.sin(time + i) });
+  }
   if (frame.drink !== null) drawGlass(ctx, cx + r * 1.2, groundY, r, frame.drink, time);
 
   ctx.save();

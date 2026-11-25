@@ -5,7 +5,7 @@ import { createRandom, type Random } from '../core/random';
 import { circlesTouch, isNearMiss, isPastNearMissZone, playerHitsGround, playerHitsRoot } from './collision';
 import { createPlayer, flap, stepPlayer, type Player } from './player';
 import { detach, isMagnetic, pickupPosition, pullToward, scrollPickup, type Pickup, type PickupKind } from './pickups';
-import { rootLeft, stepRoot, type Root } from './roots';
+import { extraGap, rootLeft, stepRoot, type Root } from './roots';
 import { removeRock, rockHittingPlayer, stepBoss, type Boss } from './boss';
 import { bounceOffVeins } from './veins';
 import { createCourse, stepCourse, type Course } from './course';
@@ -27,6 +27,10 @@ export type GameEvent =
   | { type: 'nearMiss'; x: number; y: number }
   | { type: 'shieldPop'; x: number; y: number }
   | { type: 'milestone'; score: number }
+  /** Past the level's checkpoint: a crash from here on may restart from it. */
+  | { type: 'checkpoint'; x: number }
+  /** Through a secret gap: the level is finished and a secret level found. */
+  | { type: 'secret'; x: number; y: number }
   | { type: 'wind'; kind: WindZone['kind']; x: number; y: number }
   | { type: 'crash'; x: number; y: number }
   | { type: 'landed'; x: number; y: number }
@@ -44,6 +48,13 @@ export type GameEvent =
  * Everything about one round of play, from the first flap until a crash or the finish gate.
  * Lives, saving and screens are handled outside, by the states.
  */
+/** A passed checkpoint: the first root after it, and what the run had earned and been offered by then. */
+export interface Checkpoint {
+  root: number;
+  stats: RunStats;
+  offered: { coins: number; diamonds: number; sporelings: number };
+}
+
 export interface World extends Field {
   readonly width: number;
   /** The round's seed: with the taps below, enough to replay the round exactly. */
@@ -68,6 +79,8 @@ export interface World extends Field {
   winds: WindZone[];
   /** Numbers for achievements and quests; `stats.score` is the round's score (1 per root). */
   stats: RunStats;
+  /** The level's checkpoint once passed: where a restart begins, with what had been earned by then. */
+  checkpoint: Checkpoint | null;
   /** Valuables that appeared this round, for the star rating. */
   offered: { coins: number; diamonds: number; sporelings: number };
   rootsSpawned: number;
@@ -121,6 +134,7 @@ export function createWorld(width: number, height: number, level: LevelConfig, s
     pickups: [],
     winds: [],
     stats: { score: 0, flaps: 0, coins: 0, diamonds: 0, nearMisses: 0, veins: 0, sporelings: 0 },
+    checkpoint: null,
     offered: { coins: 0, diamonds: 0, sporelings: 0 },
     rootsSpawned: 0,
     rootsPassed: 0,
@@ -331,6 +345,16 @@ function scorePasses(world: World): void {
     world.rootsPassed += 1;
     world.stats.score += 1;
     world.events.push({ type: 'pass', score: world.stats.score, rootX: rootLeft(root) + root.width / 2 });
+    const extra = extraGap(root);
+    if (root.extra?.secret && extra && world.player.y > extra.top && world.player.y < extra.bottom) {
+      world.course.finished = true;
+      world.course.secret = true;
+      world.events.push({ type: 'secret', x: world.player.x, y: world.player.y });
+    }
+    if (root.checkpoint && !world.checkpoint) {
+      world.checkpoint = { root: root.index + 1, stats: { ...world.stats }, offered: { ...world.offered } };
+      world.events.push({ type: 'checkpoint', x: rootLeft(root) + root.width });
+    }
   }
 }
 
@@ -385,6 +409,40 @@ function checkNearMisses(world: World): void {
 }
 
 /** Endless only: in a level, the finish gate is the goal. */
+/**
+ * Restarts a round from its level's checkpoint: the course runs on (roots,
+ * pickups and wind spawn exactly as they did, so the layout stays the same)
+ * without the mushroom, until the checkpoint is passed. Then the run gets
+ * back what it had earned by then, and a moment of grace to find its rhythm.
+ */
+export function startFromCheckpoint(world: World, checkpoint: Checkpoint): void {
+  const dt = 1 / 60;
+  for (let guard = 0; world.rootsPassed < checkpoint.root && guard < 60 * 600; guard++) {
+    updateSpeed(world, dt);
+    const speed = scrollSpeed(world);
+    world.distance += speed * dt;
+    updateWind(world, dt, speed);
+    stepCourse(world, speed * dt, dt);
+    for (const root of world.roots) stepRoot(root, dt, speed);
+    for (const pickup of world.pickups) scrollPickup(pickup, speed * dt);
+    for (const root of world.roots) {
+      if (root.passed || rootLeft(root) + root.width >= world.player.x) continue;
+      root.passed = true;
+      world.rootsPassed += 1;
+    }
+    removeOffscreen(world);
+  }
+  // Behind the mushroom is the past: what was collected there is in the checkpoint's stats.
+  world.pickups = world.pickups.filter((pickup) => pickupPosition(pickup).x > world.player.x);
+  world.stats = { ...checkpoint.stats };
+  world.offered = { ...checkpoint.offered };
+  world.checkpoint = checkpoint;
+  world.events.length = 0;
+  world.player.vy = 0;
+  world.player.y = world.height * TUNING.player.startYFraction;
+  world.invulnerableTime = TUNING.checkpoint.graceSeconds;
+}
+
 function checkMilestones(world: World): void {
   if (!world.level.progressive) return;
   const next = TUNING.milestones[world.milestonesReached];

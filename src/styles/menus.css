@@ -585,3 +585,21 @@
   letter-spacing: 0.1em;
   color: var(--muted);
 }
+
+/* A secret level on the map: a dotted violet side path and a softly glowing stop. */
+.map-line .secret-trail {
+  fill: none;
+  stroke: #e3d9ff;
+  stroke-width: 3;
+  stroke-dasharray: 2 9;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.8;
+}
+
+.map-node.secret {
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  font-size: 1.7rem;
+}

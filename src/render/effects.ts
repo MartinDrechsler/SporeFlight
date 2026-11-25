@@ -114,6 +114,15 @@ export class Effects {
         this.text('CRACKED OPEN!', event.x, event.y - 52, '#7fe6ff', 30);
         this.flash('0, 229, 255');
         break;
+      case 'checkpoint':
+        for (let i = 0; i < 24; i++) this.spawn(event.x, (height * i) / 24, -30 - Math.random() * 40, 0, 0.8, 2.5, '#ffd23f');
+        this.text('CHECKPOINT!', width / 2, height * 0.3, '#ffd23f', 30);
+        break;
+      case 'secret':
+        this.burst(event.x, event.y, 40, '#e3d9ff', 260, 1.1);
+        this.text('A SECRET!', width / 2, height * 0.35, '#e3d9ff', 40);
+        this.flash('227, 217, 255');
+        break;
       case 'finish':
         // The gate opens in light.
         for (let i = 0; i < 40; i++) this.spawn(event.x, (height * i) / 40, -60 - Math.random() * 80, 0, 0.9, 3, i % 2 ? '#ffd23f' : accent);

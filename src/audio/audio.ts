@@ -190,5 +190,9 @@ export function soundFor(event: GameEvent): SoundName | null {
       return 'veinHit';
     case 'veinBreak':
       return 'veinBreak';
+    case 'checkpoint':
+      return 'milestone';
+    case 'secret':
+      return 'secret';
   }
 }

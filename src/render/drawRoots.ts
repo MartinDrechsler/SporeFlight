@@ -6,7 +6,7 @@ import { COIN, DIAMOND } from '../config/sprites';
 import { drawSprite } from './sprites';
 import { TUNING } from '../config/tuning';
 import { pickupPosition, type Pickup } from '../gameplay/pickups';
-import { gapBottom, gapTop, rootLeft, type Root } from '../gameplay/roots';
+import { extraGap, gapBottom, gapTop, rootLeft, solidSpans, type Root } from '../gameplay/roots';
 import { isBroken, type Vein } from '../gameplay/veins';
 import type { WindZone } from '../gameplay/wind';
 
@@ -18,11 +18,61 @@ export interface RootLook {
 
 export function drawRoot(ctx: CanvasRenderingContext2D, root: Root, look: RootLook, groundY: number, time: number): void {
   const x = rootLeft(root);
-  const top = gapTop(root);
-  const bottom = gapBottom(root);
-  drawColumn(ctx, look.style, look.colors, { x, y: 0, width: root.width, height: top, tip: 'down', seed: root.index * 2 }, time);
-  drawColumn(ctx, look.style, look.colors, { x, y: bottom, width: root.width, height: groundY - bottom, tip: 'up', seed: root.index * 2 + 1 }, time);
+  const spans = solidSpans(root, groundY);
+  spans.forEach(([top, bottom], i) => {
+    const seed = root.index * 4 + i * 2;
+    const column = (y: number, height: number, tip: 'up' | 'down', s: number): void =>
+      drawColumn(ctx, look.style, look.colors, { x, y, width: root.width, height, tip, seed: s }, time);
+    if (i === 0) column(top, bottom - top, 'down', seed);
+    else if (i === spans.length - 1) column(top, bottom - top, 'up', seed);
+    else {
+      // A fork's pillar: capped on both ends, so each half faces its own gap.
+      const middle = (top + bottom) / 2;
+      column(top, middle - top, 'up', seed);
+      column(middle, bottom - middle, 'down', seed + 1);
+    }
+  });
   if (root.vein) drawVein(ctx, root, root.vein, time);
+  if (root.extra?.secret) drawSecretGlow(ctx, root, time);
+  if (root.checkpoint) drawCheckpoint(ctx, x + root.width + 30, groundY, time);
+}
+
+/** A faint violet shimmer deep in a secret gap: easy to miss, worth a look. */
+function drawSecretGlow(ctx: CanvasRenderingContext2D, root: Root, time: number): void {
+  const gap = extraGap(root);
+  if (!gap) return;
+  const cx = rootLeft(root) + root.width / 2;
+  const cy = (gap.top + gap.bottom) / 2;
+  const pulse = 0.35 + Math.sin(time * 2.4) * 0.15;
+  const glowR = (gap.bottom - gap.top) * 0.55;
+  const halo = ctx.createRadialGradient(cx, cy, 2, cx, cy, glowR);
+  halo.addColorStop(0, `rgba(227, 217, 255, ${pulse})`);
+  halo.addColorStop(1, 'rgba(227, 217, 255, 0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(cx - glowR, cy - glowR, glowR * 2, glowR * 2);
+  ctx.save();
+  ctx.translate(cx, cy);
+  sparkles(ctx, glowR * 0.6, time, '#e3d9ff', 2);
+  ctx.restore();
+}
+
+/** The checkpoint: a lantern on a tall stem, glowing gold. */
+function drawCheckpoint(ctx: CanvasRenderingContext2D, x: number, groundY: number, time: number): void {
+  const top = groundY - 120;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 210, 63, 0.7)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, groundY);
+  ctx.quadraticCurveTo(x + 6, groundY - 60, x, top);
+  ctx.stroke();
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 16 + Math.sin(time * 3) * 5;
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath();
+  ctx.ellipse(x, top - 8, 9, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 /**

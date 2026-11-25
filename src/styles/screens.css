@@ -704,3 +704,14 @@
 .rest-time[hidden] {
   display: none;
 }
+
+/* A story panel's line of text. */
+.story-text {
+  max-width: 320px;
+  min-height: 3.6em;
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text);
+}

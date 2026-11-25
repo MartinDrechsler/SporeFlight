@@ -63,6 +63,12 @@ export const SOUNDS = {
     noise('bandpass', 1100, 0.12, 0.045, { to: 2600, q: 1.4, delay: 0.03 }),
   ],
   pass: [tone('sine', C6, 0.05, 0.03)],
+  // A secret found: a mysterious rising shimmer, then a bright chord.
+  secret: [
+    noise('bandpass', 600, 0.6, 0.06, { to: 4000, q: 2, attack: 0.2 }),
+    ...arpeggio('sine', [E5, G5, B5, E6], 0.08, 0.5, 0.05, 0.1),
+    tone('triangle', E6, 0.9, 0.04, { delay: 0.45 }),
+  ],
   // A sporeling rescued: a happy little two-note chirp and a soft chime.
   sporeling: [
     tone('sine', 880, 0.08, 0.06, { to: 1320 }),

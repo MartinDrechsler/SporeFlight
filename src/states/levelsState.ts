@@ -2,7 +2,7 @@ import { levelById } from '../config/levels';
 import { skinById } from '../config/skins';
 import { THEMES } from '../config/theme';
 import type { State } from '../core/stateMachine';
-import { currentLevelId, isLevelOpen, levelNumber, levelProgress, levelStars } from '../meta/adventure';
+import { currentLevelId, isLevelOpen, levelNumber, levelTitle, levelProgress, levelStars } from '../meta/adventure';
 import { byId, setText, starText } from '../ui/dom';
 import { renderMap, scrollMapTo, showMapStars } from '../ui/map';
 import { showScreens } from '../ui/screens';
@@ -34,7 +34,7 @@ export function levelsState(ctx: GameContext): State {
     const level = levelById(selected);
     const open = isLevelOpen(save, level.id);
     const name = byId('map-card-name');
-    setText(name, `${levelNumber(level.id)}. ${level.name}`);
+    setText(name, levelTitle(level.id));
     name.style.setProperty('--level-color', THEMES[level.theme].accent);
     setText(byId('map-card-stars'), starText(levelStars(save, level.id)));
     setText(byId('map-card-text'), open ? level.description : `Finish level ${levelNumber(level.id) - 1} to open this one.`);
@@ -52,6 +52,12 @@ export function levelsState(ctx: GameContext): State {
 
   return {
     enter() {
+      // The first time on the map, the story begins.
+      if (!ctx.save.storySeen.includes('opening')) {
+        ctx.story = { id: 'opening', then: 'levels' };
+        ctx.go('story');
+        return;
+      }
       // Coming back from a level shows that level; otherwise the one the player is up to.
       const last = ctx.levelId;
       selected = last !== 0 && isLevelOpen(ctx.save, last) ? last : currentLevelId(ctx.save);

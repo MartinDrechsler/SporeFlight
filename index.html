@@ -125,6 +125,18 @@
           <button id="adventure-back" class="menu-button" type="button">MAP</button>
           <button id="adventure-retry" class="primary-button compact" type="button">FLY AGAIN</button>
         </div>
+        <button id="adventure-restart" class="menu-button small" type="button" hidden>RESTART LEVEL</button>
+      </section>
+
+      <!-- A story scene: the mushroom acts out each panel, one line of text under it -->
+      <section id="screen-story" class="overlay center dim" hidden>
+        <canvas id="story-stage" class="avatar-stage tall" aria-hidden="true"></canvas>
+        <p id="story-text" class="story-text"></p>
+        <p id="story-page" class="panel-text small"></p>
+        <div class="button-row">
+          <button id="story-skip" class="menu-button" type="button">SKIP</button>
+          <button id="story-next" class="primary-button compact" type="button">NEXT</button>
+        </div>
       </section>
 
       <!-- Through the finish gate -->
