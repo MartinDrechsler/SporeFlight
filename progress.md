@@ -7,6 +7,12 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Bigger mushroom, same difficulty
+- The mushroom is drawn 15% bigger in flight (and the home avatar with it), `LOOK_SCALE` in
+  render/drawPlayer.ts. Its hitbox stays radius 18: a bigger hitbox would tighten every gap (endless gaps are
+  132 px; radius 21 would leave 90 px of room instead of 96, about 6% less) and change leaderboard replays.
+  Drawn bigger on the same hitbox, a cap edge brushing a root by a pixel or two is forgiven, never punished.
+
 ### Coin and diamond piles on home
 - Beside the home avatar: neat stacks of coins to its lower left (10 per stack, up to 5 stacks) and a
   pyramid of diamonds to its right (5 at the bottom, up to 15), one piece for each one owned, with the
@@ -15,6 +21,8 @@ app stores, playtesting).
 - When the amount changes (a purchase, a reward), the piles change one piece at a time: spent pieces pop
   off the top and fade, new ones drop on. A big change still takes about a second. The piles catch up
   whenever the home screen shows, so coming back from the shop shows the purchase leaving the pile.
+- Each pile has its name above its number (COINS / 15, DIAMONDS / 3). The home stats panel no longer
+  repeats coins and diamonds; it keeps RECORD and LIVES.
 - Spacing: the piles start further out from the avatar (1.75 radii from its centre) and stand a little
   below its foot (never lower than its space, above the buttons). The home avatar can be bigger (up to
   2.1x); the pieces keep their size and shrink only if a screen is too narrow for full piles.
