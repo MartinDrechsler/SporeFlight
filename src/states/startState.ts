@@ -91,8 +91,6 @@ function refresh(ctx: GameContext): void {
   const { save } = ctx;
   setText(byId('start-username'), save.username ?? TUNING.session.defaultUsername);
   setText(byId('start-best'), save.bestScore);
-  setText(byId('start-coins'), save.coins);
-  setText(byId('start-diamonds'), save.diamonds);
   paintLives(ctx);
   byId('start-last').hidden = ctx.lastScore === null;
   setText(byId('start-last-score'), ctx.lastScore ?? 0);

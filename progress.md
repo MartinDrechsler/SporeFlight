@@ -21,7 +21,8 @@ app stores, playtesting).
 - When the amount changes (a purchase, a reward), the piles change one piece at a time: spent pieces pop
   off the top and fade, new ones drop on. A big change still takes about a second. The piles catch up
   whenever the home screen shows, so coming back from the shop shows the purchase leaving the pile.
-- Each pile has its name above its number (COINS / 15, DIAMONDS / 3).
+- Each pile has its name above its number (COINS / 15, DIAMONDS / 3). The home stats panel no longer
+  repeats coins and diamonds; it keeps RECORD and LIVES.
 - Spacing: the piles start further out from the avatar (1.75 radii from its centre) and stand a little
   below its foot (never lower than its space, above the buttons). The home avatar can be bigger (up to
   2.1x); the pieces keep their size and shrink only if a screen is too narrow for full piles.
