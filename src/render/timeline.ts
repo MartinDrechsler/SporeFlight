@@ -19,6 +19,10 @@ export interface AvatarFrame {
   burst: number | null;
   /** Progress of floating "z z", or null. */
   zzz: number | null;
+  /** Progress of the circling stars, or null. */
+  stars: number | null;
+  /** Progress of a drink of water (the glass empties), or null. */
+  drink: number | null;
   /** The new look is on. */
   revealed: boolean;
   face: Expression;
@@ -54,7 +58,24 @@ const MOVES: Record<MoveKind, { holds: boolean; apply: (frame: AvatarFrame, p: n
   wobble: { holds: false, apply: (f, p, a) => { f.rotation += a * Math.sin(p * Math.PI * 6) * (1 - p); } },
   shiver: { holds: false, apply: (f, p, a) => { f.x += a * Math.sin(p * 97); } },
   lean: { holds: true, apply: (f, p, a) => { f.rotation += a * smooth(p); } },
-  lie: { holds: true, apply: (f, p) => { f.lie = Math.max(f.lie, smooth(p)); } },
+  lie: { holds: true, apply: (f, p, a) => { f.lie += (a - f.lie) * smooth(p); } },
+  slump: {
+    holds: true,
+    apply: (f, p, a) => {
+      const s = a * smooth(p);
+      f.scaleY *= 1 - s;
+      f.scaleX *= 1 + s * 0.5;
+    },
+  },
+  daze: {
+    holds: false,
+    apply: (f, p, a) => {
+      f.rotation += a * Math.sin(p * Math.PI * 2);
+      f.x += a * 0.5 * Math.cos(p * Math.PI * 2);
+    },
+  },
+  stars: { holds: false, apply: (f, p) => { f.stars = p; } },
+  drink: { holds: false, apply: (f, p) => { f.drink = p; } },
   breathe: {
     holds: false,
     apply: (f, p, a) => {
@@ -73,7 +94,7 @@ export function frameAt(timeline: Timeline, time: number): AvatarFrame {
   const t = timeline.loop ? ((time % timeline.length) + timeline.length) % timeline.length : Math.min(time, timeline.length);
   const frame: AvatarFrame = {
     x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, lie: 0, flash: 0,
-    faceVisible: true, burst: null, zzz: null, revealed: false, face: faceAt(timeline, t),
+    faceVisible: true, burst: null, zzz: null, stars: null, drink: null, revealed: false, face: faceAt(timeline, t),
   };
   for (const step of timeline.moves) {
     if (t < step.at) continue;

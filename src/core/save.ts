@@ -59,7 +59,10 @@ export interface SaveData {
   quests: { day: string; list: QuestState[] };
   /** Distances where recent rounds ended, per level id, oldest first. Mushroom clumps grow there. */
   deathMarks: Record<string, number[]>;
-  /** Seconds of rest left before lives refill; 0 when not resting. Counts only while the game is open. */
+  /**
+   * Seconds of rest left before lives refill; 0 when not resting (out of lives with 0 here: the player has
+   * not yet chosen between resting and an ad). Counts only while the game is open.
+   */
   restSecondsLeft: number;
   leaderboard: LeaderboardState;
 }

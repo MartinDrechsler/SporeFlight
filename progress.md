@@ -7,6 +7,21 @@ TypeScript, keeping its idea, principles and flow, then develop it further towar
 The plan lives in the Claude Doc "Spore Flight plan" (5 phases). Next: phase 5, launch prep (real ads, PWA,
 app stores, playtesting).
 
+### Out of breath, and home vs flight
+- **Home and flight are separate**: tapping TAP TO FLAP no longer shrinks the big home mushroom into the
+  flying one; the flying mushroom is simply in its place.
+- **Out of breath: two big choices side by side**, REST 1 MINUTE and WATCH AN AD. Nothing happens until one
+  is tapped (the rest no longer starts by itself; `startRest`, no save change: out of lives with 0 seconds
+  left means "not chosen yet"). Meanwhile the mushroom sits knocked out: crossed eyes, head swaying round,
+  cartoon stars circling its head.
+- **Resting**: the rest button becomes a countdown ring, the ad button stays to skip the wait. The mushroom
+  gets better as the minute passes (`RECOVERY` in config/animations.ts, by share of the rest): flops over
+  knocked out (tongue out, stars), at 15 s sits up and opens its eyes, at 30 s drinks a glass of water
+  through a straw, gulp by gulp, at 45 s stands up and stretches, at 60 s a jump for joy with a burst, then
+  home with 5 lives. Leaving mid-rest and coming back picks up at the right step.
+- New moves: lie (down or back up), slump, daze, stars, drink. Squashes now keep the stem's foot on the
+  ground.
+
 ### Jump feel
 - **Squeeze and stretch forward** (`render/jump.ts`, drawing only): a tap flattens the mushroom for 50 ms
   from the very frame of the tap, then it springs long and thin along the jump, leaning right (forward).

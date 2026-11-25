@@ -8,7 +8,7 @@ import { defaultSave, loadSave, migrate, writeSave, type KeyValueStore } from '.
 import { finishLevel, isLevelOpen, starsFor, currentLevelId } from '../src/meta/adventure';
 import { unlockAchievements } from '../src/meta/achievements';
 import { accepted, join, leave, refused, rememberRun, setCountry, submissionFor } from '../src/meta/leaderboard';
-import { bankRound, buyLook, refillLives, rest, selectLook, unlockAdventure } from '../src/meta/economy';
+import { awaitingChoice, bankRound, buyLook, refillLives, rest, restProgress, selectLook, startRest, unlockAdventure } from '../src/meta/economy';
 import { addQuestProgress, claimableCount, claimQuest, dayKey, refreshQuests } from '../src/meta/quests';
 
 function memoryStore(initial: Record<string, string> = {}): KeyValueStore {
@@ -78,11 +78,26 @@ describe('economy', () => {
     expect(bankRound(save, { levelId: 0, score: 10, coins: 0, diamonds: 0, distance: 0 })).toBe(false);
   });
 
+  it('out of lives: nothing happens until the player chooses to rest', () => {
+    const save = { ...defaultSave(), lives: 1 };
+    bankRound(save, { levelId: 0, score: 0, coins: 0, diamonds: 0, distance: 0 });
+    expect([save.lives, save.restSecondsLeft]).toEqual([0, 0]);
+    expect(awaitingChoice(save)).toBe(true);
+    expect(rest(save, 120)).toBe(false);
+    expect(save.lives).toBe(0);
+  });
+
   it('out of lives: resting refills them after the rest time, counting only given time', () => {
     const save = { ...defaultSave(), lives: 1 };
     bankRound(save, { levelId: 0, score: 0, coins: 0, diamonds: 0, distance: 0 });
-    expect([save.lives, save.restSecondsLeft]).toEqual([0, TUNING.session.restSeconds]);
-    expect(rest(save, 30)).toBe(false);
+    startRest(save);
+    expect(save.restSecondsLeft).toBe(TUNING.session.restSeconds);
+    expect(awaitingChoice(save)).toBe(false);
+    expect(rest(save, 15)).toBe(false);
+    expect(restProgress(save)).toBeCloseTo(0.25);
+    startRest(save);
+    expect(restProgress(save)).toBeCloseTo(0.25);
+    expect(rest(save, 15)).toBe(false);
     expect(rest(save, 30)).toBe(true);
     expect([save.lives, save.restSecondsLeft]).toEqual([TUNING.session.refillLives, 0]);
   });

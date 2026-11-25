@@ -23,8 +23,16 @@ export type MoveKind =
   | 'shiver'
   /** Lean by `amount` radians (negative: back) and stay leaning. */
   | 'lean'
-  /** Fall onto its side and stay lying. */
+  /** Lie down on its side (`amount` 1, the default) or get back up (`amount` 0), and stay so. */
   | 'lie'
+  /** Sink into a slumped sit, shorter and wider by `amount`, and stay so (negative: straighten up again). */
+  | 'slump'
+  /** Sway the head round in a circle, dazed, by `amount` radians. */
+  | 'daze'
+  /** Cartoon stars circle above the head. */
+  | 'stars'
+  /** A glass of water with a straw stands beside it and empties. */
+  | 'drink'
   /** One slow breath: swell by `amount` and settle. */
   | 'breathe'
   /** Spores and rays of light burst out from the mushroom. */
@@ -59,23 +67,137 @@ export interface Timeline {
   faces: readonly FaceCue[];
 }
 
+/** `count` gulps (a quick stretch as the water goes down), `every` seconds apart from `start`. */
+function gulps(start: number, count: number, every: number): Move[] {
+  return Array.from({ length: count }, (_, i) => ({ move: 'squash' as const, at: start + i * every, for: 0.22, amount: -0.05 }));
+}
+
 export const ANIMATIONS = {
   /** The home screen and anything calm: just being there. */
   idle: { length: 4, loop: true, moves: [], faces: [{ at: 0, face: 'neutral' }] },
 
-  /** Out of lives: lying on its side, breathing slowly, eyes falling shut now and then. */
-  rest: {
-    length: 4.2,
+  /** Out of lives, before the player chooses: slumped, head swaying round, crossed eyes, stars circling. */
+  knockedOut: {
+    length: 2.4,
+    loop: true,
+    moves: [
+      { move: 'slump', at: 0, for: 0, amount: 0.1 },
+      { move: 'daze', at: 0, for: 2.4, amount: 0.14 },
+      { move: 'stars', at: 0, for: 2.4 },
+    ],
+    faces: [{ at: 0, face: 'dizzy' }],
+  },
+
+  // Resting one minute: the mushroom gets better step by step (see RECOVERY below).
+
+  /** It flops over onto its side. */
+  restFall: {
+    length: 1,
+    loop: false,
+    then: 'restOut',
+    moves: [
+      { move: 'slump', at: 0, for: 0, amount: 0.1 },
+      { move: 'lie', at: 0.15, for: 0.35 },
+      { move: 'squash', at: 0.5, for: 0.2, amount: 0.12 },
+    ],
+    faces: [
+      { at: 0, face: 'dizzy' },
+      { at: 0.5, face: 'knockedOut' },
+    ],
+  },
+  /** Lying knocked out, stars circling, a twitch now and then. */
+  restOut: {
+    length: 2.6,
     loop: true,
     moves: [
       { move: 'lie', at: 0, for: 0 },
-      { move: 'breathe', at: 0, for: 4.2, amount: 0.05 },
-      { move: 'zzz', at: 0.4, for: 3.6 },
+      { move: 'stars', at: 0, for: 2.6 },
+      { move: 'breathe', at: 0, for: 2.6, amount: 0.03 },
+      { move: 'squash', at: 1.8, for: 0.14, amount: 0.06 },
+    ],
+    faces: [{ at: 0, face: 'knockedOut' }],
+  },
+  /** It sits up and opens its eyes. */
+  restSitUp: {
+    length: 1.8,
+    loop: false,
+    then: 'restSit',
+    moves: [
+      { move: 'lie', at: 0, for: 0 },
+      { move: 'lie', at: 0.3, for: 0.7, amount: 0 },
+      { move: 'slump', at: 0.3, for: 0.7, amount: 0.1 },
+      { move: 'wobble', at: 1, for: 0.6, amount: 0.08 },
     ],
     faces: [
-      { at: 0, face: 'exhausted' },
-      { at: 1.8, face: 'dozing' },
-      { at: 3.5, face: 'exhausted' },
+      { at: 0, face: 'knockedOut' },
+      { at: 0.9, face: 'dozing' },
+      { at: 1.4, face: 'tired' },
+    ],
+  },
+  /** Sitting, still tired, breathing slowly. */
+  restSit: {
+    length: 3.5,
+    loop: true,
+    moves: [
+      { move: 'slump', at: 0, for: 0, amount: 0.1 },
+      { move: 'breathe', at: 0, for: 3.5, amount: 0.04 },
+    ],
+    faces: [{ at: 0, face: 'tired' }],
+  },
+  /** A long drink of water through a straw, gulp by gulp. */
+  restDrink: {
+    length: 13,
+    loop: false,
+    then: 'restSit',
+    moves: [
+      { move: 'slump', at: 0, for: 0, amount: 0.1 },
+      { move: 'drink', at: 0, for: 12 },
+      ...gulps(1.2, 7, 1.5),
+    ],
+    faces: [
+      { at: 0, face: 'tired' },
+      { at: 0.9, face: 'sipping' },
+      { at: 11.6, face: 'neutral' },
+    ],
+  },
+  /** It gets up, stretches tall, and smiles. */
+  restStand: {
+    length: 1.6,
+    loop: false,
+    then: 'restReady',
+    moves: [
+      { move: 'slump', at: 0, for: 0, amount: 0.1 },
+      { move: 'squash', at: 0.1, for: 0.3, amount: 0.08 },
+      { move: 'slump', at: 0.3, for: 0.4, amount: -0.1 },
+      { move: 'squash', at: 0.6, for: 0.8, amount: -0.16 },
+    ],
+    faces: [
+      { at: 0, face: 'tired' },
+      { at: 0.6, face: 'sipping' },
+      { at: 1.3, face: 'neutral' },
+    ],
+  },
+  /** Standing, nearly ready, bouncing lightly on the spot. */
+  restReady: {
+    length: 1.2,
+    loop: true,
+    moves: [{ move: 'squash', at: 0, for: 0.6, amount: 0.04 }],
+    faces: [{ at: 0, face: 'neutral' }],
+  },
+  /** Lives are back: a big jump for joy, then happy hops. */
+  restJump: {
+    length: 1.4,
+    loop: false,
+    then: 'celebrate',
+    moves: [
+      { move: 'squash', at: 0, for: 0.2, amount: 0.14 },
+      { move: 'hop', at: 0.15, for: 0.75, amount: 1.1 },
+      { move: 'burst', at: 0.3, for: 0.9 },
+      { move: 'squash', at: 0.9, for: 0.22, amount: 0.16 },
+    ],
+    faces: [
+      { at: 0, face: 'surprised' },
+      { at: 0.2, face: 'happy' },
     ],
   },
 
@@ -174,3 +296,24 @@ export const ANIMATIONS = {
 } satisfies Record<string, Timeline>;
 
 export type AnimationId = keyof typeof ANIMATIONS;
+
+/**
+ * Resting one minute, out of lives: what the avatar does as the rest goes
+ * on, by the share of the rest done. Lying knocked out, then sitting up and
+ * opening its eyes, a drink of water, standing up, and a jump when the
+ * lives are back.
+ */
+export const RECOVERY: readonly { from: number; play: AnimationId }[] = [
+  { from: 0, play: 'restFall' },
+  { from: 0.25, play: 'restSitUp' },
+  { from: 0.5, play: 'restDrink' },
+  { from: 0.75, play: 'restStand' },
+  { from: 1, play: 'restJump' },
+];
+
+/** The recovery step for a share of the rest done. */
+export function recoveryStep(done: number): AnimationId {
+  let play: AnimationId = RECOVERY[0]!.play;
+  for (const step of RECOVERY) if (done >= step.from) play = step.play;
+  return play;
+}

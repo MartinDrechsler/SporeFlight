@@ -1,22 +1,57 @@
-import type { State } from '../core/stateMachine';
-import { rest } from '../meta/economy';
+import { recoveryStep, type AnimationId } from '../config/animations';
 import { skinById } from '../config/skins';
+import type { State } from '../core/stateMachine';
+import { awaitingChoice, rest, restProgress, startRest } from '../meta/economy';
 import { AvatarStage } from '../ui/avatarStage';
 import { byId, setText } from '../ui/dom';
 import { showScreens } from '../ui/screens';
 import { toast } from '../ui/toast';
 import type { GameContext } from './context';
 
+/** Seconds the happy jump plays before going home once the lives are back. */
+const JUMP_SECONDS = 1.6;
+
 /**
- * Out of lives. The mushroom lies on its side, exhausted, breathing slowly.
- * The player chooses: rest one minute (counting only while the game is open)
- * or watch a short ad to fly again right away.
+ * Out of lives. The mushroom sits knocked out, stars circling its head. The
+ * player chooses: rest one minute (counting only while the game is open) or
+ * watch a short ad. Nothing happens until one is tapped. While resting, a
+ * ring counts down and the mushroom gets better step by step
+ * (config/animations.ts, RECOVERY).
  */
 export function gameOverState(ctx: GameContext): State {
   let sinceSave = 0;
+  let step: AnimationId | null = null;
+  /** Seconds until going home after the lives came back; null while not leaving. */
+  let leaving: number | null = null;
   const stage = new AvatarStage(byId<HTMLCanvasElement>('gameover-stage'), { skin: skinById(ctx.save.activeSkin) });
+  const look = () => ({ skin: skinById(ctx.save.activeSkin) });
+
+  const act = (id: AnimationId): void => {
+    if (step === id) return;
+    step = id;
+    stage.play(id, look());
+  };
+
+  const paint = (): void => {
+    const choosing = awaitingChoice(ctx.save);
+    byId('rest-button').hidden = !choosing;
+    byId('rest-ring').hidden = choosing;
+    byId('rest-ring-progress').style.strokeDashoffset = String(100 * (1 - restProgress(ctx.save)));
+    const total = Math.ceil(ctx.save.restSecondsLeft);
+    setText(byId('gameover-timer'), `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`);
+  };
+
+  byId('rest-button').addEventListener('click', () => {
+    ctx.audio.unlock();
+    ctx.audio.ui('click');
+    startRest(ctx.save);
+    ctx.persist();
+    paint();
+    act(recoveryStep(0));
+  });
 
   byId('watch-ad-button').addEventListener('click', () => {
+    if (leaving !== null) return;
     ctx.audio.unlock();
     ctx.audio.ui('click');
     ctx.persist();
@@ -26,17 +61,30 @@ export function gameOverState(ctx: GameContext): State {
   return {
     enter() {
       sinceSave = 0;
+      step = null;
+      leaving = null;
       setText(byId('gameover-score'), ctx.lastScore ?? 0);
       setText(byId('gameover-best'), ctx.save.bestScore);
-      paintTimer(ctx.save.restSecondsLeft);
-      stage.play('rest', { skin: skinById(ctx.save.activeSkin) });
+      paint();
+      act(awaitingChoice(ctx.save) ? 'knockedOut' : recoveryStep(restProgress(ctx.save)));
       showScreens('gameOver');
     },
 
     update(dt) {
       stage.update(dt);
+      if (leaving !== null) {
+        leaving -= dt;
+        if (leaving <= 0) {
+          ctx.lastScore = null;
+          ctx.go('start');
+        }
+        return;
+      }
+      if (awaitingChoice(ctx.save)) return;
+
       const rested = rest(ctx.save, dt);
-      paintTimer(ctx.save.restSecondsLeft);
+      paint();
+      act(recoveryStep(restProgress(ctx.save)));
       // Save the countdown now and then, so closing the game keeps the progress.
       sinceSave += dt;
       if (sinceSave >= 1 || rested) {
@@ -46,15 +94,9 @@ export function gameOverState(ctx: GameContext): State {
       if (!rested) return;
       ctx.audio.ui('reward');
       toast(`RESTED! +${ctx.save.lives} LIVES`);
-      ctx.lastScore = null;
-      ctx.go('start');
+      leaving = JUMP_SECONDS;
     },
   };
-}
-
-function paintTimer(seconds: number): void {
-  const total = Math.ceil(seconds);
-  setText(byId('gameover-timer'), `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`);
 }
 
 /** Shows or hides the "ad failed" message on the game over screen. */

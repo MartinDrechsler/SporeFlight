@@ -17,6 +17,8 @@ export interface SceneLook {
 
 /** The mushroom stands this many radii above the ground line. */
 const STAND = 0.95;
+/** Where the mouth is: radii below the centre (render/mushroom.ts face plus the mouth's place in it). */
+const MOUTH_Y = 0.36 + 0.17 + 0.03;
 /** Lying on its side, the cap's edge touches the ground. */
 const LIE = 1.05;
 
@@ -44,11 +46,16 @@ export function drawAvatarScene(ctx: CanvasRenderingContext2D, width: number, he
   if (look.trail && (!look.trailIsNew || frame.revealed) && frame.lie === 0) drawTrail(ctx, look.trail, cx, cy, r, time);
   if (frame.burst !== null) drawBurst(ctx, cx, cy, r, frame.burst, skin);
 
+  if (frame.drink !== null) drawGlass(ctx, cx + r * 1.2, groundY, r, frame.drink, time);
+
   ctx.save();
   ctx.translate(cx, cy);
   // Lying: the cap rolls over to the left, the face looks up and out.
   ctx.rotate(frame.rotation - frame.lie * Math.PI * 0.5);
+  // Squashes and slumps keep the stem's foot on the ground.
+  ctx.translate(0, STAND * r);
   ctx.scale(frame.scaleX, frame.scaleY);
+  ctx.translate(0, -STAND * r);
   const idle = idleLook(time);
   drawMushroom(ctx, r, {
     skin,
@@ -60,7 +67,13 @@ export function drawAvatarScene(ctx: CanvasRenderingContext2D, width: number, he
   });
   ctx.restore();
 
+  if (frame.drink !== null) drawStraw(ctx, cx, groundY, r, frame);
   if (frame.flash > 0) drawGlow(ctx, cx, cy, r, frame.flash);
+  if (frame.stars !== null) {
+    // Above the head: over the cap when sitting, over the body when lying.
+    const headTop = cy + STAND * r - 2 * STAND * r * frame.scaleY * (1 - frame.lie) - LIE * r * frame.lie;
+    drawStars(ctx, cx - r * 0.15 * frame.lie + Math.sin(frame.rotation) * r * 0.8, headTop - r * 0.5, r, frame.stars);
+  }
   if (frame.zzz !== null) drawZzz(ctx, cx, cy - r * 0.55, r, frame.zzz);
 }
 
@@ -148,4 +161,87 @@ function drawTrail(ctx: CanvasRenderingContext2D, trail: Trail, cx: number, cy: 
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+}
+
+/** Three cartoon stars circling above the head; the ones at the back are smaller and dimmer. */
+function drawStars(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, p: number): void {
+  for (let i = 0; i < 3; i++) {
+    const a = (p + i / 3) * Math.PI * 2;
+    const front = (Math.sin(a) + 1) / 2;
+    const size = r * (0.12 + front * 0.08);
+    ctx.globalAlpha = 0.55 + front * 0.45;
+    ctx.save();
+    ctx.translate(x + Math.cos(a) * r * 0.75, y + Math.sin(a) * r * 0.22);
+    ctx.rotate(a * 1.5);
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const radius = k % 2 === 0 ? size : size * 0.45;
+      const angle = (k / 10) * Math.PI * 2 - Math.PI / 2;
+      ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#ffd84a';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, r * 0.03);
+    ctx.strokeStyle = '#b8860b';
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** A glass of water standing at (x, ground), emptying as `p` goes from 0 to 1, with bubbles. */
+function drawGlass(ctx: CanvasRenderingContext2D, x: number, ground: number, r: number, p: number, time: number): void {
+  const w = r * 0.42;
+  const h = r * 0.62;
+  const top = ground - h;
+  const glass = (): void => {
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, top);
+    ctx.lineTo(x - w * 0.38, ground);
+    ctx.lineTo(x + w * 0.38, ground);
+    ctx.lineTo(x + w / 2, top);
+  };
+  // Water fills the glass up to its level.
+  const level = ground - h * 0.85 * (1 - p * 0.9);
+  ctx.save();
+  glass();
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = 'rgba(111, 200, 255, 0.85)';
+  ctx.fillRect(x - w, level, w * 2, ground - level);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+  for (let i = 0; i < 3; i++) {
+    const rise = (time * 0.6 + i / 3) % 1;
+    const by = ground - (ground - level) * rise;
+    ctx.beginPath();
+    ctx.arc(x + (i - 1) * w * 0.22, by, r * 0.025, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.fillStyle = 'rgba(220, 245, 255, 0.18)';
+  glass();
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(230, 248, 255, 0.9)';
+  ctx.lineWidth = Math.max(1.2, r * 0.035);
+  glass();
+  ctx.stroke();
+}
+
+/** A bendy straw from the glass to the mouth. */
+function drawStraw(ctx: CanvasRenderingContext2D, cx: number, ground: number, r: number, frame: AvatarFrame): void {
+  const gx = cx + r * 1.2;
+  // The mouth, on the stem: its height above the ground follows the slump.
+  const mouthY = ground - (STAND - MOUTH_Y) * r * frame.scaleY;
+  ctx.strokeStyle = '#ff7fa8';
+  ctx.lineWidth = Math.max(1.5, r * 0.06);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(gx + r * 0.05, ground - r * 0.15);
+  ctx.lineTo(gx - r * 0.05, ground - r * 0.85);
+  ctx.quadraticCurveTo(gx - r * 0.15, ground - r * 0.98, gx - r * 0.45, mouthY - r * 0.05);
+  ctx.lineTo(cx + r * 0.08, mouthY);
+  ctx.stroke();
 }

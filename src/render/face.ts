@@ -156,6 +156,22 @@ function drawMouth(ctx: CanvasRenderingContext2D, r: number, face: Expression): 
         ctx.quadraticCurveTo(r * 0.013, m + r * 0.08, r * 0.105, m - r * 0.026);
       });
       break;
+    case 'tongue':
+      stroke(ctx, () => {
+        ctx.moveTo(-r * 0.09, m + r * 0.02);
+        ctx.quadraticCurveTo(0, m + r * 0.05, r * 0.09, m + r * 0.01);
+      });
+      // The tongue hangs out of one side.
+      ctx.fillStyle = TONGUE;
+      ctx.beginPath();
+      ctx.moveTo(r * 0.0, m + r * 0.035);
+      ctx.lineTo(r * 0.08, m + r * 0.025);
+      ctx.quadraticCurveTo(r * 0.09, m + r * 0.13, r * 0.04, m + r * 0.13);
+      ctx.quadraticCurveTo(-r * 0.005, m + r * 0.12, 0, m + r * 0.035);
+      ctx.fill();
+      ctx.lineWidth = Math.max(1, ctx.lineWidth * 0.7);
+      ctx.stroke();
+      break;
     case 'wobbly':
       stroke(ctx, () => {
         const w = r * 0.03;
