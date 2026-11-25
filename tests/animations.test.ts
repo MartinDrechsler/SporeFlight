@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANIMATIONS, type Timeline } from '../src/config/animations';
+import { ANIMATIONS, recoveryStep, type Timeline } from '../src/config/animations';
 import { blendExpressions, EXPRESSIONS } from '../src/config/expressions';
 import { AvatarPlayer, frameAt } from '../src/render/timeline';
 
@@ -25,13 +25,30 @@ describe('avatar animations as data', () => {
 });
 
 describe('scenes', () => {
-  it('rest: lies on its side all the time, exhausted, with z z floating up and its eyes falling shut now and then', () => {
-    const rest = ANIMATIONS.rest;
-    const frames = Array.from({ length: 240 }, (_, i) => frameAt(rest, (i / 240) * rest.length));
-    expect(frames.every((f) => f.lie === 1)).toBe(true);
-    expect(frames.some((f) => f.zzz !== null)).toBe(true);
-    expect(frames.some((f) => f.face.eyes === 'shut')).toBe(true);
-    expect(frames[0]!.face.lid).toBeGreaterThan(0.5);
+  it('knocked out (before choosing): sitting, crossed eyes, head swaying round, stars circling', () => {
+    const ko = ANIMATIONS.knockedOut;
+    const frames = Array.from({ length: 120 }, (_, i) => frameAt(ko, (i / 120) * ko.length));
+    expect(frames.every((f) => f.lie === 0 && f.stars !== null && f.face.eyes === 'cross')).toBe(true);
+    expect(Math.max(...frames.map((f) => f.rotation))).toBeGreaterThan(0.1);
+    expect(Math.min(...frames.map((f) => f.rotation))).toBeLessThan(-0.1);
+  });
+
+  it('resting gets better step by step: knocked out, sitting up with eyes open, drinking, standing, jumping', () => {
+    expect([0, 0.2, 0.3, 0.6, 0.8, 1].map(recoveryStep)).toEqual(['restFall', 'restFall', 'restSitUp', 'restDrink', 'restStand', 'restJump']);
+    const out = frameAt(ANIMATIONS.restOut, 1);
+    expect([out.lie, out.face.eyes, out.stars !== null]).toEqual([1, 'cross', true]);
+    const sat = frameAt(ANIMATIONS.restSitUp, ANIMATIONS.restSitUp.length);
+    expect(sat.lie).toBeCloseTo(0);
+    expect(sat.face.eyes).toBe('open');
+    expect(frameAt(ANIMATIONS.restDrink, 5).drink).not.toBeNull();
+    const stood = frameAt(ANIMATIONS.restReady, 0);
+    expect(stood.scaleY).toBeCloseTo(1, 1);
+    expect(Math.min(...Array.from({ length: 60 }, (_, i) => frameAt(ANIMATIONS.restJump, i / 40).y))).toBeLessThan(-0.9);
+  });
+
+  it('getting up undoes lying down', () => {
+    expect(frameAt(ANIMATIONS.restSitUp, 0).lie).toBe(1);
+    expect(frameAt(ANIMATIONS.restSitUp, 1.2).lie).toBe(0);
   });
 
   it('reveal: the new look appears at the brightest flash, with a burst, and ends happy', () => {

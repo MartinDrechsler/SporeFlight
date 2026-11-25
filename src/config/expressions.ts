@@ -9,7 +9,7 @@
 
 /** How the eyes are drawn: open ovals, happy arcs (^ ^), shut lines, or dizzy crosses. */
 export type EyeShape = 'open' | 'happy' | 'shut' | 'cross';
-export type MouthShape = 'smile' | 'grin' | 'frown' | 'o' | 'tiny' | 'smirk' | 'wobbly';
+export type MouthShape = 'smile' | 'grin' | 'frown' | 'o' | 'tiny' | 'smirk' | 'wobbly' | 'tongue';
 
 export interface Expression {
   eyes: EyeShape;
@@ -48,6 +48,12 @@ export const EXPRESSIONS = {
   nervous: { ...BASE, size: 1.05, brows: { raise: -0.02, tilt: 0.05 }, mouth: 'wobbly', blush: 0.3, sweat: true },
   /** Right after a crash. */
   dizzy: { ...BASE, eyes: 'cross', mouth: 'o', blush: 0 },
+  /** Knocked out, cartoon style: crossed eyes, tongue hanging out. */
+  knockedOut: { ...BASE, eyes: 'cross', mouth: 'tongue', blush: 0 },
+  /** Coming round: eyes open but heavy. */
+  tired: { ...BASE, lid: 0.35, brows: { raise: 0.03, tilt: 0.02 }, mouth: 'tiny', blush: 0.3 },
+  /** Sipping water: eyes closed in bliss, cheeks pink. */
+  sipping: { ...BASE, eyes: 'happy', mouth: 'tiny', blush: 0.9 },
 } satisfies Record<string, Expression>;
 
 export type ExpressionId = keyof typeof EXPRESSIONS;

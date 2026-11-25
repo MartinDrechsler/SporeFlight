@@ -76,16 +76,25 @@
 
       <!-- Out of lives -->
       <section id="screen-gameOver" class="overlay center dim" hidden>
-        <canvas id="gameover-stage" class="avatar-stage" aria-hidden="true"></canvas>
+        <canvas id="gameover-stage" class="avatar-stage tall" aria-hidden="true"></canvas>
         <h2 class="panel-title danger">OUT OF BREATH!</h2>
         <dl class="stats">
           <div><dt>SCORE</dt><dd id="gameover-score">0</dd></div>
           <div><dt>BEST</dt><dd id="gameover-best">0</dd></div>
         </dl>
-        <p class="panel-text">Resting... lives return in</p>
-        <p id="gameover-timer" class="timer">1:00</p>
-        <p class="panel-text">or fly again right now:</p>
-        <button id="watch-ad-button" class="primary-button compact blink" type="button">WATCH A SHORT AD</button>
+        <!-- Two ways to get lives back; nothing happens until one is chosen. Resting turns its button into a countdown ring. -->
+        <div class="choice-row">
+          <button id="rest-button" class="choice-button" type="button">REST<br />1 MINUTE</button>
+          <div id="rest-ring" class="rest-ring" hidden>
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="ring-track" cx="50" cy="50" r="44" />
+              <circle id="rest-ring-progress" class="ring-progress" cx="50" cy="50" r="44" pathLength="100" />
+            </svg>
+            <span id="gameover-timer" class="ring-time">1:00</span>
+            <span class="ring-label">RESTING</span>
+          </div>
+          <button id="watch-ad-button" class="choice-button ad" type="button">WATCH<br />AN AD</button>
+        </div>
         <p id="ad-error" class="panel-text danger" hidden>The ad could not be shown. Please try again.</p>
       </section>
 

@@ -32,7 +32,7 @@ import { unlockState } from './states/unlockState';
 import { settingsState } from './states/settingsState';
 import { usernameState } from './states/usernameState';
 import { installIcons } from './ui/icons';
-import { NEUTRAL_POSE, relaxPose } from './render/avatar';
+import { NEUTRAL_POSE } from './render/avatar';
 import { installTestHooks } from './testHooks';
 import { byId } from './ui/dom';
 
@@ -108,8 +108,9 @@ let time = 0;
 const loop = createLoop(
   (dt) => {
     time += dt;
-    // Screens other than home let the avatar pose settle back; home sets it again in its update.
-    ctx.pose = relaxPose(ctx.pose, dt);
+    // Off the home screen the flying mushroom is simply in its place: the big home avatar does not shrink
+    // into it. Home sets its pose again in its own update.
+    ctx.pose = NEUTRAL_POSE;
     machine.update(dt);
     ctx.effects.update(dt);
     ctx.audio.setMusic(machine.current === null ? null : MUSIC[machine.current]);

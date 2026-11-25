@@ -28,7 +28,6 @@ export function bankRound(save: SaveData, result: RoundResult): boolean {
   save.lives = Math.max(0, save.lives - 1);
   const key = String(result.levelId);
   save.deathMarks[key] = [...(save.deathMarks[key] ?? []), result.distance].slice(-TUNING.session.deathMarks);
-  if (save.lives === 0) save.restSecondsLeft = TUNING.session.restSeconds;
 
   if (result.levelId !== ENDLESS_LEVEL_ID || result.score <= save.bestScore) return false;
   save.bestScore = result.score;
@@ -92,7 +91,26 @@ export function unlockAdventure(save: SaveData): boolean {
   return true;
 }
 
-/** Out of lives: resting counts down while the game is open. Returns true when lives are back. */
+/** Out of lives, the player chose to rest: the countdown starts (only once; a running rest goes on). */
+export function startRest(save: SaveData): void {
+  if (save.lives === 0 && save.restSecondsLeft <= 0) save.restSecondsLeft = TUNING.session.restSeconds;
+}
+
+/** Out of lives, not resting and not yet chosen how to get lives back. */
+export function awaitingChoice(save: SaveData): boolean {
+  return save.lives === 0 && save.restSecondsLeft <= 0;
+}
+
+/** Share of the rest done, 0 to 1 (1 also when not resting). */
+export function restProgress(save: SaveData): number {
+  if (save.restSecondsLeft <= 0) return save.lives > 0 ? 1 : 0;
+  return 1 - save.restSecondsLeft / TUNING.session.restSeconds;
+}
+
+/**
+ * Resting counts down while the game is open, once the player has chosen to
+ * rest. Returns true when lives are back.
+ */
 export function rest(save: SaveData, dt: number): boolean {
   if (save.restSecondsLeft <= 0) return save.lives > 0;
   save.restSecondsLeft = Math.max(0, save.restSecondsLeft - dt);

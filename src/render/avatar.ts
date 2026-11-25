@@ -67,14 +67,3 @@ function gazeAt(time: number): number {
   return target(stretch - 1) + (target(stretch) - target(stretch - 1)) * eased;
 }
 
-/** Eases any pose back to the normal one; call every frame outside the home screen. */
-export function relaxPose(pose: Pose, dt: number): Pose {
-  const keep = Math.exp(-dt * 10);
-  return {
-    shiftX: Math.abs(pose.shiftX) < 0.5 ? 0 : pose.shiftX * keep,
-    scale: 1 + (pose.scale - 1) * keep,
-    gaze: pose.gaze * keep,
-    blink: 0,
-    act: null,
-  };
-}
